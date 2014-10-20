@@ -1,7 +1,6 @@
-<<<<<<< HEAD
-node_modules/
 .DS_Store
-=======
+bower_components
+
 # Logs
 logs
 *.log
@@ -30,4 +29,3 @@ node_modules
 
 # Users Environment Variables
 .lock-wscript
->>>>>>> b9da731652dc05f7a5630dde239cffb347db6bce
