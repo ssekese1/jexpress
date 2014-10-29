@@ -12,9 +12,9 @@ var UserSchema   = new Schema({
 });
 
 UserSchema.set("_perms", {
-	admin: "rw",
-	owner: "rw",
-	user: "r"
+	admin: "crud",
+	owner: "crud",
+	user: "r",
 });
 
 module.exports = mongoose.model('User', UserSchema);

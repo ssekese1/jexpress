@@ -10,9 +10,9 @@ var TestSchema   = new Schema({
 });
 
 TestSchema.set("_perms", {
-	admin: "rw",
-	owner: "rw",
-	user: "r",
+	admin: "crud",
+	owner: "crud",
+	user: "cr",
 	all: "r"
 });
 

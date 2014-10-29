@@ -71,10 +71,10 @@ Possible permission keys are:
 "all"   | the w0rld
 
 Possible values are:
-"w"  | write
+"c"  | create
 "r"  | read
-"rw" | read/write
-"wr" | Also read/write, in case of dyslexia
+"u"  | update
+"d"  | delete
 
 */
 
@@ -86,7 +86,6 @@ var LocalApiKeyStrategy = require('passport-localapikey').Strategy;
 var User = require('../models/user_model');
 var bcrypt = require('bcrypt');
 var router = express.Router();
-var mongo = require('mongodb').MongoClient;
 var config = require('../../config');
 
 var modelname = "";
@@ -135,8 +134,16 @@ var auth = function(req, res, next) {
 	};
 	if (req.method == "GET") {
 		var method = "r";
+	} else if (req.method == "POST") {
+		var method = "u";
+	} else if (req.method == "PUT") {
+		var method = "c";
+	} else if (req.method == "DELETE") {
+		var method = "d";
 	} else {
-		var method = "w";
+		console.log("Unsupported method", req.method);
+		deny(req, res, next);
+		return;
 	}
 	req.authorized = false;
 	//First check if "all" is able to do this. If so, let's get on with it.
