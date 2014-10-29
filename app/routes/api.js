@@ -84,6 +84,7 @@ var BasicStrategy = require('passport-http').BasicStrategy;
 var LocalApiKeyStrategy = require('passport-localapikey').Strategy;
 // var auth = require('./auth');
 var User = require('../models/user_model');
+var APIKey = require('../models/apikey_model');
 var bcrypt = require('bcrypt');
 var router = express.Router();
 var config = require('../../config');
@@ -96,6 +97,45 @@ var deny = function(req, res, next) {
 	res.status(500).send("Unauthorized");
 	req.authorized = false;
 }
+
+/* Our login endpoint. I'm afraid you can never have a model called login. */
+router.use("/login", function(req, res, next) {
+	var email = req.body.email;
+	var password = req.body.password;
+	if ((!password) || (!email)) {
+		console.log("Missing email or password");
+		deny(req, res, next);
+		return;
+	}
+	User.findOne({ email: email }, function(err, user) {
+		if (err) { console.log("Err"); return done(err); }
+		if (!user) {
+			console.log("Incorrect username");
+			deny(req, res, next);
+			return;
+		}
+		console.log(password, user.password);
+		if (!bcrypt.compareSync(password, user.password)) {
+			console.log("Incorrect password");
+			deny(req, res, next);
+			return;
+		}
+		//Generate new API key
+		var apikey = new APIKey();
+		apikey.user_id = user._id;
+		apikey.apikey = require('rand-token').generate(16);
+
+		apikey.save(function(err) {
+			if (err) {
+				console.log("Error", err);
+				deny(req, res, next);
+				return;
+			}
+			// console.log(user);
+			res.json(apikey);
+		});
+	});
+});
 
 /* This middleware prepares the correct Model */
 router.use('/:modelname', function(req, res, next) {
@@ -158,53 +198,65 @@ var auth = function(req, res, next) {
 	//This isn't an 'all' situation, so let's log the user in and go from there
 	if (req.query.apikey) {
 		var apikey = req.query.apikey;
-		User.findOne({ apikey: apikey }, function(err, user) {
+		APIKey.findOne({ apikey: apikey }, function(err, apikey) {
 			if (err) { 
 				console.log("Err", err);
 				deny(req, res, next);
 				return;
 			}
-			if (!user) {
-				console.log("Deny User");
+			if (!apikey) {
+				console.log("API Key not found");
 				deny(req, res, next);
 				return;
 			}
-			req.user = user;
-			//Let's check perms in this order - admin, user, owner
-			//Admin check
-			if (user.admin) { 
-				if (perms["admin"].indexOf(method) !== -1) {
-					console.log("Matched permission 'admin':", method);
-					req.authorized = true;
-					next();
-					return;
-				}
-			}
-			//User check
-			if (perms["user"].indexOf(method) !== -1) {
-				console.log("Matched permission 'user':", method);
-				req.authorized = true;
-				next();
-				return;
-			}
-			//Owner check
-			var owner_id = false;
-			Model.findById(req.params.item_id, function(err, item) {
-				if (err) {
+			User.findOne({ _id: apikey.user_id }, function(err, user) {
+				if (err) { 
 					console.log("Err", err);
-				}
-				if ((item) && (item._owner_id) && (item._owner_id.toString() == user._id.toString())) {
-					req.authorized = true;
-					console.log("Matched permission 'owner'", method);
-					next();
+					deny(req, res, next);
 					return;
-				} else {
-					console.log("All authorizations failed");
-					if(!req.authorized) {
-						deny(req, res, next);
+				}
+				if (!user) {
+					console.log("User not found");
+					deny(req, res, next);
+					return;
+				}
+				req.user = user;
+				//Let's check perms in this order - admin, user, owner
+				//Admin check
+				if (user.admin) { 
+					if (perms["admin"].indexOf(method) !== -1) {
+						console.log("Matched permission 'admin':", method);
+						req.authorized = true;
+						next();
 						return;
 					}
 				}
+				//User check
+				if (perms["user"].indexOf(method) !== -1) {
+					console.log("Matched permission 'user':", method);
+					req.authorized = true;
+					next();
+					return;
+				}
+				//Owner check
+				var owner_id = false;
+				Model.findById(req.params.item_id, function(err, item) {
+					if (err) {
+						console.log("Err", err);
+					}
+					if ((item) && (item._owner_id) && (item._owner_id.toString() == user._id.toString())) {
+						req.authorized = true;
+						console.log("Matched permission 'owner'", method);
+						next();
+						return;
+					} else {
+						console.log("All authorizations failed");
+						if(!req.authorized) {
+							deny(req, res, next);
+							return;
+						}
+					}
+				});
 			});
 		});
 	} else {

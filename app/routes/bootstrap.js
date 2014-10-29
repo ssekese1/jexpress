@@ -14,7 +14,6 @@ router.get("/", function(req, res) {
             user.email = "admin";
             user.admin = true;
             user.password = bcrypt.hashSync("admin", 4);
-            user.apikey="admin";
             user.save(function(err) {
                 if (err) {
                     res.send(err);

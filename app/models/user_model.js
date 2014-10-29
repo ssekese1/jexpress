@@ -5,9 +5,8 @@ var Objectid = mongoose.Schema.Types.ObjectId;
 
 var UserSchema   = new Schema({
 	name: String,
-	email: String,
+	email: { type: String, unique: true, index: true },
 	password: String,
-	apikey: String,
 	admin: Boolean,
 });
 
