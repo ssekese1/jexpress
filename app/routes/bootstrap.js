@@ -1,6 +1,6 @@
 var express = require('express');
 var router = express.Router();
-var User = require("../models/user");
+var User = require("../models/user_model");
 var bcrypt = require("bcrypt");
 
 router.get("/", function(req, res) {
@@ -14,7 +14,7 @@ router.get("/", function(req, res) {
             user.email = "admin";
             user.admin = true;
             user.password = bcrypt.hashSync("admin", 4);
-            user.token="admin";
+            user.apikey="admin";
             user.save(function(err) {
                 if (err) {
                     res.send(err);
