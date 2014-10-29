@@ -1,5 +1,8 @@
 .DS_Store
 bower_components
+config.js
+
+app/models/*
 
 # Logs
 logs
