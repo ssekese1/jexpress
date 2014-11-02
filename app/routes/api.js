@@ -282,8 +282,16 @@ function format_filter(filter) {
 				filter[key] = {}
 				filter[key][tmp[0]] = tmp[1];
 			}
+			if (typeof(val) == "object") {
+				result = format_filter(val);
+				filter[key] = {};
+				for(var x = 0; x < result.length; x++) {
+					filter[key][Object.keys(result[x])[0]]=result[x][Object.keys(result[x])[0]];
+				}
+			}
 		});
 	}
+	console.log("Filter:", filter);
 	return filter;
 }
 
