@@ -8,6 +8,14 @@ var UserSchema   = new Schema({
 	email: { type: String, unique: true, index: true },
 	password: String,
 	admin: Boolean,
+	space_total: Number, //Debit + Credit
+	space_reserve: Number,
+	space_debit: Number,
+	space_credit: Number,
+	stuff_total: Number, //Debit + Credit
+	stuff_reserve: Number,
+	stuff_debit: Number,
+	stuff_credit: Number,
 });
 
 UserSchema.set("_perms", {
