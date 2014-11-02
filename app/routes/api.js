@@ -250,7 +250,7 @@ var auth = function(req, res, next) {
 						console.log("Err", err);
 					}
 					if ((item) && (item._owner_id) && (item._owner_id.toString() == user._id.toString()) && ((perms["owner"]) && (perms["owner"].indexOf(method) !== -1))) {
-							console.log("Matched permission 'user':", method);
+							console.log("Matched permission 'owner':", method);
 							req.authorized = true;
 							next();
 							return;
