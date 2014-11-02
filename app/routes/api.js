@@ -21,6 +21,8 @@ The format is /:modelname/:_id for a GET item, PUT and DELETE.
 
 When GETting a list, you can add a Filter as a parameter, eg. /:modelname?filter[field]=value
 
+To filter with $gte, $lte or similar, use a colon to divide the operator and query. Eg. /:modelname?filter[field]=$gte:value
+
 There's also a special route, /:modelname/_describe, which returns the model
 
 User model should look a bit like:
@@ -271,6 +273,20 @@ var auth = function(req, res, next) {
 	}
 };
 
+function format_filter(filter) {
+	if (typeof(filter) == "object") {
+		Object.keys(filter).forEach(function(key) {
+			var val = filter[key];
+			if (val.indexOf(":") !== -1) {
+				var tmp = val.split(":");
+				filter[key] = {}
+				filter[key][tmp[0]] = tmp[1];
+			}
+		});
+	}
+	return filter;
+}
+
 /* Routes */
 router.route('/:modelname')
 	.post(auth, function(req, res) {
@@ -292,7 +308,7 @@ router.route('/:modelname')
 		});
 	})
 	.get(auth, function(req, res) {
-		Model.find(req.query.filter, function(err, items) {
+		Model.find(format_filter(req.query.filter), function(err, items) {
 			if (err) {
 				res.send(err);
 			} else {
