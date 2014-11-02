@@ -175,9 +175,9 @@ var auth = function(req, res, next) {
 	if (req.method == "GET") {
 		var method = "r";
 	} else if (req.method == "POST") {
-		var method = "u";
-	} else if (req.method == "PUT") {
 		var method = "c";
+	} else if (req.method == "PUT") {
+		var method = "u";
 	} else if (req.method == "DELETE") {
 		var method = "d";
 	} else {
@@ -186,6 +186,13 @@ var auth = function(req, res, next) {
 		return;
 	}
 	req.authorized = false;
+	//If no perms are set, then this isn't an available model
+	console.log("perms", perms.admin);
+	if (!perms.admin) {
+		console.log("Model not available");
+		deny(req, res, next);
+		return;
+	}
 	//First check if "all" is able to do this. If so, let's get on with it.
 	if (perms["all"]) {
 		if (perms["all"].indexOf(method) !== -1) {
@@ -223,16 +230,14 @@ var auth = function(req, res, next) {
 				req.user = user;
 				//Let's check perms in this order - admin, user, owner
 				//Admin check
-				if (user.admin) { 
-					if (perms["admin"].indexOf(method) !== -1) {
-						console.log("Matched permission 'admin':", method);
-						req.authorized = true;
-						next();
-						return;
-					}
+				if ((perms["admin"]) && (perms["admin"].indexOf(method) !== -1)) {
+					console.log("Matched permission 'admin':", method);
+					req.authorized = true;
+					next();
+					return;
 				}
 				//User check
-				if (perms["user"].indexOf(method) !== -1) {
+				if ((perms["user"]) && (perms["user"].indexOf(method) !== -1)) {
 					console.log("Matched permission 'user':", method);
 					req.authorized = true;
 					next();
@@ -244,11 +249,11 @@ var auth = function(req, res, next) {
 					if (err) {
 						console.log("Err", err);
 					}
-					if ((item) && (item._owner_id) && (item._owner_id.toString() == user._id.toString())) {
-						req.authorized = true;
-						console.log("Matched permission 'owner'", method);
-						next();
-						return;
+					if ((item) && (item._owner_id) && (item._owner_id.toString() == user._id.toString()) && ((perms["owner"]) && (perms["owner"].indexOf(method) !== -1))) {
+							console.log("Matched permission 'user':", method);
+							req.authorized = true;
+							next();
+							return;
 					} else {
 						console.log("All authorizations failed");
 						if(!req.authorized) {
