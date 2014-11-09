@@ -26,7 +26,11 @@ app.use(cors());
 
 //DB connection
 var mongoose   = require('mongoose');
-mongoose.connect('mongodb://' + config.mongo_server + '/' + config.mongo_db ); // connect to our database
+mongoose.connect('mongodb://' + config.mongo_server + '/' + config.mongo_db, function(err) {
+    if (err) {
+        console.log("Connection error", err);
+    }
+}); // connect to our database
 
 
 app.use('/', routes);
