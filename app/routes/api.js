@@ -142,8 +142,12 @@ router.use("/login", function(req, res, next) {
 /* This middleware prepares the correct Model */
 router.use('/:modelname', function(req, res, next) {
 	modelname = req.params.modelname;
-	Model = require('../models/' + modelname + "_model");
-	next();
+	try {
+		Model = require('../models/' + modelname + "_model");
+		next();
+	} catch(err) {
+		res.status(404).send("Model not found");
+	}
 });
 
 /* Deal with Passwords. Just always encrypt anything called 'password' */
@@ -352,18 +356,22 @@ router.route('/:modelname/:item_id')
 			if (err) {
 				res.send(err);
 			} else {
-				for(prop in item) {
-					if (req.body[prop]) {
-						item[prop] = req.body[prop];
+				if (item) {
+					for(prop in item) {
+						if (req.body[prop]) {
+							item[prop] = req.body[prop];
+						}
 					}
+					item.save(function(err) {
+						if (err) {
+							res.send(err);
+						} else {
+							res.json({ message: modelname + " updated ", data: item });
+						}
+					});
+				} else {
+					res.status(404).send("Document not found");
 				}
-				item.save(function(err) {
-					if (err) {
-						res.send(err);
-					} else {
-						res.json({ message: modelname + " updated ", data: item });
-					}
-				});
 			}
 		});	
 	})
