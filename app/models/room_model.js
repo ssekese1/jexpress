@@ -7,6 +7,7 @@ var RoomSchema   = new Schema({
 	location: Objectid,
 	name: String,
 	img: String,
+	cost: Number,
 });
 
 RoomSchema.set("_perms", {
