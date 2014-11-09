@@ -147,6 +147,7 @@ router.use('/:modelname', function(req, res, next) {
 		next();
 	} catch(err) {
 		res.status(404).send("Model not found");
+
 	}
 });
 
@@ -302,22 +303,27 @@ function format_filter(filter) {
 /* Routes */
 router.route('/:modelname')
 	.post(auth, function(req, res) {
-		var item = new Model();
-		for(prop in item) {
-			if (req.body[prop]) {
-				item[prop] = req.body[prop];
+		try {
+			var item = new Model();
+			for(prop in item) {
+				if (req.body[prop]) {
+					console.log(prop, req.body[prop]);
+					item[prop] = req.body[prop];
+				}
 			}
+			// item.add("_owner_id");
+			item._owner_id = req.user._id;
+			console.log(item);
+			item.save(function(err) {
+				if (err) {
+					res.send(err);
+				} else {
+					res.json({ message: modelname + " created ", data: item });
+				}
+			});
+		} catch(err) {
+			res.status(500).send("An error occured:", err)
 		}
-		// item.add("_owner_id");
-		item._owner_id = req.user._id;
-		console.log(item);
-		item.save(function(err) {
-			if (err) {
-				res.send(err);
-			} else {
-				res.json({ message: modelname + " created ", data: item });
-			}
-		});
 	})
 	.get(auth, function(req, res) {
 		Model.find(format_filter(req.query.filter), function(err, items) {
@@ -352,38 +358,50 @@ router.route('/:modelname/:item_id')
 		});
 	})
 	.put(auth, function(req, res) {
-		Model.findById(req.params.item_id, function(err, item) {
-			if (err) {
-				res.send(err);
-			} else {
-				if (item) {
-					for(prop in item) {
-						if (req.body[prop]) {
-							item[prop] = req.body[prop];
-						}
-					}
-					item.save(function(err) {
-						if (err) {
-							res.send(err);
-						} else {
-							res.json({ message: modelname + " updated ", data: item });
-						}
-					});
+		try {
+			Model.findById(req.params.item_id, function(err, item) {
+				if (err) {
+					res.send(err);
 				} else {
-					res.status(404).send("Document not found");
+					if (item) {
+						for(prop in item) {
+							if (req.body[prop]) {
+								item[prop] = req.body[prop];
+							}
+						}
+						item.save(function(err) {
+							if (err) {
+								res.send(err);
+							} else {
+								res.json({ message: modelname + " updated ", data: item });
+							}
+						});
+					} else {
+						res.status(404).send("Document not found");
+					}
 				}
-			}
-		});	
+			});
+		} catch(err) {
+			res.status(500).send("An error occured:", err)
+		}
 	})
 	.delete(auth, function(req, res) {
-		Model.remove({
-			_id: req.params.item_id
-		}, function(err, item) {
+		Model.findById(req.params.item_id, function(err, item) {
+			if (!item) {
+				res.status(404).send("Could not find document");
+				return;
+			}
 			if (err) {
 				res.send(err);
-			} else {
-				res.json({ message: modelname + ' deleted' });
-			}
+				return;
+			} 
+			item.remove(function(err, item) {
+				if (err) {
+					res.send(err);
+				} else {
+					res.json({ message: modelname + ' deleted' });
+				}
+			});
 		});
 	});
 
