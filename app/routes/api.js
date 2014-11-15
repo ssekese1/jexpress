@@ -352,7 +352,15 @@ router.route('/:modelname/:item_id')
 		Model.findById(req.params.item_id, function(err, item) {
 			if (err) {
 				res.send(err);
+				return;
 			} else {
+				if (!item) {
+					res.status(404).send("Could not find document");
+					return;
+				}
+				//Don't ever return passwords
+				item = item.toObject();
+				delete item.password;
 				res.json(item);
 			}
 		});
@@ -367,6 +375,7 @@ router.route('/:modelname/:item_id')
 						for(prop in item) {
 							if (req.body[prop]) {
 								item[prop] = req.body[prop];
+								// console.log(prop, req.body[prop]);
 							}
 						}
 						item.save(function(err) {
