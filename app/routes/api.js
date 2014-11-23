@@ -39,6 +39,7 @@ var UserSchema   = new Schema({
 	password: String,
 	apikey: String,
 	admin: Boolean,
+	temp_hash: String,
 });
 
 UserSchema.set("_perms", {
@@ -100,6 +101,85 @@ var deny = function(req, res, next) {
 	req.authorized = false;
 }
 
+var encPassword = function(password) {
+	return hash = bcrypt.hashSync(password, 4);
+}
+
+/* Password recovery */
+router.route("/login/recover").post(function(req, res, next) {
+	var email = req.body.email;
+	if (!email) {
+		console.log("Missing email");
+		deny(req, res, next);
+		return;
+	}
+	User.findOne({ email: email }, function(err, user) {
+		if (err) { console.log("Err"); return done(err); }
+		if (!user) {
+			console.log("Incorrect username");
+			deny(req, res, next);
+			return;
+		}
+		user.temp_hash = require('rand-token').generate(16);
+		user.save(function(err) {
+			if (err) { console.log("Err"); return done(err); }
+			var nodemailer = require('nodemailer');
+			var smtpTransport = require('nodemailer-smtp-transport');
+			// create reusable transporter object using SMTP transport
+			var transporter = nodemailer.createTransport(smtpTransport({
+				host: config.smtp_server,
+				port: 25,
+				auth: {
+					user: config.smtp_username,
+					pass: config.smtp_password,
+				},
+				// secure: true,
+				tls: { rejectUnauthorized: false }
+			}));
+			transporter.sendMail({
+				from: config.smtp_from,
+				to: user.email,
+				subject: "Password Recovery",
+				text: "Someone (hopefully you) requested a password reset. Please click on the following url to recover your password. If you did not request a password reset, you can ignore this message. \n" + config.password_recovery_url + "/" + user.temp_hash,
+			},
+			function(a, b, c) {
+				console.log("a", a);
+			});
+			res.send("Sent recovery email");
+		});
+	});
+});
+
+router.route("/login/reset").post(function(req, res, next) {
+	var password = req.body.password;
+	var temp_hash = req.body.temp_hash;
+	if (temp_hash.length < 16) {
+		console.log("Hash error");
+		deny(req, res, next);
+		return;
+	}
+	if (password.length < 4) {
+		console.log("Password too short");
+		deny(req, res, next);
+		return;
+	}
+	User.findOne({ temp_hash: temp_hash }, function(err, user) {
+		if (err) { console.log("Err"); return done(err); }
+		if (!user) {
+			console.log("Hash not found");
+			deny(req, res, next);
+			return;
+		}
+		user.password = encPassword(password);
+		user.temp_hash = "";
+		user.save(function(err) {
+			if (err) { console.log("Err"); return done(err); }
+			res.send("User updated");
+			return;
+		});
+	})
+});
+
 /* Our login endpoint. I'm afraid you can never have a model called login. */
 router.use("/login", function(req, res, next) {
 	var email = req.body.email;
@@ -116,7 +196,6 @@ router.use("/login", function(req, res, next) {
 			deny(req, res, next);
 			return;
 		}
-		console.log(password, user.password);
 		if (!bcrypt.compareSync(password, user.password)) {
 			console.log("Incorrect password");
 			deny(req, res, next);
@@ -153,11 +232,6 @@ router.use('/:modelname', function(req, res, next) {
 
 /* Deal with Passwords. Just always encrypt anything called 'password' */
 router.use('/:modelname', function(req, res, next) {
-
-	function encPassword(password) {
-		
-		return hash = bcrypt.hashSync(password, 4);
-	}
 
 	if (req.body["password"]) {
 		var password = encPassword(req.body["password"]);
