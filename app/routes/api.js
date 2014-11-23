@@ -142,8 +142,8 @@ router.route("/login/recover").post(function(req, res, next) {
 				subject: "Password Recovery",
 				text: "Someone (hopefully you) requested a password reset. Please click on the following url to recover your password. If you did not request a password reset, you can ignore this message. \n" + config.password_recovery_url + "/" + user.temp_hash,
 			},
-			function(a, b, c) {
-				console.log("a", a);
+			function(result) {
+				console.log("Mailer result", result);
 			});
 			res.send("Sent recovery email");
 		});
