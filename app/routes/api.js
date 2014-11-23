@@ -386,7 +386,9 @@ router.route('/:modelname')
 				}
 			}
 			// item.add("_owner_id");
-			item._owner_id = req.user._id;
+			if (req.user) {
+				item._owner_id = req.user._id;
+			}
 			console.log(item);
 			item.save(function(err) {
 				if (err) {
@@ -396,7 +398,7 @@ router.route('/:modelname')
 				}
 			});
 		} catch(err) {
-			res.status(500).send("An error occured:", err)
+			res.status(500).send("An error occured:" + err)
 		}
 	})
 	.get(auth, function(req, res) {
