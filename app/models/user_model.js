@@ -9,6 +9,7 @@ var UserSchema   = new Schema({
 	email: { type: String, unique: true, index: true },
 	password: String,
 	admin: Boolean,
+	temp_hash: String,
 	space_total: Number, //Debit + Credit
 	space_reserve: Number,
 	space_debit: Number,
