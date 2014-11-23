@@ -2,6 +2,7 @@ var mongoose     = require('mongoose');
 var Schema       = mongoose.Schema;
 
 var Objectid = mongoose.Schema.Types.ObjectId;
+var Membertype = require('./membertype_model');
 
 var UserSchema   = new Schema({
 	name: String,
@@ -30,6 +31,7 @@ var UserSchema   = new Schema({
 	referee: String,
 	referal_method: String,
 	status: { type: String, validate: /active|inactive/, index: true, default: "inactive" },
+	membertype: { type: Objectid, ref: 'Membertype' },
 	_owner_id: Objectid,
 });
 
