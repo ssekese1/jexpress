@@ -8,6 +8,8 @@ var RoomSchema   = new Schema({
 	name: String,
 	img: String,
 	cost: Number,
+	description: String,
+	capacity: Number,
 });
 
 RoomSchema.set("_perms", {
