@@ -14,7 +14,7 @@ npm install
 npm start
 ```
 
-Now point your browser at [http://localhost:3001] and you should see the Jexpress welcome screen.
+Now point your browser at [http://localhost:3001](http://localhost:3001) and you should see the Jexpress welcome screen.
 
 ### Bootstrapping
 
