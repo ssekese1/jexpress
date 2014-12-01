@@ -4,7 +4,7 @@
 
 Life's too short to make APIs. With Jexpress, you write your model and then, er, no that's it. You just write the model. Jexpress takes care of the rest.
 
-What Jexpress gives you is permission management (down to an object level), user management (even a password recovery thingymagig), password encryption (this is the "opinionated" bit), and of course a full RESTful API with CRUD and hardly any programming. 
+What Jexpress gives you is permission management (down to an object level), user management (even a password recovery thingymajig), password encryption (this is the "opinionated" bit), and of course a full RESTful API with CRUD and hardly any programming. 
 
 ### Installing
 
@@ -267,6 +267,15 @@ Note that none of the SMTP stuff is required if you're not sending out password 
 ###Reserved Names
 
 The model names `login` and `_describe` are reserved for, er, logging in and describing. 
+
+###Roadmap
+
+- Pagination
+- Define your own user permission levels
+- Tests
+- A cool welcome page that'll help you bootstrap
+- List of all the models at /api/
+- ... [you tell me](https://github.com/j-norwood-young/jexpress/issues)!
 
 ###Getting Help
 
