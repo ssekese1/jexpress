@@ -220,6 +220,41 @@ The following actions are supported:
 - **PUT** updates an existing object, and requires an ID
 - **DELETE** deletes an existing object, and requires an ID
 
+###Filters
+
+When GETting a list, you can add a Filter as a parameter
+```/:modelname?filter[field]=value```
+
+To filter with `$gte`, `$lte` or similar, use a colon to divide the operator and query. 
+```
+/:modelname?filter[field]=$gte:value
+```
+
+There's also a special route, `/:modelname/_describe`, which returns the model.
+
+### Password Resets
+
+You can request a password reset through the endpoint `/login/recover`, POSTing the user's `email`. The system will set a one-time password and send it to the user through email. The user won't be directed to the API, however, but to whatever URL you define in the config.js file as `password_recovery_url`. You can then POST the `temp_hash` and `password` to `/login/reset` to change the password.
+
+###Config
+
+The config.js file has the following options:
+- **mongo_server** - The address of the Mongo server, defaults to *localhost*
+- **mongo_db** - The db you'd like to store your data in, defaults to *jexpress*
+- **port** - Port that the app runs on, defaults to *3001*
+- **apikey_lifespan** - How long an API key lives for in seconds, defaults to *24 hours*
+- **smtp_server** - Your SMTP server, if you want to send password resets
+- **smtp_username** - The username you use to log in to your SMTP server, if you're sending password resets
+- **smtp_password** - Your SMTP password, if you're sending password resets
+- **smtp_from** - The address that the password reset mails should come from
+- **password_recovery_url** - A URL to your front-end app that handles the password resets
+
+Note that none of the SMTP stuff is required if you're not sending out password resets.
+
+###Random Notes
+
+- The model names `login` and `_describe` are reserved for, er, logging in and describing. 
+
 ###Getting Help
 
 You can submit an [Issue in Git](https://github.com/j-norwood-young/jexpress/issues), email me at jexpress@freespeechpub.co.za, or do a pull request.
