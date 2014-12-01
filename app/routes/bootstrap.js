@@ -27,4 +27,13 @@ router.get("/", function(req, res) {
     });
 });
 
+router.get("/test", function(req, res) {
+    User.count(function(err, data) {
+        if (err) {
+            res.status(500).send(err);
+        }
+        res.json({ user_exists: !!(data) });
+    });
+});
+
 module.exports = router;
