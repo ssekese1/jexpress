@@ -179,10 +179,10 @@ This is used to associate an object to a user, which we utilise in our permissio
 
 Jexpress implements seperate permissions for administrators, object owners, users, and all.
 
-- An administrator is a user with the "admin" field set to true.
-- An owner is the creator of an object.
-- A user is any logged in user using a valid API key.
-- All is everybody, whether they have an API key or not. The unwashed masses.
+- An **administrator** is a user with the "admin" field set to true.
+- An **owner** is the creator of an object.
+- A **user** is any logged in user using a valid API key.
+- **All** is everybody, whether they have an API key or not. The unwashed masses.
 
 Each type of user can have the following permissions set:
 - **c** - Create an object
@@ -191,10 +191,10 @@ Each type of user can have the following permissions set:
 - **d** - Delete an object
 
 So in the above example:
-- An admin can create, read, update or delete other users;
-- An owner can read or update their own account ("Create" has no meaning in this context)
-- A user can read other users' account details, but can't take any action on them
-- Anyone who isn't logged in can't have anything to do with user accounts
+- An **admin** can create, read, update or delete other users;
+- An **owner** can read or update their own account ("Create" has no meaning in this context)
+- A **user** can read other users' account details, but can't take any action on them
+- **All** - anyone who isn't logged in can't have anything to do with user accounts
 
 ***Tip:*** The line ```all: "",``` isn't necessary. If a permission isn't set, it's assumed that that user level can't do anything.
 
@@ -232,7 +232,18 @@ To filter with `$gte`, `$lte` or similar, use a colon to divide the operator and
 /:modelname?filter[field]=$gte:value
 ```
 
-There's also a special route, `/:modelname/_describe`, which returns the model.
+###Meta
+
+There's a special route, `/:modelname/_describe`, which returns the model definition, if you're into introspection.
+
+```
+curl -X GET http://localhost:3001/api/user/_describe/\?apikey\=gCjXEnv3AXjwD5to
+```
+
+Response:
+```
+{"name":{"enumValues":[],"regExp":null,"path":"name","instance":"String","validators":[],"setters":[],"getters":[],"options":{},"_index":null},"company":{"enumValues":[],"regExp":null,"path":"company","instance":"String","validators":[],"setters":[],"getters":[],"options":{},"_index":null},"email":{"enumValues":[],"regExp":null,"path":"email","instance":"String","validators":[],"setters":[],"getters":[],"options":{"unique":true,"index":true},"_index":{"unique":true,"background":true}},"password":{"enumValues":[],"regExp":null,"path":"password","instance":"String","validators":[],"setters":[],"getters":[],"options":{},"_index":null},"admin":{"path":"admin","validators":[],"setters":[],"getters":[],"options":{},"_index":null},"temp_hash":{"enumValues":[],"regExp":null,"path":"temp_hash","instance":"String","validators":[],"setters":[],"getters":[],"options":{},"_index":null},"_owner_id":{"path":"_owner_id","instance":"ObjectID","validators":[],"setters":[],"getters":[],"options":{},"_index":null},"_id":{"path":"_id","instance":"ObjectID","validators":[],"setters":[null],"getters":[],"options":{"auto":true},"_index":null},"__v":{"path":"__v","instance":"Number","validators":[],"setters":[],"getters":[],"options":{},"_index":null}}
+```
 
 ### Password Resets
 
@@ -253,9 +264,9 @@ The config.js file has the following options:
 
 Note that none of the SMTP stuff is required if you're not sending out password resets.
 
-###Random Notes
+###Reserved Names
 
-- The model names `login` and `_describe` are reserved for, er, logging in and describing. 
+The model names `login` and `_describe` are reserved for, er, logging in and describing. 
 
 ###Getting Help
 
