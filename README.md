@@ -10,6 +10,8 @@ What Jexpress gives you is permission management (down to an object level), user
 
 ```
 git clone git@github.com:j-norwood-young/jexpress.git
+cd jexpress
+bower install
 npm install
 npm start
 ```
