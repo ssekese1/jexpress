@@ -201,7 +201,7 @@ So in the above example:
 ###Using the API
 
 The URL format for the API is as follows:
-http://*your-server*:*port*/api/*content-type*/*id*/?apikey=*apikey*
+http://***your-server***:***port***/api/***content-type***/***id***/?apikey=***apikey***
 
 - **your-server** would usually be localhost
 - **port** is defined in config.js - default is 3001
