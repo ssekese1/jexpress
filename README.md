@@ -223,7 +223,9 @@ The following actions are supported:
 ###Filters
 
 When GETting a list, you can add a Filter as a parameter
-```/:modelname?filter[field]=value```
+```
+/:modelname?filter[field]=value
+```
 
 To filter with `$gte`, `$lte` or similar, use a colon to divide the operator and query. 
 ```
