@@ -105,6 +105,31 @@ var encPassword = function(password) {
 	return hash = bcrypt.hashSync(password, 4);
 }
 
+router.route("/").get(function(req, res, next) {
+	var fs = require("fs");
+	var path = require("path");
+	model_dir = path.join(process.argv[1], "../../app/models");
+	fs.readdir(model_dir, function(err, files) {
+		if (err) {
+			res.status(500).send("Error reading models directory");
+			return false;
+		}
+		var models = [];
+		files.forEach(function(file) {
+			var modelname = path.basename(file, ".js").replace("_model", "");
+			var modelobj = require("../models/" + file);
+			
+			var model = {
+				model: modelname,
+				file: file,
+				perms: modelobj.schema.get("_perms"),
+			}
+			models.push(model);
+		});
+		res.json(models);
+	})
+});
+
 /* Password recovery */
 router.route("/login/recover").post(function(req, res, next) {
 	var email = req.body.email;
