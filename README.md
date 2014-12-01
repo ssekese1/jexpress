@@ -14,7 +14,7 @@ npm install
 npm start
 ```
 
-Now point your browser at http://localhost:3001 and you should see the Jexpress welcome screen.
+Now point your browser at [http://localhost:3001] and you should see the Jexpress welcome screen.
 
 ### Bootstrapping
 
@@ -198,6 +198,10 @@ So in the above example:
 
 ***Tip:*** The line ```all: "",``` isn't necessary. If a permission isn't set, it's assumed that that user level can't do anything.
 
+###Business Logic
+
+You can add some logic into your API by using Mongoose's [Middleware](http://mongoosejs.com/docs/middleware.html) and its [Validation](http://mongoosejs.com/docs/validation.html). There's lots of cool stuff you can do in Mongoose that'll Just Work (tm) in Jexpress. 
+
 ###Using the API
 
 The URL format for the API is as follows:
@@ -216,3 +220,6 @@ The following actions are supported:
 - **PUT** updates an existing object, and requires an ID
 - **DELETE** deletes an existing object, and requires an ID
 
+###Getting Help
+
+You can submit an [Issue in Git](https://github.com/j-norwood-young/jexpress/issues), email me at jexpress@freespeechpub.co.za, or do a pull request.
