@@ -33,7 +33,7 @@ message: "users table created "
 
 You now have a user with username `admin`, and password `admin`. You should probably change that. Let's see how (which will conveniently demonstrate how to use the various features of Jexpress in the process):
 
-#### Loggin In
+#### Logging In
 
 To log in, we send a username and a password as a POST to /login/, and we get an API key back. We can then use this API key to transact with the API. The API key expires after a while - you can change how long this is in the config.js file.
 
@@ -160,19 +160,19 @@ Let's have a look at the fields.
 **name**
 This doesn't do anything in Jexpress. You can set it if you want.
 
-***email***
+**email**
 This is the primary identifier for a user. And it's used to email password resets.
 
-***password***
+**password**
 A hashed password. This is automagically hashed, you don't need to do it explicitly.
 
-***admin*** 
+**admin**
 Defines a user as an admin. We'll get into permissions a bit later.
 
-***temp_hash***
+**temp_hash**
 Lets a user log in through a temporary login key, for password recovery.
 
-***_owner_id***
+**_owner_id**
 This is used to associate an object to a user, which we utilise in our permissions.
 
 ###Permissions
@@ -185,10 +185,10 @@ Jexpress implements seperate permissions for administrators, object owners, user
 - All is everybody, whether they have an API key or not. The unwashed masses.
 
 Each type of user can have the following permissions set:
-- ***c*** Create an object
-- ***r*** Retrieve/read an object
-- ***u*** Update an existing object
-- ***d*** Delete an object
+- **c** - Create an object
+- **r** - Retrieve/read an object
+- **u** - Update an existing object
+- **d** - Delete an object
 
 So in the above example:
 - An admin can create, read, update or delete other users;
@@ -201,7 +201,7 @@ So in the above example:
 ###Using the API
 
 The URL format for the API is as follows:
-http://your-server:port/api/content-type/id/?apikey=apikey
+http://*your-server*:*port*/api/*content-type*/*id*/?apikey=*apikey*
 
 - **your-server** would usually be localhost
 - **port** is defined in config.js - default is 3001
