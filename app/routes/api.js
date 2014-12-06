@@ -180,6 +180,30 @@ router.route("/login/reset").post(function(req, res, next) {
 	})
 });
 
+router.route("/login/logout").get(function(req, res, next) {
+	var apikey = req.query.apikey;
+	APIKey.findOne({ apikey: apikey }, function(err, apikey) {
+		if (err) { 
+			console.log("Err", err);
+			deny(req, res, next);
+			return;
+		}
+		if (!apikey) {
+			console.log("API Key not found");
+			deny(req, res, next);
+			return;
+		}
+		apikey.remove(function(err, item) {
+			if (err) { 
+				console.log("Err", err);
+				deny(req, res, next);
+				return;
+			}
+			res.send("User logged out");
+		});
+	});
+});
+
 /* Our login endpoint. I'm afraid you can never have a model called login. */
 router.use("/login", function(req, res, next) {
 	var email = req.body.email;
