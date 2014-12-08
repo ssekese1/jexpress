@@ -118,13 +118,15 @@ router.route("/").get(function(req, res, next) {
 		files.forEach(function(file) {
 			var modelname = path.basename(file, ".js").replace("_model", "");
 			var modelobj = require("../models/" + file);
-			
-			var model = {
-				model: modelname,
-				file: file,
-				perms: modelobj.schema.get("_perms"),
+			console.log(modelobj.schema.get("_perms").size);
+			if (modelobj.schema.get("_perms") && (modelobj.schema.get("_perms").admin || modelobj.schema.get("_perms").user || modelobj.schema.get("_perms").owner || modelobj.schema.get("_perms").all)) {
+				var model = {
+					model: modelname,
+					file: file,
+					perms: modelobj.schema.get("_perms"),
+				}
+				models.push(model);
 			}
-			models.push(model);
 		});
 		res.json(models);
 	})
