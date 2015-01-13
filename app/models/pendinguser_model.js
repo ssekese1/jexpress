@@ -6,6 +6,7 @@ var Objectid = mongoose.Schema.Types.ObjectId;
 var PendinguserSchema   = new Schema({
 	name: String,
 	organisation_id: Objectid,
+	location_id: Objectid,
 	email: { type: String, unique: true, index: true },
 	mobile: String,
 	password: String,
