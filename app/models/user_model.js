@@ -6,7 +6,8 @@ var Membertype = require('./membertype_model');
 
 var UserSchema   = new Schema({
 	name: String,
-	company: String,
+	organisation_id: Objectid,
+	location_id: Objectid,
 	email: { type: String, unique: true, index: true },
 	password: String,
 	admin: Boolean,
@@ -26,12 +27,14 @@ var UserSchema   = new Schema({
 	skype: String,
 	mobile: String,
 	about: String,
+	url: String,
 	pic: { type: String, default: '/avatars/grey_avatar_1.png' },
 	start_date: { type: Date, default: Date.now },
 	referee: String,
 	referal_method: String,
 	status: { type: String, validate: /active|inactive/, index: true, default: "inactive" },
 	membertype: { type: Objectid, ref: 'Membertype' },
+	newsletter: Boolean,
 	_owner_id: Objectid,
 });
 
@@ -41,7 +44,7 @@ UserSchema.set("_perms", {
 	user: "r",
 });
 
-UserSchema.post("save", function(user) { 
+UserSchema.post("save", function(user) {
 	var Useradmin 	= require('./useradmin_model');
 	Useradmin.findOne({ user_id: user._id }, function(err, useradmin) {
 		if (err) {
