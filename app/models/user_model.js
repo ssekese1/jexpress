@@ -2,24 +2,17 @@ var mongoose     = require('mongoose');
 var Schema       = mongoose.Schema;
 
 var Objectid = mongoose.Schema.Types.ObjectId;
-var Membertype = require('./membertype_model');
+var Organisation = require("./organisation_model");
+var Location = require("./location_model");
 
 var UserSchema   = new Schema({
 	name: String,
-	organisation_id: Objectid,
-	location_id: Objectid,
+	organisation_id: { type: Objectid, ref: "Organisation" },
+	location_id: { type: Objectid, ref: "Location" },
 	email: { type: String, unique: true, index: true },
 	password: String,
 	admin: Boolean,
 	temp_hash: String,
-	space_total: Number, //Debit + Credit
-	space_reserve: Number,
-	space_debit: Number,
-	space_credit: Number,
-	stuff_total: Number, //Debit + Credit
-	stuff_reserve: Number,
-	stuff_debit: Number,
-	stuff_credit: Number,
 	twitter: String,
 	facebook: String,
 	google: String,
@@ -28,12 +21,11 @@ var UserSchema   = new Schema({
 	mobile: String,
 	about: String,
 	url: String,
-	pic: { type: String, default: '/avatars/grey_avatar_1.png' },
+	img: { type: String, default: '/avatars/grey_avatar_1.png' },
 	start_date: { type: Date, default: Date.now },
 	referee: String,
 	referal_method: String,
 	status: { type: String, validate: /active|inactive/, index: true, default: "inactive" },
-	membertype: { type: Objectid, ref: 'Membertype' },
 	newsletter: Boolean,
 	_owner_id: Objectid,
 });
