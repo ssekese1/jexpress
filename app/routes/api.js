@@ -413,7 +413,6 @@ router.route('/:modelname')
 			if (req.user) {
 				item._owner_id = req.user._id;
 			}
-			console.log(item);
 			item.save(function(err) {
 				if (err) {
 					res.send(err);
@@ -426,7 +425,22 @@ router.route('/:modelname')
 		}
 	})
 	.get(auth, function(req, res) {
-		Model.find(format_filter(req.query.filter), function(err, items) {
+		var q = Model.find(format_filter(req.query.filter));
+		if (req.query.sort) {
+			q.sort(req.query.sort);
+		}
+		if (req.query.populate) {
+			q.populate(req.query.populate);
+		}
+		if (req.query.autopopulate) {
+			for(var key in Model.schema.paths) {
+				var path = Model.schema.paths[key];
+				if ((path.instance == "ObjectID") && (path.options.ref)) {
+					q.populate(path.path);
+				}
+			}
+		}
+		q.exec(function(err, items) {
 			if (err) {
 				res.send(err);
 			} else {
@@ -449,7 +463,19 @@ router.route('/:modelname/_test')
 
 router.route('/:modelname/:item_id')
 	.get(auth, function(req, res) {
-		Model.findById(req.params.item_id, function(err, item) {
+		var q = Model.findById(req.params.item_id);
+		if (req.query.populate) {
+			q.populate(req.query.populate);
+		}
+		if (req.query.autopopulate) {
+			for(var key in Model.schema.paths) {
+				var path = Model.schema.paths[key];
+				if ((path.instance == "ObjectID") && (path.options.ref)) {
+					q.populate(path.path);
+				}
+			}
+		}
+		q.exec(function(err, item) {
 			if (err) {
 				res.send(err);
 				return;
