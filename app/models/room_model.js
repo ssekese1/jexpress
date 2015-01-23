@@ -2,9 +2,10 @@ var mongoose     = require('mongoose');
 var Schema       = mongoose.Schema;
 
 var Objectid = mongoose.Schema.Types.ObjectId;
+var Location = require('./location_model');
 
 var RoomSchema   = new Schema({
-	location: Objectid,
+	location: { type: Objectid, ref: "Location" },
 	name: String,
 	img: String,
 	cost: Number,
