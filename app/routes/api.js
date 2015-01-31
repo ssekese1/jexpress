@@ -389,17 +389,22 @@ function format_filter(filter) {
 	if (typeof(filter) == "object") {
 		Object.keys(filter).forEach(function(key) {
 			var val = filter[key];
-			if (val.indexOf(":") !== -1) {
-				var tmp = val.split(":");
-				filter[key] = {}
-				filter[key][tmp[0]] = tmp[1];
-			}
-			if (typeof(val) == "object") {
-				result = format_filter(val);
-				filter[key] = {};
-				for(var x = 0; x < result.length; x++) {
-					filter[key][Object.keys(result[x])[0]]=result[x][Object.keys(result[x])[0]];
+			try {
+				if (val.indexOf(":") !== -1) {
+					var tmp = val.split(":");
+					filter[key] = {}
+					filter[key][tmp[0]] = tmp[1];
 				}
+				if (typeof(val) == "object") {
+					result = format_filter(val);
+					filter[key] = {};
+					for(var x = 0; x < result.length; x++) {
+						filter[key][Object.keys(result[x])[0]]=result[x][Object.keys(result[x])[0]];
+					}
+				}
+			} catch(err) {
+				// res.status(500).send("An error occured:" + err)
+				throw(err);
 			}
 		});
 	}
@@ -424,7 +429,7 @@ router.route('/:modelname')
 			}
 			item.save(function(err) {
 				if (err) {
-					res.send(err);
+					throw(err);
 				} else {
 					res.json({ message: modelname + " created ", data: item });
 				}
@@ -434,10 +439,15 @@ router.route('/:modelname')
 		}
 	})
 	.get(auth, function(req, res) {
-		Model.find(format_filter(req.query.filter)).count(function(err, count) {
+		try {
+			var filters = format_filter(req.query.filter, res);
+		} catch(err) {
+			res.status(500).send("An error occured:" + err)
+		}
+		Model.find(filters).count(function(err, count) {
 			var result = {};
 			result.count = count;
-			var q = Model.find(format_filter(req.query.filter));
+			var q = Model.find(filters);
 			var limit = parseInt(req.query.limit);
 			if (limit) {
 				q.limit(limit);
