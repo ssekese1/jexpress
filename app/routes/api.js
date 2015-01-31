@@ -98,7 +98,7 @@ var Model = false;
 
 var deny = function(req, res, next) {
 	console.log("Denying auth");
-	res.status(500).send("Unauthorized");
+	res.status(403).send("Unauthorized");
 	req.authorized = false;
 }
 
@@ -484,7 +484,7 @@ router.route('/:modelname')
 			}
 			q.exec(function(err, items) {
 				if (err) {
-					res.send(err);
+					res.status(500).send(err);
 				} else {
 					result.data = items;
 					res.json(result);
@@ -521,7 +521,7 @@ router.route('/:modelname/:item_id')
 		}
 		q.exec(function(err, item) {
 			if (err) {
-				res.send(err);
+				res.status(500).send(err);
 				return;
 			} else {
 				if (!item) {
@@ -539,7 +539,7 @@ router.route('/:modelname/:item_id')
 		try {
 			Model.findById(req.params.item_id, function(err, item) {
 				if (err) {
-					res.send(err);
+					res.status(500).send(err);
 				} else {
 					if (item) {
 						for(prop in item) {
@@ -550,7 +550,7 @@ router.route('/:modelname/:item_id')
 						}
 						item.save(function(err) {
 							if (err) {
-								res.send(err);
+								res.status(500).send(err);
 							} else {
 								res.json({ message: modelname + " updated ", data: item });
 							}
@@ -571,12 +571,12 @@ router.route('/:modelname/:item_id')
 				return;
 			}
 			if (err) {
-				res.send(err);
+				res.status(500).send(err);
 				return;
 			} 
 			item.remove(function(err, item) {
 				if (err) {
-					res.send(err);
+					res.status(500).send(err);
 				} else {
 					res.json({ message: modelname + ' deleted' });
 				}
