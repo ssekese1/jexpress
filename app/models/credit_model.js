@@ -7,7 +7,8 @@ var User = require("./user_model");
 var Organisation = require("./organisation_model");
 
 var CreditSchema   = new Schema({
-	user_id: { type: Objectid, index: true, required: true },
+	user_id: { type: Objectid, index: true, required: true, ref: "User" },
+	organisation_id: { type: Objectid, index: true, ref: "Organisation" },
 	description: String,
 	date: { type: Date, default: Date.now },
 	amount: { type: Number, validate: function(v) { return (v > 0) }, required: true },
@@ -46,6 +47,7 @@ CreditSchema.pre("save", function(next) {
 					transaction.invalidate("user_id", "could not find organisation associated with user");
 					return next(new Error('could not find organisation associated with user'));
 				}
+				transaction.organisation_id = organisation._id;
 				_organisation = organisation;
 				next();
 			});

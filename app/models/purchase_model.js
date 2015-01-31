@@ -7,7 +7,8 @@ var User = require("./user_model");
 var Organisation = require("./organisation_model");
 
 var PurchaseSchema   = new Schema({
-	user_id: { type: Objectid, index: true, required: true },
+	user_id: { type: Objectid, index: true, required: true, ref: "User" },
+	organisation_id: { type: Objectid, index: true, ref: "Organisation" },
 	description: String,
 	date: { type: Date, default: Date.now },
 	source_type: String,
@@ -39,9 +40,9 @@ PurchaseSchema.pre("save", function(next) {
 			Organisation.findOne({ _id: user.organisation_id }, function(err, organisation) {
 				if (err) {
 					console.warn("Err", err);
-					return next(new Error('Insufficient Credit'));
+					return next(new Error('Could not find organisation'));
 				}
-				if (!user) {
+				if (!organisation) {
 					console.log("Could not find organisation", user.organisation_id);
 					transaction.invalidate("user_id", "could not find organisation associated with user");
 					return next(new Error('could not find organisation associated with user'));
@@ -53,6 +54,7 @@ PurchaseSchema.pre("save", function(next) {
   						return next(new Error('Insufficient Credit'));
 					}
 				}
+				transaction.organisation_id = organisation._id;
 				next();
 			});
 		}

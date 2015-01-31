@@ -7,7 +7,8 @@ var User = require("./user_model");
 var Organisation = require("./organisation_model");
 
 var ReserveSchema   = new Schema({
-	user_id: { type: Objectid, index: true, required: true },
+	user_id: { type: Objectid, index: true, required: true, ref: "User" },
+	organisation_id: { type: Objectid, index: true, ref: "Organisation" },
 	description: String,
 	source_type: String,
 	source_id: Objectid,
@@ -41,7 +42,7 @@ ReserveSchema.pre("save", function(next) {
 					console.warn("Err", err);
 					return next(new Error('Insufficient Credit'));
 				}
-				if (!user) {
+				if (!organisation) {
 					console.log("Could not find organisation", user.organisation_id);
 					transaction.invalidate("user_id", "could not find organisation associated with user");
 					return next(new Error('could not find organisation associated with user'));
@@ -53,6 +54,7 @@ ReserveSchema.pre("save", function(next) {
   						return next(new Error('Insufficient Credit'));
 					}
 				}
+				transaction.organisation_id = organisation._id;
 				next();
 			});
 		}
