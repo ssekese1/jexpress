@@ -429,13 +429,13 @@ router.route('/:modelname')
 			}
 			item.save(function(err) {
 				if (err) {
-					throw(err);
+					res.status(500).send("An error occured:" + err)
 				} else {
 					res.json({ message: modelname + " created ", data: item });
 				}
 			});
 		} catch(err) {
-			res.status(500).send("An error occured:" + err)
+			res.status(500).send("An error occured:" + err);
 		}
 	})
 	.get(auth, function(req, res) {
