@@ -91,6 +91,7 @@ var APIKey = require('../models/apikey_model');
 var bcrypt = require('bcrypt');
 var router = express.Router();
 var config = require('../../config');
+var querystring = require('querystring');
 
 var modelname = "";
 var Model = false;
@@ -103,6 +104,14 @@ var deny = function(req, res, next) {
 
 var encPassword = function(password) {
 	return hash = bcrypt.hashSync(password, 4);
+}
+
+var changeUrlParams = function(req, key, val) {
+	console.log(req);
+	var q = req.query;
+	q[key] = val;
+	var pathname = require("url").parse(req.url).pathname;
+	return req.protocol + '://' + req.get('host') + req._parsedOriginalUrl.pathname + "?" + querystring.stringify(q);
 }
 
 /* Password recovery */
@@ -425,27 +434,52 @@ router.route('/:modelname')
 		}
 	})
 	.get(auth, function(req, res) {
-		var q = Model.find(format_filter(req.query.filter));
-		if (req.query.sort) {
-			q.sort(req.query.sort);
-		}
-		if (req.query.populate) {
-			q.populate(req.query.populate);
-		}
-		if (req.query.autopopulate) {
-			for(var key in Model.schema.paths) {
-				var path = Model.schema.paths[key];
-				if ((path.instance == "ObjectID") && (path.options.ref)) {
-					q.populate(path.path);
+		Model.find(format_filter(req.query.filter)).count(function(err, count) {
+			var result = {};
+			result.count = count;
+			var q = Model.find(format_filter(req.query.filter));
+			var limit = parseInt(req.query.limit);
+			if (limit) {
+				q.limit(limit);
+				result.limit = limit;
+				var page_count = Math.ceil(count / limit);
+				result.page_count = page_count;
+				var page = parseInt(req.query.page);
+				page = (page) ? page : 1;
+				result.page = page;
+				if (page < page_count) {
+					result.next = changeUrlParams(req, "page", (page + 1));
+				}
+				if (page > 1) {
+					result.prev = changeUrlParams(req, "page", (page - 1));
+					q.skip(limit * (page - 1));
 				}
 			}
-		}
-		q.exec(function(err, items) {
-			if (err) {
-				res.send(err);
-			} else {
-				res.json(items);
+			if (req.query.sort) {
+				q.sort(req.query.sort);
+				result.sort = req.query.sort;
 			}
+			if (req.query.populate) {
+				q.populate(req.query.populate);
+				result.populate = req.query.populate;
+			}
+			if (req.query.autopopulate) {
+				for(var key in Model.schema.paths) {
+					var path = Model.schema.paths[key];
+					if ((path.instance == "ObjectID") && (path.options.ref)) {
+						q.populate(path.path);
+					}
+				}
+				result.autopopulate = true;
+			}
+			q.exec(function(err, items) {
+				if (err) {
+					res.send(err);
+				} else {
+					result.data = items;
+					res.json(result);
+				}
+			});
 		});
 	});
 
