@@ -13,7 +13,7 @@ $(function() {
 	});
 
 	$("#models > .test").on("click", function() {
-		$.get(url + "api/", function(data) {
+		$.get(url + "api/_models", function(data) {
 			if (data) {
 				data.forEach(function(model) {
 					$("#models > .result").append("<strong>Model</strong> <a href='/api/" + model.model + "'>" + model.model + "</a><br><strong>Permissions</strong><br><ul><li><strong>Admin</strong> " + model.perms.admin + "</li><li><strong>Owner</strong> " + model.perms.owner + "</li><li><strong>User</strong> " + model.perms.user + "</li><li><strong>All</strong> " + model.perms.all + "</li>")
