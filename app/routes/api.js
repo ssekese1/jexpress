@@ -82,9 +82,9 @@ Possible values are:
 */
 
 var express = require('express');
-var passport = require('passport')
-var BasicStrategy = require('passport-http').BasicStrategy;
-var LocalApiKeyStrategy = require('passport-localapikey').Strategy;
+// var passport = require('passport')
+// var BasicStrategy = require('passport-http').BasicStrategy;
+// var LocalApiKeyStrategy = require('passport-localapikey').Strategy;
 // var auth = require('./auth');
 var User = require('../models/user_model');
 var APIKey = require('../models/apikey_model');
@@ -112,6 +112,56 @@ var changeUrlParams = function(req, key, val) {
 	q[key] = val;
 	var pathname = require("url").parse(req.url).pathname;
 	return req.protocol + '://' + req.get('host') + req._parsedOriginalUrl.pathname + "?" + querystring.stringify(q);
+}
+
+var basicAuth = function(req) {
+	if (!req.headers.authorization) {
+		return false;
+	}
+	try {
+		auth = req.headers.authorization.split(" ")[1];
+	} catch(err) {
+		return false;
+	}
+	decoded = new Buffer(auth, 'base64').toString();
+	return decoded.split(":");
+}
+
+var apiKeyAuth = function(req, res, next, fail) {
+	var apikey = false;
+	if (req.query.apikey) {
+		apikey = req.query.apikey;
+	} else if (req.headers.authorization) {
+		try {
+			parts = req.headers.authorization.split(" ");
+			if (parts[0].toLowerCase() == "api_key") {
+				apikey = parts[1];
+			}
+		} catch(err) {
+			// Do nothing
+		}
+	}
+	if (!apikey) {
+		return fail(403, "Unauthorized");
+	}
+	APIKey.findOne({ apikey: apikey }, function(err, apikey) {
+		if (err) {
+			return fail(500, err);
+		}
+		if (!apikey) {
+			return fail(403, "Unauthorized");
+		}
+		User.findOne({ _id: apikey.user_id }, function(err, user) {
+			if (err) {
+				return fail(500, err);
+			}
+			if (!user) {
+				return fail(403, "Unauthorized");
+			}
+			req.user = user;
+			return next(user);
+		});
+	});
 }
 
 /* Password recovery */
@@ -217,6 +267,11 @@ router.route("/login/logout").get(function(req, res, next) {
 router.use("/login", function(req, res, next) {
 	var email = req.body.email;
 	var password = req.body.password;
+	var user = basicAuth(req);
+	if (user) {
+		email = user[0];
+		password = user[1];
+	}
 	if ((!password) || (!email)) {
 		console.log("Missing email or password");
 		deny(req, res, next);
@@ -276,7 +331,7 @@ router.use('/:modelname', function(req, res, next) {
 
 /* This is our security module. See header for instructions */
 var auth = function(req, res, next) {
-	console.log("permAuth");
+	// console.log("permAuth");
 	// Check against model as to whether we're allowed to edit this model
 	var user = req.user;
 	var perms = Model.schema.get("_perms");
@@ -316,73 +371,48 @@ var auth = function(req, res, next) {
 			return;
 		}
 	}
+	
 	//This isn't an 'all' situation, so let's log the user in and go from there
-	if (req.query.apikey) {
-		var apikey = req.query.apikey;
-		APIKey.findOne({ apikey: apikey }, function(err, apikey) {
-			if (err) { 
+	apiKeyAuth(req, res, function(user) {
+		//Let's check perms in this order - admin, user, owner
+		//Admin check
+		if ((perms["admin"]) && (perms["admin"].indexOf(method) !== -1)) {
+			console.log("Matched permission 'admin':", method);
+			req.authorized = true;
+			next();
+			return;
+		}
+		//User check
+		if ((perms["user"]) && (perms["user"].indexOf(method) !== -1)) {
+			console.log("Matched permission 'user':", method);
+			req.authorized = true;
+			next();
+			return;
+		}
+		//Owner check
+		var owner_id = false;
+		Model.findById(req.params.item_id, function(err, item) {
+			if (err) {
 				console.log("Err", err);
-				deny(req, res, next);
-				return;
 			}
-			if (!apikey) {
-				console.log("API Key not found");
-				deny(req, res, next);
-				return;
-			}
-			User.findOne({ _id: apikey.user_id }, function(err, user) {
-				if (err) { 
-					console.log("Err", err);
-					deny(req, res, next);
-					return;
-				}
-				if (!user) {
-					console.log("User not found");
-					deny(req, res, next);
-					return;
-				}
-				req.user = user;
-				//Let's check perms in this order - admin, user, owner
-				//Admin check
-				if ((perms["admin"]) && (perms["admin"].indexOf(method) !== -1)) {
-					console.log("Matched permission 'admin':", method);
+			if ((item) && (item._owner_id) && (item._owner_id.toString() == user._id.toString()) && ((perms["owner"]) && (perms["owner"].indexOf(method) !== -1))) {
+					console.log("Matched permission 'owner':", method);
 					req.authorized = true;
 					next();
 					return;
-				}
-				//User check
-				if ((perms["user"]) && (perms["user"].indexOf(method) !== -1)) {
-					console.log("Matched permission 'user':", method);
-					req.authorized = true;
-					next();
+			} else {
+				console.log("All authorizations failed");
+				if(!req.authorized) {
+					deny(req, res, next);
 					return;
 				}
-				//Owner check
-				var owner_id = false;
-				Model.findById(req.params.item_id, function(err, item) {
-					if (err) {
-						console.log("Err", err);
-					}
-					if ((item) && (item._owner_id) && (item._owner_id.toString() == user._id.toString()) && ((perms["owner"]) && (perms["owner"].indexOf(method) !== -1))) {
-							console.log("Matched permission 'owner':", method);
-							req.authorized = true;
-							next();
-							return;
-					} else {
-						console.log("All authorizations failed");
-						if(!req.authorized) {
-							deny(req, res, next);
-							return;
-						}
-					}
-				});
-			});
+			}
 		});
-	} else {
-		console.log("No API key");
-		deny(req, res, next);
+	}, function(code, err) {
+		console.log("API key fail", code, err);
+		res.status(code).send(err);
 		return;
-	}
+	});
 };
 
 function format_filter(filter) {
