@@ -222,11 +222,17 @@ router.route("/login/recover").post(function(req, res, next) {
 				// secure: true,
 				tls: { rejectUnauthorized: false }
 			}));
+			var html = text = "Someone (hopefully you) requested a password reset. Please click on the following url to recover your password. If you did not request a password reset, you can ignore this message. \n" + config.password_recovery_url + "/" + user.temp_hash;
+			if (req.body.mail_format) {
+				html = req.body.mail_format;
+				html = html.replace(/\{\{recover_url\}\}/i, config.password_recovery_url + "/" + user.temp_hash);
+			}
 			transporter.sendMail({
 				from: config.smtp_from,
 				to: user.email,
 				subject: "Password Recovery",
-				text: "Someone (hopefully you) requested a password reset. Please click on the following url to recover your password. If you did not request a password reset, you can ignore this message. \n" + config.password_recovery_url + "/" + user.temp_hash,
+				text: text,
+				html: html
 			},
 			function(result) {
 				console.log("Mailer result", result);
