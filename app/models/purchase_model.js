@@ -21,7 +21,7 @@ var PurchaseSchema   = new Schema({
 PurchaseSchema.set("_perms", {
 	admin: "crud",
 	owner: "cr",
-	user: "cr"
+	user: "c"
 });
 
 PurchaseSchema.pre("save", function(next) {
