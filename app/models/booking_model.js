@@ -2,14 +2,21 @@ var mongoose     = require('mongoose');
 var Schema       = mongoose.Schema;
 
 var Objectid = mongoose.Schema.Types.ObjectId;
+var Room = require("./room_model");
+var User = require("./user_model");
 
 var BookingSchema   = new Schema({
-	room: Objectid,
+	room: { type: Objectid, ref: "Room" },
 	start_time: Date,
 	end_time: Date,
 	title: String,
-	member: String,
+	description: String,
+	message: String,
+	attendees: [{ type: Objectid, ref: "User" }],
+	external_attendees: [String],
+	user: { type: Objectid, ref: "User" },
 	cost: Number,
+	created: { type: Date, default: Date.now },
 	_owner_id: Objectid
 });
 
