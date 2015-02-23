@@ -25,7 +25,7 @@ var UserSchema   = new Schema({
 	start_date: { type: Date, default: Date.now },
 	referee: String,
 	referal_method: String,
-	status: { type: String, validate: /active|inactive/, index: true, default: "inactive" },
+	status: { type: String, validate: /active|inactive|hidden/, index: true, default: "inactive" },
 	newsletter: Boolean,
 	_owner_id: Objectid,
 });
