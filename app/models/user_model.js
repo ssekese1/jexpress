@@ -10,6 +10,7 @@ var UserSchema   = new Schema({
 	organisation_id: { type: Objectid, ref: "Organisation" },
 	location_id: { type: Objectid, ref: "Location" },
 	email: { type: String, unique: true, index: true },
+	emails: [String],
 	password: String,
 	admin: Boolean,
 	temp_hash: String,
