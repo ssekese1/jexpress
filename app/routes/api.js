@@ -611,13 +611,17 @@ router.route('/:modelname/:item_id')
 								// console.log(prop, req.body[prop]);
 							}
 						}
-						item.save(function(err) {
-							if (err) {
-								res.status(500).send(err);
-							} else {
-								res.json({ message: modelname + " updated ", data: item });
-							}
-						});
+						try {
+							item.save(function(err) {
+								if (err) {
+									res.status(500).send(err);
+								} else {
+									res.json({ message: modelname + " updated ", data: item });
+								}
+							});
+						} catch(err) {
+							res.status(500).send("An error occured:", err)
+						}
 					} else {
 						res.status(404).send("Document not found");
 					}
