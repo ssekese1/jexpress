@@ -8,7 +8,3 @@ app.set('port', process.env.PORT || config.port);
 var server = app.listen(app.get('port'), function() {
 	console.log('Express server listening on http://' + server.address().address + ":" + server.address().port);
 });
-
-//Socket.io
-var io = require("socket.io")(server, {origins:'*'});
-// var ioserver = io.listen(server,{ resource: '/socket.io/','sync disconnect on unload':true });
