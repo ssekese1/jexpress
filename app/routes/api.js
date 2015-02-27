@@ -90,7 +90,7 @@ var config = require('../../config');
 var querystring = require('querystring');
 
 //Socket.io
-var io = require("socket.io").listen(config.websocket_port);
+var io = require("socket.io").listen((config.websocket_port ? config.websocket_port : config.port + 1));
 // var io_nsp = io.of("/" + config.websocket_namespace)
 
 io.sockets.on('connection', function (s) {
