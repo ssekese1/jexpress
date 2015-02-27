@@ -82,16 +82,20 @@ Possible values are:
 */
 
 var express = require('express');
-// var passport = require('passport')
-// var BasicStrategy = require('passport-http').BasicStrategy;
-// var LocalApiKeyStrategy = require('passport-localapikey').Strategy;
-// var auth = require('./auth');
 var User = require('../models/user_model');
 var APIKey = require('../models/apikey_model');
 var bcrypt = require('bcrypt');
 var router = express.Router();
 var config = require('../../config');
 var querystring = require('querystring');
+
+//Socket.io
+var io = require("socket.io").listen(config.websocket_port);
+// var io_nsp = io.of("/" + config.websocket_namespace)
+
+io.sockets.on('connection', function (s) {
+	console.log("Socket.io connection established");
+});
 
 var modelname = "";
 var Model = false;
@@ -190,6 +194,19 @@ router.route("/_models").get(function(req, res, next) {
 		res.json(models);
 	})
 });
+
+router.route('/_websocket_test')
+	.get(function(req, res) {
+		// io.on('connection', function (socket) {
+			io.sockets.emit('testing', { hello: 'world'});
+			res.send("Sent testing");
+		// 	socket.emit('news', { hello: 'world' });
+		// 	socket.on('test', function (data) {
+		// 		console.log(data);
+		// 		res.json(data);
+		// 	});
+		// });
+	});
 
 /* Password recovery */
 router.route("/login/recover").post(function(req, res, next) {
@@ -338,6 +355,8 @@ router.use("/login", function(req, res, next) {
 		});
 	});
 });
+
+
 
 /* This middleware prepares the correct Model */
 router.use('/:modelname', function(req, res, next) {
@@ -490,10 +509,11 @@ router.route('/:modelname')
 			if (req.user) {
 				item._owner_id = req.user._id;
 			}
-			item.save(function(err) {
+			item.save(function(err, result) {
 				if (err) {
 					res.status(500).send("An error occured:" + err)
 				} else {
+					io.sockets.emit(modelname, { method: "post", _id: result._id });
 					res.json({ message: modelname + " created ", data: item });
 				}
 			});
@@ -588,6 +608,7 @@ router.route('/:modelname/:item_id')
 				return;
 			} else {
 				if (!item) {
+					console.log("Err 404", item);
 					res.status(404).send("Could not find document");
 					return;
 				}
@@ -616,6 +637,7 @@ router.route('/:modelname/:item_id')
 								if (err) {
 									res.status(500).send(err);
 								} else {
+									io.sockets.emit(modelname, { method: "put", _id: item._id });
 									res.json({ message: modelname + " updated ", data: item });
 								}
 							});
@@ -645,6 +667,7 @@ router.route('/:modelname/:item_id')
 				if (err) {
 					res.status(500).send(err);
 				} else {
+					io.sockets.emit(modelname, { method: "delete", _id: item._id });
 					res.json({ message: modelname + ' deleted' });
 				}
 			});

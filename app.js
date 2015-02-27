@@ -30,7 +30,7 @@ mongoose.connect('mongodb://' + config.mongo_server + '/' + config.mongo_db, fun
     if (err) {
         console.log("Connection error", err);
     }
-}); // connect to our database
+}, { db: { safe:true } }); // connect to our database
 
 
 app.use('/', routes);
