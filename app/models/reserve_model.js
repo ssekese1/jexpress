@@ -29,8 +29,7 @@ ReserveSchema.pre("save", function(next) {
 	User.findOne({ _id: transaction.user_id }, function(err, user) {
 		if (err) {
 			console.warn("Err", err);
-			next(new Error('Insufficient Credit'));
-			return;
+			return next(new Error('Insufficient Credit'));
 		}
 		if (!user) {
 			console.log("Could not find user", transaction.user_id);
@@ -45,7 +44,7 @@ ReserveSchema.pre("save", function(next) {
 				if (!organisation) {
 					console.log("Could not find organisation", user.organisation_id);
 					transaction.invalidate("user_id", "could not find organisation associated with user");
-					return next(new Error('could not find organisation associated with user'));
+					return next(new Error('Could not find organisation associated with user'));
 				} else {
 					(organisation[transaction.cred_type + "_total"]) ? test = organisation[transaction.cred_type + "_total"] + transaction.amount : test = transaction.amount;
 					if (test < 0) {

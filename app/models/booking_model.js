@@ -4,6 +4,7 @@ var Schema       = mongoose.Schema;
 var Objectid = mongoose.Schema.Types.ObjectId;
 var Room = require("./room_model");
 var User = require("./user_model");
+var Reserve = require("./reserve_model");
 
 var BookingSchema   = new Schema({
 	room: { type: Objectid, ref: "Room" },
@@ -26,9 +27,34 @@ BookingSchema.set("_perms", {
 	user: "cr",
 });
 
+BookingSchema.pre("save", function(next) {
+
+	console.log("Looking for existing reserve");
+	transaction = this;
+	console.log(transaction);
+	try {
+		
+		//Remove the reserve if it already exists
+		
+		Reserve.findOne({
+			source_type: "booking",
+			source_id: transaction._id
+		}, function(err, item) {
+			if (item) {
+				console.log("Found existing reserve, removing it");
+				item.remove();
+			}
+			next();
+		});
+		
+	} catch(err) {
+		console.log("Error", err);
+		// throw(err);
+	}
+})
+
 BookingSchema.post("save", function(transaction) { //Keep our running total up to date
 	try {
-		var Reserve = require("./reserve_model");
 		var reserve = Reserve({
 			user_id: transaction._owner_id,
 			description: "Booking",
@@ -37,6 +63,7 @@ BookingSchema.post("save", function(transaction) { //Keep our running total up t
 			source_type: "booking",
 			source_id: transaction._id
 		});
+		console.log(reserve);
 		reserve.save();
 	} catch(err) {
 		console.log("Error", err);
@@ -45,10 +72,9 @@ BookingSchema.post("save", function(transaction) { //Keep our running total up t
 });
 
 BookingSchema.post("remove", function(transaction) { //Keep our running total up to date
-	console.log("Going to remove reserve");
+	console.log("Remove called, Going to remove reserve");
 	console.log(transaction);
 	try {
-		var Reserve = require("./reserve_model");
 		Reserve.findOne({
 			source_type: "booking",
 			source_id: transaction._id
