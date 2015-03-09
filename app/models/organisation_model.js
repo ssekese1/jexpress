@@ -3,6 +3,7 @@ var Schema       = mongoose.Schema;
 
 var Objectid = mongoose.Schema.Types.ObjectId;
 var Membership = require('./membership_model');
+var Location = require('./location_model');
 var User = require('./user_model');
 
 var OrganisationSchema   = new Schema({
@@ -20,6 +21,7 @@ var OrganisationSchema   = new Schema({
 	user_id: { type: Objectid, ref: 'User' },
 	sage_uid: Number,
 	vat: String,
+	location_id: { type: Objectid, ref: 'Location' },
 	space_total: { type: Number, default: 0 }, //Debit + Credit
 	space_reserve: { type: Number, default: 0 },
 	space_debit: { type: Number, default: 0 },
