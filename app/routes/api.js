@@ -88,14 +88,7 @@ var bcrypt = require('bcrypt');
 var router = express.Router();
 var config = require('../../config');
 var querystring = require('querystring');
-
-//Socket.io
-var io = require("socket.io").listen((config.websocket_port ? config.websocket_port : config.port + 1));
-// var io_nsp = io.of("/" + config.websocket_namespace)
-
-io.sockets.on('connection', function (s) {
-	console.log("Socket.io connection established");
-});
+var websocket = require('../middleware/websockets.js').connect();
 
 var modelname = "";
 var Model = false;
@@ -198,7 +191,7 @@ router.route("/_models").get(function(req, res, next) {
 router.route('/_websocket_test')
 	.get(function(req, res) {
 		// io.on('connection', function (socket) {
-			io.sockets.emit('testing', { hello: 'world'});
+			websocket.emit('testing', { hello: 'world'});
 			res.send("Sent testing");
 		// 	socket.emit('news', { hello: 'world' });
 		// 	socket.on('test', function (data) {
@@ -496,7 +489,7 @@ function format_filter(filter) {
 
 /* Routes */
 router.route('/:modelname')
-	.post(auth, function(req, res) {
+	.post(auth, function(req, res, next) {
 		try {
 			var item = new Model();
 			for(prop in item) {
@@ -513,8 +506,9 @@ router.route('/:modelname')
 				if (err) {
 					res.status(500).send("An error occured:" + err)
 				} else {
-					io.sockets.emit(modelname, { method: "post", _id: result._id });
+					websocket.emit(modelname, { method: "post", _id: result._id });
 					res.json({ message: modelname + " created ", data: item });
+					return next();
 				}
 			});
 		} catch(err) {
@@ -637,7 +631,7 @@ router.route('/:modelname/:item_id')
 								if (err) {
 									res.status(500).send(err);
 								} else {
-									io.sockets.emit(modelname, { method: "put", _id: item._id });
+									websocket.emit(modelname, { method: "put", _id: item._id });
 									res.json({ message: modelname + " updated ", data: item });
 								}
 							});
@@ -667,7 +661,7 @@ router.route('/:modelname/:item_id')
 				if (err) {
 					res.status(500).send(err);
 				} else {
-					io.sockets.emit(modelname, { method: "delete", _id: item._id });
+					websocket.emit(modelname, { method: "delete", _id: item._id });
 					res.json({ message: modelname + ' deleted' });
 				}
 			});
