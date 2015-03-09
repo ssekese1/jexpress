@@ -44,19 +44,18 @@ BookingSchema.pre("save", function(next) {
 				console.log("Found existing reserve, removing it");
 				item.remove();
 			}
-			next();
 		});
 		
 	} catch(err) {
 		console.log("Error", err);
 		// throw(err);
 	}
-})
 
-BookingSchema.post("save", function(transaction) { //Keep our running total up to date
+	//Reserve the moneyz
+	//We do this here, because if it fails we don't want to process the payment.
 	try {
 		var reserve = Reserve({
-			user_id: transaction._owner_id,
+			user_id: transaction.user,
 			description: "Booking",
 			amount: transaction.cost * -1,
 			cred_type: "space",
@@ -64,11 +63,22 @@ BookingSchema.post("save", function(transaction) { //Keep our running total up t
 			source_id: transaction._id
 		});
 		console.log(reserve);
-		reserve.save();
+		reserve.save(function(err) {
+			if (err) {
+				console.error(err);
+				return next(err);
+			}
+			return next();
+		});
 	} catch(err) {
-		console.log("Error", err);
-		// throw(err);
+		console.log("Error", err); 
+		//Roll back booking
+
 	}
+})
+
+BookingSchema.post("save", function(transaction) {
+	
 });
 
 BookingSchema.post("remove", function(transaction) { //Keep our running total up to date
