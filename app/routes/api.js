@@ -623,16 +623,25 @@ router.route('/:modelname/:item_id')
 						for(prop in item) {
 							if (req.body[prop]) {
 								item[prop] = req.body[prop];
-								// console.log(prop, req.body[prop]);
+							}
+							//Check for arrays that come in like param[1]=blah, param[2]=yack
+							if (req.body[prop + "[0]"]) {
+								var x = 0;
+								var tmp = [];
+								while(req.body[prop + "[" + x + "]"]) {
+									tmp.push(req.body[prop + "[" + x + "]"]);
+									x++;
+								}
+								item[prop] = tmp;
 							}
 						}
 						try {
-							item.save(function(err) {
+							item.save(function(err, data) {
 								if (err) {
 									res.status(500).send(err);
 								} else {
 									websocket.emit(modelname, { method: "put", _id: item._id });
-									res.json({ message: modelname + " updated ", data: item });
+									res.json({ message: modelname + " updated ", data: data });
 								}
 							});
 						} catch(err) {
