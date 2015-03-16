@@ -487,23 +487,40 @@ function format_filter(filter) {
 	return filter;
 }
 
+var _populateItem = function(item, data) {
+	for(prop in item) {
+		if (data[prop]) {
+			item[prop] = data[prop];
+		}
+		//Check for arrays that come in like param[1]=blah, param[2]=yack
+		if (data[prop + "[0]"]) {
+			var x = 0;
+			var tmp = [];
+			while(data[prop + "[" + x + "]"]) {
+				tmp.push(req.body[prop + "[" + x + "]"]);
+				x++;
+			}
+			item[prop] = tmp;
+		}
+	}
+
+}
+
+
+
 /* Routes */
 router.route('/:modelname')
 	.post(auth, function(req, res, next) {
+		console.log("Normal post");
 		try {
 			var item = new Model();
-			for(prop in item) {
-				if (req.body[prop]) {
-					console.log(prop, req.body[prop]);
-					item[prop] = req.body[prop];
-				}
-			}
-			// item.add("_owner_id");
+			_populateItem(item, req.body);
 			if (req.user) {
 				item._owner_id = req.user._id;
 			}
 			item.save(function(err, result) {
 				if (err) {
+					console.log(err);
 					res.status(500).send("An error occured:" + err)
 				} else {
 					websocket.emit(modelname, { method: "post", _id: result._id });
@@ -570,6 +587,32 @@ router.route('/:modelname')
 		});
 	});
 
+/* Batch routes */
+router.route('/:modelname/batch')
+	.post(auth, function(req, res, next) {
+		console.log("Batch post");
+		var items = [];
+		data = JSON.parse(req.body.json);
+		data.forEach(function(data) {
+			var item = new Model();
+			_populateItem(item, data);
+			if (req.user) {
+				item._owner_id = req.user._id;
+			}
+			items.push(item);
+		});
+		Model.create(items, function(err, docs) {
+			if (err) {
+				console.log(err);
+				res.status(500).send("An error occured:" + err)
+			} else {
+				// websocket.emit(modelname, { method: "post", _id: result._id });
+				res.json({ message: modelname + " created ", data: items.length });
+				return next();
+			}
+		});
+	});
+
 router.route('/:modelname/_describe')
 	.get(auth, function(req, res) {
 		console.log(Model.schema.paths);
@@ -620,21 +663,7 @@ router.route('/:modelname/:item_id')
 					res.status(500).send(err);
 				} else {
 					if (item) {
-						for(prop in item) {
-							if (req.body[prop]) {
-								item[prop] = req.body[prop];
-							}
-							//Check for arrays that come in like param[1]=blah, param[2]=yack
-							if (req.body[prop + "[0]"]) {
-								var x = 0;
-								var tmp = [];
-								while(req.body[prop + "[" + x + "]"]) {
-									tmp.push(req.body[prop + "[" + x + "]"]);
-									x++;
-								}
-								item[prop] = tmp;
-							}
-						}
+						_populateItem(item, req.body);
 						try {
 							item.save(function(err, data) {
 								if (err) {
