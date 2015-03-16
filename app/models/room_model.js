@@ -9,6 +9,7 @@ var RoomSchema   = new Schema({
 	name: String,
 	img: String,
 	cost: Number,
+	off_peak_cost: Number,
 	description: String,
 	capacity: Number,
 });
