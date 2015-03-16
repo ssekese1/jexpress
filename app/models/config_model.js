@@ -4,7 +4,7 @@ var Schema       = mongoose.Schema;
 var Objectid = mongoose.Schema.Types.ObjectId;
 
 var ConfigSchema   = new Schema({
-	name: { type: String, unique: true, index: true },
+	_id: String,
 	value: String,
 });
 
