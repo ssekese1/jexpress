@@ -51,6 +51,11 @@ BookingSchema.pre("save", function(next) {
 		// throw(err);
 	}
 
+	//Is this free? If so, cool, don't do any more
+	if (!transaction.cost) {
+		return next();
+	}
+
 	//Reserve the moneyz
 	//We do this here, because if it fails we don't want to process the payment.
 	try {
