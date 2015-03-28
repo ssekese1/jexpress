@@ -521,11 +521,12 @@ router.route('/:modelname')
 			item.save(function(err, result) {
 				if (err) {
 					console.log(err);
-					res.status(500).send("An error occured:" + err)
+					res.status(500).send("An error occured:" + err);
+					return;
 				} else {
 					websocket.emit(modelname, { method: "post", _id: result._id });
-					res.json({ message: modelname + " created ", data: item });
-					return next();
+					res.status(200).json({ message: modelname + " created ", data: item });
+					return;
 				}
 			});
 		} catch(err) {
@@ -608,7 +609,7 @@ router.route('/:modelname/batch')
 			} else {
 				// websocket.emit(modelname, { method: "post", _id: result._id });
 				res.json({ message: modelname + " created ", data: items.length });
-				return next();
+				return;
 			}
 		});
 	});
