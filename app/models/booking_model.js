@@ -5,6 +5,7 @@ var Objectid = mongoose.Schema.Types.ObjectId;
 var Room = require("./room_model");
 var User = require("./user_model");
 var Reserve = require("./reserve_model");
+var moment = require('moment');
 
 var BookingSchema   = new Schema({
 	room: { type: Objectid, ref: "Room" },
@@ -28,14 +29,11 @@ BookingSchema.set("_perms", {
 });
 
 BookingSchema.pre("save", function(next) {
-
 	console.log("Looking for existing reserve");
 	transaction = this;
-	console.log(transaction);
 	try {
 		
 		//Remove the reserve if it already exists
-		
 		Reserve.findOne({
 			source_type: "booking",
 			source_id: transaction._id
@@ -59,21 +57,28 @@ BookingSchema.pre("save", function(next) {
 	//Reserve the moneyz
 	//We do this here, because if it fails we don't want to process the payment.
 	try {
-		var reserve = Reserve({
-			user_id: transaction.user,
-			description: "Booking",
-			amount: transaction.cost * -1,
-			cred_type: "space",
-			source_type: "booking",
-			source_id: transaction._id
-		});
-		console.log(reserve);
-		reserve.save(function(err) {
-			if (err) {
-				console.error(err);
-				return next(err);
+		Room.findById(transaction.room).populate('location').exec(function(err, room) {
+			console.log(transaction);
+			var description = "Booking: " + room.name + " - " + room.location.name + ", " + moment(transaction.start_time).format("dddd MMMM Do, ha") + " to " + moment(transaction.end_time).format("ha");
+			if (parseInt(transaction._owner_id) !== parseInt(transaction.user)) {
+				description += " (Booked by Reception)";
 			}
-			return next();
+			var reserve = Reserve({
+				user_id: transaction.user,
+				description: description,
+				amount: transaction.cost * -1,
+				cred_type: "space",
+				source_type: "booking",
+				source_id: transaction._id
+			});
+			console.log(reserve);
+			reserve.save(function(err) {
+				if (err) {
+					console.error(err);
+					return next(err);
+				}
+				return next();
+			});
 		});
 	} catch(err) {
 		console.log("Error", err); 
