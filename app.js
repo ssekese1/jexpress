@@ -32,6 +32,9 @@ mongoose.connect('mongodb://' + config.mongo_server + '/' + config.mongo_db, fun
     }
 }, { db: { safe:true } }); // connect to our database
 
+if (app.get('env') === 'development') {
+    console.log("Jexpress is in Development Mode");
+}
 
 app.use('/', routes);
 
@@ -51,22 +54,22 @@ app.use(function(req, res, next) {
 if (app.get('env') === 'development') {
     app.use(function(err, req, res, next) {
         res.status(err.status || 500);
-        res.json('error', {
+        res.status(500).json({
             message: err.message,
             error: err
         });
     });
-}
+} else {
 
-// production error handler
-// no stacktraces leaked to user
-app.use(function(err, req, res, next) {
-    res.status(err.status || 500);
-    res.json('error', {
-        message: err.message,
-        error: {}
+    // production error handler
+    // no stacktraces leaked to user
+    app.use(function(err, req, res, next) {
+        res.status(err.status || 500);
+        res.status(500).json({
+            message: err.message,
+            error: {}
+        });
     });
-});
-
+}
 
 module.exports = app;
