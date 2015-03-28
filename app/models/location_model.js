@@ -7,6 +7,7 @@ var LocationSchema   = new Schema({
 	address: String,
 	img: String,
 	description: String,
+	email: String,
 });
 
 LocationSchema.set("_perms", {
