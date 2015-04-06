@@ -497,7 +497,7 @@ var _populateItem = function(item, data) {
 			var x = 0;
 			var tmp = [];
 			while(data[prop + "[" + x + "]"]) {
-				tmp.push(req.body[prop + "[" + x + "]"]);
+				tmp.push(data[prop + "[" + x + "]"]);
 				x++;
 			}
 			item[prop] = tmp;
