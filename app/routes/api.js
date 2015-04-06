@@ -366,7 +366,7 @@ router.use('/:modelname', function(req, res, next) {
 /* Deal with Passwords. Just always encrypt anything called 'password' */
 router.use('/:modelname', function(req, res, next) {
 
-	if (req.body["password"]) {
+	if (req.body["password"] && !(req.query["password_override"])) {
 		var password = encPassword(req.body["password"]);
 		req.body["password"] = password;
 		console.log("Password generated: " + password)
@@ -689,14 +689,16 @@ router.route('/:modelname/:item_id')
 	.delete(auth, function(req, res) {
 		Model.findById(req.params.item_id, function(err, item) {
 			if (!item) {
+				console.log("Couldn't find item for delete");
 				res.status(404).send("Could not find document");
 				return;
 			}
 			if (err) {
+				console.error("Error: ", err);
 				res.status(500).send(err);
 				return;
 			} 
-			item.remove(function(err, item) {
+			item.remove(function(err) {
 				if (err) {
 					res.status(500).send(err);
 				} else {
