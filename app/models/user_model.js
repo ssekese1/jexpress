@@ -22,6 +22,7 @@ var UserSchema   = new Schema({
 	mobile: String,
 	about: String,
 	url: String,
+	timezone: String,
 	img: { type: String, default: '/avatars/grey_avatar_1.png' },
 	start_date: { type: Date, default: Date.now },
 	referee: String,
@@ -35,6 +36,41 @@ UserSchema.set("_perms", {
 	admin: "crud",
 	owner: "cru",
 	user: "r",
+});
+
+var UserModel = mongoose.model('User', UserSchema);
+
+UserSchema.pre("save", function(next) {
+	var self = this;
+	var emails = this.emails;
+	// if (emails.length) {
+		emails.forEach(function(email) {
+			console.log("Checking email ", email);
+			UserModel.findOne({ email: email }, function(err, doc) {
+				if (doc) {
+					if (doc._id.toString() !== self._id.toString()) {
+						console.error("Err", "Alternative email already in use in primary mails", email, doc._id, self._id);
+						self.invalidate("emails", "Alternative email already in use")
+						return next(new Error('Alternative email already in use'));
+						// return;
+					}
+				}
+			
+				UserModel.findOne({ emails: email }, function(err, doc) {
+					if (doc) {
+						if (doc._id.toString() !== self._id.toString()) {
+							console.error("Err", "Alternative email already in use in alternative mails", email, doc._id, self._id);
+							self.invalidate("emails", "Alternative email already")
+							return next(new Error('Alternative email already in use'));
+							// return;
+						}
+					} 
+					next();
+				});
+			});
+		});
+	// }
+	
 });
 
 UserSchema.post("save", function(user) {
