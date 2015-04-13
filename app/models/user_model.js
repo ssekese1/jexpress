@@ -43,10 +43,14 @@ var UserModel = mongoose.model('User', UserSchema);
 UserSchema.pre("save", function(next) {
 	var self = this;
 	var emails = this.emails;
-	// if (emails.length) {
+	if (emails.length) {
 		emails.forEach(function(email) {
 			console.log("Checking email ", email);
 			UserModel.findOne({ email: email }, function(err, doc) {
+				console.log("Check one");
+				if (err) {
+					return next(err);
+				}
 				if (doc) {
 					if (doc._id.toString() !== self._id.toString()) {
 						console.error("Err", "Alternative email already in use in primary mails", email, doc._id, self._id);
@@ -57,6 +61,10 @@ UserSchema.pre("save", function(next) {
 				}
 			
 				UserModel.findOne({ emails: email }, function(err, doc) {
+					console.log("Check two");
+					if (err) {
+						return next(err);
+					}
 					if (doc) {
 						if (doc._id.toString() !== self._id.toString()) {
 							console.error("Err", "Alternative email already in use in alternative mails", email, doc._id, self._id);
@@ -65,11 +73,13 @@ UserSchema.pre("save", function(next) {
 							// return;
 						}
 					} 
-					next();
+					return next();
 				});
 			});
 		});
-	// }
+	} else {
+		return next();
+	}
 	
 });
 
