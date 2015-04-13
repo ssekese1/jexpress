@@ -327,8 +327,15 @@ router.use("/login", function(req, res, next) {
 			deny(req, res, next);
 			return;
 		}
-		if (!bcrypt.compareSync(password, user.password)) {
-			console.log("Incorrect password");
+		try {
+			if (!bcrypt.compareSync(password, user.password)) {
+				console.log("Incorrect password");
+				deny(req, res, next);
+				return;
+			}
+		} catch (err) {
+			console.log("Erm, something went wrong");
+			console.log(err);
 			deny(req, res, next);
 			return;
 		}
