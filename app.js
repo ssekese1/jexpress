@@ -1,4 +1,5 @@
 var express = require('express');
+var compress = require('compression');
 var path = require('path');
 var favicon = require('serve-favicon');
 var logger = require('morgan');
@@ -9,6 +10,9 @@ var routes = require('./app/routes/index');
 var cors = require('cors');
 
 var app = express();
+
+/* Compression */
+app.use(compress());  
 
 // view engine setup
 app.set('views', path.join(__dirname, 'app', 'views'));
