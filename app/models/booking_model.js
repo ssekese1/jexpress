@@ -59,7 +59,7 @@ BookingSchema.pre("save", function(next) {
 	try {
 		Room.findById(transaction.room).populate('location').exec(function(err, room) {
 			console.log(transaction);
-			var description = "Booking: " + room.location.name + ": " + room.name +  ", " + moment(transaction.start_time).format("dddd MMMM Do, H:m") + " to " + moment(transaction.end_time).format("H:m");
+			var description = "Booking: " + transaction.title + " :: " + room.location.name + ", " + room.name +  ", " + moment(transaction.start_time).format("dddd MMMM Do, H:m") + " to " + moment(transaction.end_time).format("H:m");
 			if (parseInt(transaction._owner_id) !== parseInt(transaction.user)) {
 				description += " (Booked by Reception)";
 			}
