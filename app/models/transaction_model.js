@@ -19,7 +19,7 @@ var TransactionSchema   = new Schema({
 	result_code: Number,
 	auth_code: Number,
 	result_desc: String,
-	transaction_id: { type: Number, unique: true },
+	transaction_id: Number,
 	risk_indicator: String,
 	_owner_id: Objectid
 });
