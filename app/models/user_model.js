@@ -29,6 +29,9 @@ var UserSchema   = new Schema({
 	referal_method: String,
 	status: { type: String, validate: /active|inactive|hidden/, index: true, default: "inactive" },
 	newsletter: Boolean,
+	radius_username: String,
+	pin: String,
+	card: String,
 	_owner_id: Objectid,
 });
 
