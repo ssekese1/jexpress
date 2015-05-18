@@ -24,11 +24,11 @@ var OrganisationSchema   = new Schema({
 	location_id: { type: Objectid, ref: 'Location' },
 	space_total: { type: Number, default: 0 }, //Debit + Credit
 	space_reserve: { type: Number, default: 0 },
-	space_debit: { type: Number, default: 0 },
+	space_purchase: { type: Number, default: 0 },
 	space_credit: { type: Number, default: 0 },
 	stuff_total: { type: Number, default: 0 }, //Debit + Credit
 	stuff_reserve: { type: Number, default: 0 },
-	stuff_debit: { type: Number, default: 0 },
+	stuff_purchase: { type: Number, default: 0 },
 	stuff_credit: { type: Number, default: 0 },
 	membership: { type: Objectid, ref: 'Membership' },
 	_owner_id: Objectid
