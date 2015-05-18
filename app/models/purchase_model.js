@@ -79,7 +79,7 @@ PurchaseSchema.post("save", function(transaction) { //Keep our running total up 
 					console.log("Could not find organisation", user.organisation_id);
 				} else {
 					(organisation[transaction.cred_type + "_total"]) ? organisation[transaction.cred_type + "_total"] = organisation[transaction.cred_type + "_total"] + transaction.amount : organisation[transaction.cred_type + "_total"] = transaction.amount;
-					(organisation[transaction.cred_type + "_debit"]) ? organisation[transaction.cred_type + "_debit"] = organisation[transaction.cred_type + "_debit"] + transaction.amount : organisation[transaction.cred_type + "_debit"] = transaction.amount;
+					(organisation[transaction.cred_type + "_purchase"]) ? organisation[transaction.cred_type + "_purchase"] = organisation[transaction.cred_type + "_purchase"] + transaction.amount : organisation[transaction.cred_type + "_purchase"] = transaction.amount;
 					organisation.save();
 				}
 			});
