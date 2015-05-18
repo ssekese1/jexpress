@@ -56,11 +56,12 @@ CreditSchema.pre("save", function(next) {
 });
 
 CreditSchema.post("save", function(transaction) { //Keep our running total up to date
-	console.log("Here");
-	console.log(transaction);
-	(transaction.cred_type + "_total" in _organisation) ? _organisation[transaction.cred_type + "_total"] = _organisation[transaction.cred_type + "_total"] + transaction.amount : _organisation[transaction.cred_type + "_total"] = transaction.amount;
-	(transaction.cred_type + "_credit" in _organisation) ? _organisation[transaction.cred_type + "_credit"] = _organisation[transaction.cred_type + "_credit"] + transaction.amount : _organisation[transaction.cred_type + "_credit"] = transaction.amount;
-	_organisation.save();
+	console.log("Purchase, update totals");
+	Organisation.findOne({ _id: transaction.organisation_id }, function(err, organisation) {
+		(transaction.cred_type + "_total" in organisation) ? organisation[transaction.cred_type + "_total"] = organisation[transaction.cred_type + "_total"] + transaction.amount : organisation[transaction.cred_type + "_total"] = transaction.amount;
+		(transaction.cred_type + "_credit" in organisation) ? organisation[transaction.cred_type + "_credit"] = organisation[transaction.cred_type + "_credit"] + transaction.amount : organisation[transaction.cred_type + "_credit"] = transaction.amount;
+		organisation.save();
+	});
 				
 });
 
