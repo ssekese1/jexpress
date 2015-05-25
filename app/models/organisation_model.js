@@ -31,7 +31,8 @@ var OrganisationSchema   = new Schema({
 	stuff_purchase: { type: Number, default: 0 },
 	stuff_credit: { type: Number, default: 0 },
 	membership: { type: Objectid, ref: 'Membership' },
-	_owner_id: Objectid
+	_owner_id: Objectid,
+	_deleted: { type: Boolean, default: false, index: true },
 });
 
 OrganisationSchema.set("_perms", {

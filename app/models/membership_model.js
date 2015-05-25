@@ -20,6 +20,7 @@ var MembershipSchema   = new Schema({
 	hotdesk_discount: Number,
 	boardroom_discount: Number,
 	_owner_id: Objectid,
+	_deleted: { type: Boolean, default: false, index: true },
 });
 
 MembershipSchema.set("_perms", {

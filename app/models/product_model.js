@@ -8,7 +8,8 @@ var ProductSchema   = new Schema({
 	description: String,
 	amount: { type: Number, validate: function(v) { return (v > 0) }, required: true },
 	cred_type: { type: String, validate: /space|stuff|bandwidth/, index: true, required: true },
-	_owner_id: Objectid
+	_owner_id: Objectid,
+	_deleted: { type: Boolean, default: false, index: true },
 });
 
 ProductSchema.set("_perms", {

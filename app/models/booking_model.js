@@ -21,7 +21,8 @@ var BookingSchema   = new Schema({
 	user: { type: Objectid, ref: "User" },
 	cost: Number,
 	created: { type: Date, default: Date.now },
-	_owner_id: Objectid
+	_owner_id: Objectid,
+	_deleted: { type: Boolean, default: false, index: true },
 });
 
 BookingSchema.set("_perms", {

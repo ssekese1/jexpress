@@ -12,6 +12,7 @@ var RoomSchema   = new Schema({
 	off_peak_cost: Number,
 	description: String,
 	capacity: Number,
+	_deleted: { type: Boolean, default: false, index: true },
 });
 
 RoomSchema.set("_perms", {

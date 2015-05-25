@@ -33,6 +33,7 @@ var UserSchema   = new Schema({
 	pin: String,
 	card: String,
 	_owner_id: Objectid,
+	_deleted: { type: Boolean, default: false, index: true },
 });
 
 UserSchema.set("_perms", {
