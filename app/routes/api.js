@@ -541,15 +541,20 @@ router.route('/:modelname')
 		}
 	})
 	.get(auth, function(req, res) {
+		var filters = {};
 		try {
-			var filters = format_filter(req.query.filter, res);
+			filters = format_filter(req.query.filter, res);
 		} catch(err) {
 			res.status(500).send("An error occured:" + err)
 		}
-		Model.find(filters).count(function(err, count) {
+		var checkDeleted = null;
+		if (Model.schema.paths.hasOwnProperty("_deleted")) {
+			checkDeleted = [ { _deleted: false }, { _deleted: null }];
+		}
+		Model.find(filters).or(checkDeleted).count(function(err, count) {
 			var result = {};
 			result.count = count;
-			var q = Model.find(filters);
+			var q = Model.find(filters).or(checkDeleted);
 			var limit = parseInt(req.query.limit);
 			if (limit) {
 				q.limit(limit);
@@ -652,7 +657,7 @@ router.route('/:modelname/:item_id')
 				res.status(500).send(err);
 				return;
 			} else {
-				if (!item) {
+				if (!item || item._deleted) {
 					console.log("Err 404", item);
 					res.status(404).send("Could not find document");
 					return;
@@ -704,18 +709,30 @@ router.route('/:modelname/:item_id')
 				console.error("Error: ", err);
 				res.status(500).send(err);
 				return;
-			} 
-			item.remove(function(err) {
-				if (err) {
-					res.status(500).send(err);
-				} else {
-					websocket.emit(modelname, { method: "delete", _id: item._id });
-					res.json({ message: modelname + ' deleted' });
-				}
-			});
+			}
+			if (Model.schema.paths.hasOwnProperty("_deleted")) {
+				console.log("Soft deleting");
+				item._deleted = true;
+				item.save(function(err) {
+					if (err) {
+						res.status(500).send(err);
+					} else {
+						websocket.emit(modelname, { method: "delete", _id: item._id });
+						res.json({ message: modelname + ' deleted' });
+					}
+				})
+			} else {
+				console.log("Hard deleting");
+				item.remove(function(err) {
+					if (err) {
+						res.status(500).send(err);
+					} else {
+						websocket.emit(modelname, { method: "delete", _id: item._id });
+						res.json({ message: modelname + ' deleted' });
+					}
+				});
+			}
 		});
 	});
-
-
 
 module.exports = router;
