@@ -79,6 +79,29 @@ Possible values are:
 "u"  | update
 "d"  | delete
 
+###Soft Delete
+
+If you want a model to soft delete, add a _deleted property as follows:
+
+```
+_deleted: { type: Boolean, default: false, index: true },
+```
+
+If _deleted equals true, the document will not show up when you get the list of 
+documents, and calling it directly will result in a 404.
+
+###Calling Static Methods
+
+You can define a method for a Model in the model as follows:
+```
+TestSchema.statics.test = function() {
+	return "Testing OKAY!";
+}
+```
+
+Then to call that method through the API, use `https://my.api/api/_call/test`. 
+If you POST, all variables will be passed through to the method.
+
 */
 
 var express = require('express');
@@ -89,6 +112,7 @@ var router = express.Router();
 var config = require('../../config');
 var querystring = require('querystring');
 var websocket = require('../middleware/websockets.js').connect();
+var Q = require("q");
 
 var modelname = "";
 var Model = false;
@@ -638,34 +662,88 @@ router.route('/:modelname/_test')
 		res.send(Model.schema.get("test"));
 	});
 
-router.route('/:modelname/:item_id')
-	.get(auth, function(req, res) {
-		var q = Model.findById(req.params.item_id);
-		if (req.query.populate) {
-			q.populate(req.query.populate);
-		}
-		if (req.query.autopopulate) {
-			for(var key in Model.schema.paths) {
-				var path = Model.schema.paths[key];
-				if ((path.instance == "ObjectID") && (path.options.ref)) {
-					q.populate(path.path);
-				}
+router.route('/:modelname/_call/:method_name')
+.get(auth, function(req, res) {
+	Model[req.params.method_name]()
+	.then(function(item) {
+		res.json(item);
+	}, function(err) {
+		res.status(500).send(err)
+	});
+})
+.post(auth, function(req, res) {
+	var result = Model[req.params.method_name](req.body);
+	res.json(result);
+});
+
+var getOne = function(item_id, params) {
+	var deferred = Q.defer();
+	var query = Model.findById(item_id);
+	if (params.populate) {
+		query.populate(params.populate);
+	}
+	if (params.autopopulate) {
+		for(var key in Model.schema.paths) {
+			var path = Model.schema.paths[key];
+			if ((path.instance == "ObjectID") && (path.options.ref)) {
+				query.populate(path.path);
 			}
 		}
-		q.exec(function(err, item) {
-			if (err) {
-				res.status(500).send(err);
+	}
+	query.exec(function(err, item) {
+		if (err) {
+			deferred.reject({ code: 500, msg: err });
+			// res.status(500).send(err);
+			return;
+		} else {
+			if (!item || item._deleted) {
+				// console.log("Err 404", item);
+				deferred.reject({ code: 404, msg: "Could not find document" });
+				// res.status(404).send("Could not find document");
 				return;
+			}
+			//Don't ever return passwords
+			item = item.toObject();
+			delete item.password;
+			deferred.resolve(item);
+		}
+	});
+	return deferred.promise;
+}
+
+router.route('/:modelname/:item_id/:method_name')
+.get(function(req, res) {
+	Model.findById(req.params.item_id, function(err, item) {
+		if (!item) {
+			res.status(404).send("Document not found for " + req.params.method_name);
+			return;
+		}
+		if (err) {
+			console.log("Err", err);
+			res.status(500).send(err);
+			return;
+		}
+		// console.log("Item", item);
+		Model[req.params.method_name](item)
+		.then(function(item) {
+			res.json(item);
+		}, function(err) {
+			res.status(500).send(err)
+		});
+	});
+});
+
+router.route('/:modelname/:item_id')
+	.get(auth, function(req, res) {
+		getOne(req.params.item_id, req.query)
+		.then(function(item) {
+			res.send(item);
+		}, function(err) {
+			console.log("Err", err);
+			if (err.code) {
+				res.status(err.code).send(err.msg);
 			} else {
-				if (!item || item._deleted) {
-					console.log("Err 404", item);
-					res.status(404).send("Could not find document");
-					return;
-				}
-				//Don't ever return passwords
-				item = item.toObject();
-				delete item.password;
-				res.json(item);
+				res.status(500).send(err);
 			}
 		});
 	})
