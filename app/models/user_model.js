@@ -14,6 +14,7 @@ var UserSchema   = new Schema({
 	password: String,
 	admin: Boolean,
 	temp_hash: String,
+	position: String,
 	twitter: String,
 	facebook: String,
 	google: String,
