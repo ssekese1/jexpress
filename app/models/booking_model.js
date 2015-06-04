@@ -62,7 +62,7 @@ BookingSchema.pre("save", function(next) {
 	try {
 		Room.findById(transaction.room).populate('location').exec(function(err, room) {
 			console.log(transaction);
-			var description = "Booking: " + transaction.title + " :: " + room.location.name + ", " + room.name +  ", " + moment(transaction.start_time).format("dddd MMMM Do, H:mm") + " to " + moment(transaction.end_time).format("H:mm");
+			var description = "Booking: " + transaction.title + " :: " + room.location.name + ", " + room.name +  ", " + moment(transaction.start_time).tz("Africa/Johannesburg").format("dddd MMMM Do, H:mm") + " to " + moment(transaction.end_time).tz("Africa/Johannesburg").format("H:mm");
 			if (parseInt(transaction._owner_id) !== parseInt(transaction.user)) {
 				description += " (Booked by Reception)";
 			}
