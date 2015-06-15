@@ -49,6 +49,7 @@ PurchaseSchema.pre("save", function(next) {
 				} else {
 					(organisation[transaction.cred_type + "_total"]) ? test = organisation[transaction.cred_type + "_total"] + transaction.amount : test = transaction.amount;
 					if (test < 0) {
+						console.log(transaction.amount, organisation[transaction.cred_type + "_total"]);
 						console.warn("Insufficient Credit", this);
 						transaction.invalidate("amount", "insufficient credit");
   						return next(new Error('Insufficient Credit'));
