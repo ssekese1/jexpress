@@ -19,6 +19,7 @@ var MembershipSchema   = new Schema({
 	free_printing: Boolean,
 	hotdesk_discount: Number,
 	boardroom_discount: Number,
+	discount_multiplier: { type: Number, default: 1 },
 	_owner_id: Objectid,
 	_deleted: { type: Boolean, default: false, index: true },
 });
