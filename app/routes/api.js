@@ -389,7 +389,7 @@ router.use('/:modelname', function(req, res, next) {
 		Model = require('../models/' + modelname + "_model");
 		next();
 	} catch(err) {
-		res.status(404).send("Model not found");
+		res.status(404).send("Model " + modelname + " not found");
 
 	}
 });
