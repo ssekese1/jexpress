@@ -88,13 +88,9 @@ BookingSchema.pre("save", function(next) {
 		//Roll back booking
 
 	}
-})
-
-BookingSchema.post("save", function(transaction) {
-	
 });
 
-BookingSchema.post("remove", function(transaction) { //Keep our running total up to date
+var deleteReserve = function(transaction) {
 	console.log("Remove called, Going to remove reserve");
 	console.log(transaction);
 	try {
@@ -110,12 +106,24 @@ BookingSchema.post("remove", function(transaction) { //Keep our running total up
 				console.log("Could not find Reserve");
 				return;
 			}
+			console.log("Deleting", item);
 			item.remove();
 		});
 	} catch(err) {
 		console.log("Error", err);
 		// throw(err);
 	}
+}
+
+BookingSchema.post("save", function(transaction) {
+	console.log("Transaction", transaction);
+	if (transaction._deleted) {
+		deleteReserve(transaction);
+	}
+});
+
+BookingSchema.post("remove", function(transaction) { //Keep our running total up to date
+	deleteReserve(transaction);
 });
 
 module.exports = mongoose.model('Booking', BookingSchema);

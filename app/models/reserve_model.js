@@ -1,10 +1,12 @@
 var mongoose     = require('mongoose');
 var Schema       = mongoose.Schema;
+var Q = require("q");
 
 var Objectid = mongoose.Schema.Types.ObjectId;
 
 var User = require("./user_model");
 var Organisation = require("./organisation_model");
+var Purchase = require("./purchase_model");
 
 var ReserveSchema   = new Schema({
 	user_id: { type: Objectid, index: true, required: true, ref: "User" },
@@ -23,6 +25,59 @@ ReserveSchema.set("_perms", {
 	owner: "cr",
 	user: "c"
 });
+
+var process_item = function(item) {
+	var deferred = Q.defer();
+	console.log("Processing item", item);
+	purchase = new Purchase();
+	for (var key in item) {
+		purchase[key] = item[key];
+	}
+	item.remove(function(err) {
+		if (err) {
+			deferred.reject({ code: 500, msg: err });
+		} else {
+			console.log("Removed item");
+			purchase.save(function(err, result) {
+				if (err) {
+					console.log(err);
+					deferred.reject({ code: 500, msg: err });
+				} else {
+					console.log("Saved item");
+					deferred.resolve(purchase);
+				}
+			})
+		}
+	});
+	return deferred.promise;
+}
+
+ReserveSchema.statics.process = function(item) {
+	return process_item(item);
+}
+
+ReserveSchema.statics.process_all = function(h) {
+	var deferred = Q.defer();
+	var s = (h * 3600) || (24 * 3600);
+	var t = new Date() - s;
+	console.log("Looking for items that are more than " + t + " old");
+	this.find({ date: { "$lte": t } }, function(err, result) {
+		if (!result.length) {
+			console.log("All done");
+			deferred.resolve("None to process");
+			return;
+		}
+		var first = result.pop();
+		console.log("First", first);
+		var p = process_item(first);
+		result.forEach(function(item) {
+			p.then(process_item(item));
+		});
+		// console.log(result);
+		deferred.resolve(p);
+	});
+	return deferred.promise;
+}
 
 ReserveSchema.pre("save", function(next) {
 	var transaction = this;
