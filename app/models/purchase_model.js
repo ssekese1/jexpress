@@ -7,7 +7,7 @@ var User = require("./user_model");
 var Organisation = require("./organisation_model");
 
 var PurchaseSchema   = new Schema({
-	user_id: { type: Objectid, index: true, required: true, ref: "User" },
+	user_id: { type: Objectid, index: true, ref: "User" },
 	organisation_id: { type: Objectid, index: true, ref: "Organisation" },
 	description: String,
 	date: { type: Date, default: Date.now },
@@ -15,6 +15,7 @@ var PurchaseSchema   = new Schema({
 	source_id: Objectid,
 	amount: { type: Number, validate: function(v) { return (v < 0) }, required: true },
 	cred_type: { type: String, validate: /space|stuff/, index: true, required: true },
+	email: String,
 	_owner_id: Objectid
 });
 
@@ -26,17 +27,22 @@ PurchaseSchema.set("_perms", {
 
 PurchaseSchema.pre("save", function(next) {
 	var transaction = this;
-	User.findOne({ _id: transaction.user_id }, function(err, user) {
+	var search_criteria = { _id: transaction.user_id };
+	if (!transaction.user_id) {
+		search_criteria = { email: transaction.email };
+	}
+	User.findOne(search_criteria, function(err, user) {
 		if (err) {
 			console.warn("Err", err);
-			next(new Error('Insufficient Credit'));
+			next(new Error('Unknown Error'));
 			return;
 		}
 		if (!user) {
-			console.log("Could not find user", transaction.user_id);
+			console.log("Could not find user", transaction.user_id || transaction.email );
 			transaction.invalidate("user_id", "could not find user");
 			return next(new Error('Could not find user'));
 		} else {
+			transaction.user_id = user._id;
 			Organisation.findOne({ _id: user.organisation_id }, function(err, organisation) {
 				if (err) {
 					console.warn("Err", err);
