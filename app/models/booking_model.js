@@ -5,6 +5,7 @@ var Objectid = mongoose.Schema.Types.ObjectId;
 var Room = require("./room_model");
 var User = require("./user_model");
 var Reserve = require("./reserve_model");
+var Layout = require("./layout_model");
 var moment = require('moment-timezone');
 
 moment.tz.setDefault("SAST");
@@ -21,6 +22,9 @@ var BookingSchema   = new Schema({
 	user: { type: Objectid, ref: "User" },
 	cost: Number,
 	created: { type: Date, default: Date.now },
+	public_event: { type: Boolean, default: false },
+	img: String,
+	layout: { type: Objectid, ref: "Layout" },
 	_owner_id: Objectid,
 	_deleted: { type: Boolean, default: false, index: true },
 	_version: { type: Number, default: 0 },

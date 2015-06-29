@@ -3,6 +3,7 @@ var Schema       = mongoose.Schema;
 
 var Objectid = mongoose.Schema.Types.ObjectId;
 var Location = require('./location_model');
+var Layout = require('./layout_model');
 
 var RoomSchema   = new Schema({
 	location: { type: Objectid, ref: "Location" },
@@ -12,6 +13,7 @@ var RoomSchema   = new Schema({
 	off_peak_cost: Number,
 	description: String,
 	capacity: Number,
+	layout: [{ type: Objectid, ref: "Layout" }],
 	_deleted: { type: Boolean, default: false, index: true },
 });
 
