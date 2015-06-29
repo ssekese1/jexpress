@@ -520,7 +520,7 @@ function format_filter(filter) {
 
 var _populateItem = function(item, data) {
 	for(prop in item) {
-		if (data[prop]) {
+		if (typeof data[prop] != "undefined") {
 			item[prop] = data[prop];
 		}
 		//Check for arrays that come in like param[1]=blah, param[2]=yack
@@ -731,7 +731,6 @@ router.route('/:modelname/:item_id/:method_name')
 			res.status(500).send(err);
 			return;
 		}
-		// console.log("Item", item);
 		Model[req.params.method_name](item)
 		.then(function(item) {
 			res.json(item);
