@@ -79,19 +79,40 @@ Possible values are:
 "u"  | update
 "d"  | delete
 
+###Soft Delete
+
+If you want a model to soft delete, add a _deleted property as follows:
+
+```
+_deleted: { type: Boolean, default: false, index: true },
+```
+
+If _deleted equals true, the document will not show up when you get the list of 
+documents, and calling it directly will result in a 404.
+
+###Calling Static Methods
+
+You can define a method for a Model in the model as follows:
+```
+TestSchema.statics.test = function() {
+	return "Testing OKAY!";
+}
+```
+
+Then to call that method through the API, use `https://my.api/api/_call/test`. 
+If you POST, all variables will be passed through to the method.
+
 */
 
 var express = require('express');
-// var passport = require('passport')
-// var BasicStrategy = require('passport-http').BasicStrategy;
-// var LocalApiKeyStrategy = require('passport-localapikey').Strategy;
-// var auth = require('./auth');
 var User = require('../models/user_model');
 var APIKey = require('../models/apikey_model');
 var bcrypt = require('bcrypt');
 var router = express.Router();
 var config = require('../../config');
 var querystring = require('querystring');
+var websocket = require('../middleware/websockets.js').connect();
+var Q = require("q");
 
 var modelname = "";
 var Model = false;
@@ -191,6 +212,19 @@ router.route("/_models").get(function(req, res, next) {
 	})
 });
 
+router.route('/_websocket_test')
+	.get(function(req, res) {
+		// io.on('connection', function (socket) {
+			websocket.emit('testing', { hello: 'world'});
+			res.send("Sent testing");
+		// 	socket.emit('news', { hello: 'world' });
+		// 	socket.on('test', function (data) {
+		// 		console.log(data);
+		// 		res.json(data);
+		// 	});
+		// });
+	});
+
 /* Password recovery */
 router.route("/login/recover").post(function(req, res, next) {
 	var email = req.body.email;
@@ -222,11 +256,17 @@ router.route("/login/recover").post(function(req, res, next) {
 				// secure: true,
 				tls: { rejectUnauthorized: false }
 			}));
+			var html = text = "Someone (hopefully you) requested a password reset. Please click on the following url to recover your password. If you did not request a password reset, you can ignore this message. \n" + config.password_recovery_url + "/" + user.temp_hash;
+			if (req.body.mail_format) {
+				html = req.body.mail_format;
+				html = html.replace(/\{\{recover_url\}\}/i, config.password_recovery_url + "/" + user.temp_hash);
+			}
 			transporter.sendMail({
 				from: config.smtp_from,
 				to: user.email,
 				subject: "Password Recovery",
-				text: "Someone (hopefully you) requested a password reset. Please click on the following url to recover your password. If you did not request a password reset, you can ignore this message. \n" + config.password_recovery_url + "/" + user.temp_hash,
+				text: text,
+				html: html
 			},
 			function(result) {
 				console.log("Mailer result", result);
@@ -311,8 +351,15 @@ router.use("/login", function(req, res, next) {
 			deny(req, res, next);
 			return;
 		}
-		if (!bcrypt.compareSync(password, user.password)) {
-			console.log("Incorrect password");
+		try {
+			if (!bcrypt.compareSync(password, user.password)) {
+				console.log("Incorrect password");
+				deny(req, res, next);
+				return;
+			}
+		} catch (err) {
+			console.log("Erm, something went wrong");
+			console.log(err);
 			deny(req, res, next);
 			return;
 		}
@@ -333,6 +380,8 @@ router.use("/login", function(req, res, next) {
 	});
 });
 
+
+
 /* This middleware prepares the correct Model */
 router.use('/:modelname', function(req, res, next) {
 	modelname = req.params.modelname;
@@ -340,7 +389,7 @@ router.use('/:modelname', function(req, res, next) {
 		Model = require('../models/' + modelname + "_model");
 		next();
 	} catch(err) {
-		res.status(404).send("Model not found");
+		res.status(404).send("Model " + modelname + " not found");
 
 	}
 });
@@ -348,7 +397,7 @@ router.use('/:modelname', function(req, res, next) {
 /* Deal with Passwords. Just always encrypt anything called 'password' */
 router.use('/:modelname', function(req, res, next) {
 
-	if (req.body["password"]) {
+	if (req.body["password"] && !(req.query["password_override"])) {
 		var password = encPassword(req.body["password"]);
 		req.body["password"] = password;
 		console.log("Password generated: " + password)
@@ -469,26 +518,53 @@ function format_filter(filter) {
 	return filter;
 }
 
+var _populateItem = function(item, data) {
+	for(prop in item) {
+		if (typeof data[prop] != "undefined") {
+			item[prop] = data[prop];
+		}
+		//Check for arrays that come in like param[1]=blah, param[2]=yack
+		if (data[prop + "[0]"]) {
+			var x = 0;
+			var tmp = [];
+			while(data[prop + "[" + x + "]"]) {
+				tmp.push(data[prop + "[" + x + "]"]);
+				x++;
+			}
+			item[prop] = tmp;
+		}
+	}
+
+}
+
+var _versionItem = function(item) {
+	if (item._version || item._version === 0) {
+		item._version++;
+	} else {
+		item._version = 0;
+	}
+}
+
+
 /* Routes */
 router.route('/:modelname')
-	.post(auth, function(req, res) {
+	.post(auth, function(req, res, next) {
+		console.log("Normal post");
 		try {
 			var item = new Model();
-			for(prop in item) {
-				if (req.body[prop]) {
-					console.log(prop, req.body[prop]);
-					item[prop] = req.body[prop];
-				}
-			}
-			// item.add("_owner_id");
+			_populateItem(item, req.body);
 			if (req.user) {
 				item._owner_id = req.user._id;
 			}
-			item.save(function(err) {
+			item.save(function(err, result) {
 				if (err) {
-					res.status(500).send("An error occured:" + err)
+					console.log(err);
+					res.status(500).send("An error occured:" + err);
+					return;
 				} else {
-					res.json({ message: modelname + " created ", data: item });
+					websocket.emit(modelname, { method: "post", _id: result._id });
+					res.status(200).json({ message: modelname + " created ", data: item });
+					return;
 				}
 			});
 		} catch(err) {
@@ -496,15 +572,20 @@ router.route('/:modelname')
 		}
 	})
 	.get(auth, function(req, res) {
+		var filters = {};
 		try {
-			var filters = format_filter(req.query.filter, res);
+			filters = format_filter(req.query.filter, res);
 		} catch(err) {
 			res.status(500).send("An error occured:" + err)
 		}
-		Model.find(filters).count(function(err, count) {
+		var checkDeleted = null;
+		if (Model.schema.paths.hasOwnProperty("_deleted")) {
+			checkDeleted = [ { _deleted: false }, { _deleted: null }];
+		}
+		Model.find(filters).or(checkDeleted).count(function(err, count) {
 			var result = {};
 			result.count = count;
-			var q = Model.find(filters);
+			var q = Model.find(filters).or(checkDeleted);
 			var limit = parseInt(req.query.limit);
 			if (limit) {
 				q.limit(limit);
@@ -550,6 +631,33 @@ router.route('/:modelname')
 		});
 	});
 
+/* Batch routes */
+router.route('/:modelname/batch')
+	.post(auth, function(req, res, next) {
+		console.log("Batch post");
+		var items = [];
+		data = JSON.parse(req.body.json);
+		data.forEach(function(data) {
+			var item = new Model();
+			_populateItem(item, data);
+			_versionItem(item);
+			if (req.user) {
+				item._owner_id = req.user._id;
+			}
+			items.push(item);
+		});
+		Model.create(items, function(err, docs) {
+			if (err) {
+				console.log(err);
+				res.status(500).send("An error occured:" + err)
+			} else {
+				// websocket.emit(modelname, { method: "post", _id: result._id });
+				res.json({ message: modelname + " created ", data: items.length });
+				return;
+			}
+		});
+	});
+
 router.route('/:modelname/_describe')
 	.get(auth, function(req, res) {
 		console.log(Model.schema.paths);
@@ -562,33 +670,87 @@ router.route('/:modelname/_test')
 		res.send(Model.schema.get("test"));
 	});
 
-router.route('/:modelname/:item_id')
-	.get(auth, function(req, res) {
-		var q = Model.findById(req.params.item_id);
-		if (req.query.populate) {
-			q.populate(req.query.populate);
-		}
-		if (req.query.autopopulate) {
-			for(var key in Model.schema.paths) {
-				var path = Model.schema.paths[key];
-				if ((path.instance == "ObjectID") && (path.options.ref)) {
-					q.populate(path.path);
-				}
+router.route('/:modelname/_call/:method_name')
+.get(auth, function(req, res) {
+	Model[req.params.method_name]()
+	.then(function(item) {
+		res.json(item);
+	}, function(err) {
+		res.status(500).send(err)
+	});
+})
+.post(auth, function(req, res) {
+	var result = Model[req.params.method_name](req.body);
+	res.json(result);
+});
+
+var getOne = function(item_id, params) {
+	var deferred = Q.defer();
+	var query = Model.findById(item_id);
+	if (params.populate) {
+		query.populate(params.populate);
+	}
+	if (params.autopopulate) {
+		for(var key in Model.schema.paths) {
+			var path = Model.schema.paths[key];
+			if ((path.instance == "ObjectID") && (path.options.ref)) {
+				query.populate(path.path);
 			}
 		}
-		q.exec(function(err, item) {
-			if (err) {
-				res.status(500).send(err);
+	}
+	query.exec(function(err, item) {
+		if (err) {
+			deferred.reject({ code: 500, msg: err });
+			// res.status(500).send(err);
+			return;
+		} else {
+			if (!item || item._deleted) {
+				// console.log("Err 404", item);
+				deferred.reject({ code: 404, msg: "Could not find document" });
+				// res.status(404).send("Could not find document");
 				return;
+			}
+			//Don't ever return passwords
+			item = item.toObject();
+			delete item.password;
+			deferred.resolve(item);
+		}
+	});
+	return deferred.promise;
+}
+
+router.route('/:modelname/:item_id/:method_name')
+.get(function(req, res) {
+	Model.findById(req.params.item_id, function(err, item) {
+		if (!item) {
+			res.status(404).send("Document not found for " + req.params.method_name);
+			return;
+		}
+		if (err) {
+			console.log("Err", err);
+			res.status(500).send(err);
+			return;
+		}
+		Model[req.params.method_name](item)
+		.then(function(item) {
+			res.json(item);
+		}, function(err) {
+			res.status(500).send(err)
+		});
+	});
+});
+
+router.route('/:modelname/:item_id')
+	.get(auth, function(req, res) {
+		getOne(req.params.item_id, req.query)
+		.then(function(item) {
+			res.send(item);
+		}, function(err) {
+			console.log("Err", err);
+			if (err.code) {
+				res.status(err.code).send(err.msg);
 			} else {
-				if (!item) {
-					res.status(404).send("Could not find document");
-					return;
-				}
-				//Don't ever return passwords
-				item = item.toObject();
-				delete item.password;
-				res.json(item);
+				res.status(500).send(err);
 			}
 		});
 	})
@@ -599,19 +761,20 @@ router.route('/:modelname/:item_id')
 					res.status(500).send(err);
 				} else {
 					if (item) {
-						for(prop in item) {
-							if (req.body[prop]) {
-								item[prop] = req.body[prop];
-								// console.log(prop, req.body[prop]);
-							}
+						_populateItem(item, req.body);
+						_versionItem(item);
+						try {
+							item.save(function(err, data) {
+								if (err) {
+									res.status(500).send(err);
+								} else {
+									websocket.emit(modelname, { method: "put", _id: item._id });
+									res.json({ message: modelname + " updated ", data: data });
+								}
+							});
+						} catch(err) {
+							res.status(500).send("An error occured:", err)
 						}
-						item.save(function(err) {
-							if (err) {
-								res.status(500).send(err);
-							} else {
-								res.json({ message: modelname + " updated ", data: item });
-							}
-						});
 					} else {
 						res.status(404).send("Document not found");
 					}
@@ -624,20 +787,38 @@ router.route('/:modelname/:item_id')
 	.delete(auth, function(req, res) {
 		Model.findById(req.params.item_id, function(err, item) {
 			if (!item) {
+				console.log("Couldn't find item for delete");
 				res.status(404).send("Could not find document");
 				return;
 			}
 			if (err) {
+				console.error("Error: ", err);
 				res.status(500).send(err);
 				return;
-			} 
-			item.remove(function(err, item) {
-				if (err) {
-					res.status(500).send(err);
-				} else {
-					res.json({ message: modelname + ' deleted' });
-				}
-			});
+			}
+			if (Model.schema.paths.hasOwnProperty("_deleted")) {
+				console.log("Soft deleting");
+				item._deleted = true;
+				_versionItem(item);
+				item.save(function(err) {
+					if (err) {
+						res.status(500).send(err);
+					} else {
+						websocket.emit(modelname, { method: "delete", _id: item._id });
+						res.json({ message: modelname + ' deleted' });
+					}
+				})
+			} else {
+				console.log("Hard deleting");
+				item.remove(function(err) {
+					if (err) {
+						res.status(500).send(err);
+					} else {
+						websocket.emit(modelname, { method: "delete", _id: item._id });
+						res.json({ message: modelname + ' deleted' });
+					}
+				});
+			}
 		});
 	});
 

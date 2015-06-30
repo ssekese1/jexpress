@@ -176,7 +176,7 @@ Lets a user log in through a temporary login key, for password recovery.
 **_owner_id**
 This is used to associate an object to a user, which we utilise in our permissions.
 
-###Permissions
+### Permissions
 
 Jexpress implements seperate permissions for administrators, object owners, users, and all.
 
@@ -199,11 +199,11 @@ So in the above example:
 
 ***Tip:*** The line ```all: "",``` isn't necessary. If a permission isn't set, it's assumed that that user level can't do anything.
 
-###Business Logic
+### Business Logic
 
 You can add some logic into your API by using Mongoose's [Middleware](http://mongoosejs.com/docs/middleware.html) and its [Validation](http://mongoosejs.com/docs/validation.html). There's lots of cool stuff you can do in Mongoose that'll Just Work (tm) in Jexpress. 
 
-###Using the API
+### Using the API
 
 The URL format for the API is as follows:
 http://***your-server***:***port***/api/***content-type***/***id***/?apikey=***apikey***
@@ -221,7 +221,7 @@ The following actions are supported:
 - **PUT** updates an existing object, and requires an ID
 - **DELETE** deletes an existing object, and requires an ID
 
-###Filters
+### Filters
 
 When GETting a list, you can add a Filter as a parameter
 ```
@@ -233,7 +233,7 @@ To filter with `$gte`, `$lte` or similar, use a colon to divide the operator and
 /:modelname?filter[field]=$gte:value
 ```
 
-###Meta
+### Meta
 
 There's a special route, `/:modelname/_describe`, which returns the model definition, if you're into introspection.
 
@@ -250,7 +250,33 @@ Response:
 
 You can request a password reset through the endpoint `/login/recover`, POSTing the user's `email`. The system will set a one-time password and send it to the user through email. The user won't be directed to the API, however, but to whatever URL you define in the config.js file as `password_recovery_url`. You can then POST the `temp_hash` and `password` to `/login/reset` to change the password.
 
-###Config
+### Soft Delete
+
+Instead of deleting out of the database, you can set a *soft delete* by including the field `_deleted` in your model. Deleted items will not show up when you GET them.
+
+### Versioning
+
+You can keep a version count by setting the field `_version` in your model. This gets incremented every time a document is updated.
+
+### Batch Posts
+
+You can POST a batch of documents by calling /:modelname/batch, with your documents as an array called `data`.
+
+### Custom Methods
+
+You can fire a custom method in your document by calling /:modelname/_call/:method_name. This can be a GET or a POST. If it's a POST, we simply pass the variables through to your method.
+
+You can also fire a custom method and pass a single document by GETting /:modelname/:item_id/:method_name. This sends the document to the method.
+
+In your model, you can define your custom method as follows:
+
+```
+MySchema.statics.process = function(item) {
+    // Do something here
+}
+```
+
+### Config
 
 The config.js file has the following options:
 - **mongo_server** - The address of the Mongo server, defaults to *localhost*
@@ -269,15 +295,15 @@ Note that none of the SMTP stuff is required if you're not sending out password 
 
 The model names `login` and `_describe` are reserved for, er, logging in and describing. 
 
-###Roadmap
+### Roadmap
 
 - Pagination
 - Define your own user permission levels
 - Tests
-- A cool welcome page that'll help you bootstrap
-- List of all the models at /api/
+- A cool welcome page that'll help you bootstrap (Partially done)
+- List of all the models at /api/ (Done!)
 - ... [you tell me](https://github.com/j-norwood-young/jexpress/issues)!
 
-###Getting Help
+### Getting Help
 
 You can submit an [Issue in Git](https://github.com/j-norwood-young/jexpress/issues), email me at jexpress@freespeechpub.co.za, or do a pull request.

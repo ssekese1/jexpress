@@ -16,4 +16,8 @@ TestSchema.set("_perms", {
 	all: "r"
 });
 
+TestSchema.statics.test = function() {
+	return "Testing OKAY!";
+}
+
 module.exports = mongoose.model('Test', TestSchema);
