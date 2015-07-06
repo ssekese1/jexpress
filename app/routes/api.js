@@ -518,7 +518,32 @@ function format_filter(filter) {
 	return filter;
 }
 
+var _deSerialize = function(data) {
+	function assign(obj, keyPath, value) {
+	// http://stackoverflow.com/questions/5484673/javascript-how-to-dynamically-create-nested-objects-using-object-names-given-by
+		lastKeyIndex = keyPath.length - 1;
+		for (var i = 0; i < lastKeyIndex; ++ i) {
+			key = keyPath[i];
+			if (!(key in obj))
+				obj[key] = {};
+			obj = obj[key];
+		}
+		obj[keyPath[lastKeyIndex]] = value;
+	}
+	for(datum in data) {
+		var matches = datum.match(/\[(.+?)\]/g);
+		if (matches) {
+			var params = matches.map(function(match) {
+				return match.replace(/[\[\]]/g, "");
+			});
+			params.unshift(datum.match(/(.+?)\[/)[1]);
+			assign(data, params, data[datum]);
+		}
+	}
+}
+
 var _populateItem = function(item, data) {
+	_deSerialize(data);
 	for(prop in item) {
 		if (typeof data[prop] != "undefined") {
 			item[prop] = data[prop];
