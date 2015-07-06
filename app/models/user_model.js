@@ -2,6 +2,7 @@ var mongoose     = require('mongoose');
 var Schema       = mongoose.Schema;
 
 var Objectid = mongoose.Schema.Types.ObjectId;
+var Mixed = mongoose.Schema.Types.Mixed;
 var Organisation = require("./organisation_model");
 var Location = require("./location_model");
 
@@ -15,10 +16,10 @@ var UserSchema   = new Schema({
 	admin: Boolean,
 	temp_hash: String,
 	position: String,
-	twitter: String,
-	facebook: String,
-	google: String,
-	linkedin: String,
+	twitter: { type: Mixed },
+	facebook: { type: Mixed },
+	google: { type: Mixed },
+	linkedin: { type: Mixed },
 	skype: String,
 	mobile: String,
 	about: String,
