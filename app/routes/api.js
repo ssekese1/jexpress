@@ -536,8 +536,10 @@ var _deSerialize = function(data) {
 			var params = matches.map(function(match) {
 				return match.replace(/[\[\]]/g, "");
 			});
-			params.unshift(datum.match(/(.+?)\[/)[1]);
-			assign(data, params, data[datum]);
+			if (isNaN(params[0])) {
+				params.unshift(datum.match(/(.+?)\[/)[1]);
+				assign(data, params, data[datum]);
+			}
 		}
 	}
 }
