@@ -1,9 +1,10 @@
 {
-  "name": "nutoobs.dev",
-  "version": "0.0.0",
+  "name": "JExpress",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
-    "start": "node ./bin/www"
+    "start": "node ./bin/www",
+    "test": "node ./app/test/api_test"
   },
   "dependencies": {
     "bcrypt": "^0.8.0",
@@ -25,6 +26,22 @@
     "serve-favicon": "~2.1.3"
   },
   "devDependencies": {
+    "chai": "^3.0.0",
+    "mocha": "^2.2.5",
     "should": "^4.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/j-norwood-young/jexpress.git"
+  },
+  "keywords": [
+    "api",
+    "framework",
+    "express"
+  ],
+  "author": "Jason Norwood-You g <jason@10layer.com> (https://github.com/j-norwood-young)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/j-norwood-young/jexpress/issues"
   }
 }
