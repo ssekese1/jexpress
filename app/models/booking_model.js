@@ -4,6 +4,7 @@ var Schema       = mongoose.Schema;
 var Objectid = mongoose.Schema.Types.ObjectId;
 var Room = require("./room_model");
 var User = require("./user_model");
+var Guest = require("./guest_model");
 var Reserve = require("./reserve_model");
 var Layout = require("./layout_model");
 var moment = require('moment-timezone');
@@ -18,6 +19,7 @@ var BookingSchema   = new Schema({
 	description: String,
 	message: String,
 	attendees: [{ type: Objectid, ref: "User" }],
+	guests: [{ type: Objectid, ref: "Guest" }],
 	external_attendees: [String],
 	user: { type: Objectid, ref: "User" },
 	cost: Number,
