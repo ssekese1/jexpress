@@ -10,6 +10,7 @@ var CreditSchema   = new Schema({
 	user_id: { type: Objectid, index: true, required: true, ref: "User" },
 	organisation_id: { type: Objectid, index: true, ref: "Organisation" },
 	description: String,
+	details: String,
 	date: { type: Date, default: Date.now },
 	amount: { type: Number, validate: function(v) { return (v > 0) }, required: true },
 	cred_type: { type: String, validate: /space|stuff/, index: true, required: true },
