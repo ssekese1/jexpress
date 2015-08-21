@@ -10,6 +10,7 @@ var PurchaseSchema   = new Schema({
 	user_id: { type: Objectid, index: true, ref: "User" },
 	organisation_id: { type: Objectid, index: true, ref: "Organisation" },
 	description: String,
+	details: String,
 	date: { type: Date, default: Date.now },
 	source_type: String,
 	source_id: Objectid,
