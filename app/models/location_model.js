@@ -8,6 +8,7 @@ var LocationSchema   = new Schema({
 	img: String,
 	description: String,
 	email: String,
+	sage_uid: String,
 	_deleted: { type: Boolean, default: false, index: true },
 });
 
