@@ -12,8 +12,11 @@ var CreditSchema   = new Schema({
 	description: String,
 	details: String,
 	date: { type: Date, default: Date.now },
+	source_type: String,
+	source_id: Objectid,
 	amount: { type: Number, validate: function(v) { return (v > 0) }, required: true },
 	cred_type: { type: String, validate: /space|stuff/, index: true, required: true },
+	email: String,
 	_owner_id: Objectid
 });
 
