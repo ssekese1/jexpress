@@ -6,6 +6,7 @@ var Room = require("./room_model");
 var User = require("./user_model");
 var Guest = require("./guest_model");
 var Reserve = require("./reserve_model");
+var Ledger = require("./ledger_model");
 var Layout = require("./layout_model");
 var moment = require('moment-timezone');
 
@@ -44,12 +45,12 @@ BookingSchema.pre("save", function(next) {
 	try {
 		
 		//Remove the reserve if it already exists
-		Reserve.findOne({
+		Ledger.findOne({
 			source_type: "booking",
 			source_id: transaction._id
 		}, function(err, item) {
 			if (item) {
-				console.log("Found existing reserve, removing it");
+				console.log("Found existing transaction");
 				item.remove();
 			}
 		});
@@ -73,13 +74,14 @@ BookingSchema.pre("save", function(next) {
 			if (parseInt(transaction._owner_id) !== parseInt(transaction.user)) {
 				description += " (Booked by Reception)";
 			}
-			var reserve = Reserve({
+			var reserve = Ledger({
 				user_id: transaction.user,
 				description: description,
 				amount: transaction.cost * -1,
 				cred_type: "space",
 				source_type: "booking",
-				source_id: transaction._id
+				source_id: transaction._id,
+				reserve: true
 			});
 			console.log(reserve);
 			reserve.save(function(err) {
@@ -101,7 +103,7 @@ var deleteReserve = function(transaction) {
 	console.log("Remove called, Going to remove reserve");
 	console.log(transaction);
 	try {
-		Reserve.findOne({
+		Ledger.findOne({
 			source_type: "booking",
 			source_id: transaction._id
 		}, function(err, item) {
