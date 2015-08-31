@@ -389,8 +389,8 @@ router.use('/:modelname', function(req, res, next) {
 		Model = require('../models/' + modelname + "_model");
 		next();
 	} catch(err) {
+		console.log("Err", err);
 		res.status(404).send("Model " + modelname + " not found");
-
 	}
 });
 
@@ -596,6 +596,7 @@ router.route('/:modelname')
 			});
 		} catch(err) {
 			res.status(500).send("An error occured:" + err);
+			return;
 		}
 	})
 	.get(auth, function(req, res) {
@@ -603,13 +604,16 @@ router.route('/:modelname')
 		try {
 			filters = format_filter(req.query.filter, res);
 		} catch(err) {
-			res.status(500).send("An error occured:" + err)
+			res.status(500).send("An error occured:" + err);
+			return;
 		}
-		var checkDeleted = null;
-		if (Model.schema.paths.hasOwnProperty("_deleted")) {
-			checkDeleted = [ { _deleted: false }, { _deleted: null }];
-		}
+		checkDeleted = [ { _deleted: false }, { _deleted: null }];
 		Model.find(filters).or(checkDeleted).count(function(err, count) {
+			if (err) {
+				console.log(err);
+				res.status(500).send("An error occured: " + err);
+				return;
+			}
 			var result = {};
 			result.count = count;
 			var q = Model.find(filters).or(checkDeleted);
@@ -635,8 +639,13 @@ router.route('/:modelname')
 				result.sort = req.query.sort;
 			}
 			if (req.query.populate) {
-				q.populate(req.query.populate);
-				result.populate = req.query.populate;
+				try {
+					q.populate(req.query.populate);
+					result.populate = req.query.populate;
+				} catch(err) {
+					res.status(500).send("An error occured:", err);
+					return;
+				}
 			}
 			if (req.query.autopopulate) {
 				for(var key in Model.schema.paths) {
@@ -647,14 +656,20 @@ router.route('/:modelname')
 				}
 				result.autopopulate = true;
 			}
-			q.exec(function(err, items) {
-				if (err) {
-					res.status(500).send(err);
-				} else {
-					result.data = items;
-					res.json(result);
-				}
-			});
+			try {
+				q.exec(function(err, items) {
+					if (err) {
+						console.log("Error", err);
+						res.status(500).send(err);
+					} else {
+						result.data = items;
+						res.json(result);
+					}
+				});
+			} catch(err) {
+				res.status(500).send("An error occured:", err);
+				return;
+			}
 		});
 	});
 
@@ -800,15 +815,18 @@ router.route('/:modelname/:item_id')
 								}
 							});
 						} catch(err) {
-							res.status(500).send("An error occured:", err)
+							res.status(500).send("An error occured:", err);
+							return;
 						}
 					} else {
 						res.status(404).send("Document not found");
+						return;
 					}
 				}
 			});
 		} catch(err) {
-			res.status(500).send("An error occured:", err)
+			res.status(500).send("An error occured:", err);
+			return;
 		}
 	})
 	.delete(auth, function(req, res) {
