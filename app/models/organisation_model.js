@@ -23,14 +23,11 @@ var OrganisationSchema   = new Schema({
 	vat: String,
 	location_id: { type: Objectid, ref: 'Location' },
 	space_total: { type: Number, default: 0 }, //Debit + Credit
-	space_reserve: { type: Number, default: 0 },
-	space_purchase: { type: Number, default: 0 },
-	space_credit: { type: Number, default: 0 },
 	stuff_total: { type: Number, default: 0 }, //Debit + Credit
-	stuff_reserve: { type: Number, default: 0 },
-	stuff_purchase: { type: Number, default: 0 },
-	stuff_credit: { type: Number, default: 0 },
 	membership: { type: Objectid, ref: 'Membership' },
+	space_credits_per_month_override: Number,
+	stuff_credits_per_month_override: Number,
+	cost_per_month_override: Number,
 	_owner_id: Objectid,
 	_deleted: { type: Boolean, default: false, index: true },
 });
