@@ -27,6 +27,7 @@ var OrganisationSchema   = new Schema({
 	membership: { type: Objectid, ref: 'Membership' },
 	space_credits_per_month_override: Number,
 	stuff_credits_per_month_override: Number,
+	bandwidth_per_month_override: Number,
 	cost_per_month_override: Number,
 	_owner_id: Objectid,
 	_deleted: { type: Boolean, default: false, index: true },
