@@ -37,8 +37,8 @@ var OrganisationSchema   = new Schema({
 OrganisationSchema.set("_perms", {
 	admin: "crud",
 	owner: "crud",
-	user: "cr",
-	all: "r"
+	user: "c",
+	all: "c"
 });
 
 module.exports = mongoose.model('Organisation', OrganisationSchema);
