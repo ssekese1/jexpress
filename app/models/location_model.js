@@ -11,6 +11,7 @@ var LocationSchema   = new Schema({
 	sage_uid: String,
 	sage_product_id: String,
 	sage_taxtype_id: String,
+	sage_message: String,
 	_deleted: { type: Boolean, default: false, index: true },
 });
 
