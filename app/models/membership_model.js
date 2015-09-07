@@ -24,6 +24,7 @@ var MembershipSchema   = new Schema({
 	hotdesk_discount: Number,
 	boardroom_discount: Number,
 	discount_multiplier: { type: Number, default: 1 },
+	special: Boolean,
 	_owner_id: Objectid,
 	_deleted: { type: Boolean, default: false, index: true },
 });
