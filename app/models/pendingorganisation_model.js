@@ -6,7 +6,7 @@ var Membership = require('./membership_model');
 var Location = require('./location_model');
 var User = require('./user_model');
 
-var OrganisationSchema   = new Schema({
+var PendingOrganisationSchema   = new Schema({
 	name: { type: String, unique: true, index: true },
 	user_name: String,
 	tel: String,
@@ -34,11 +34,11 @@ var OrganisationSchema   = new Schema({
 	_deleted: { type: Boolean, default: false, index: true },
 });
 
-OrganisationSchema.set("_perms", {
+PendingOrganisationSchema.set("_perms", {
 	admin: "crud",
 	owner: "crud",
 	user: "c",
 	all: "c"
 });
 
-module.exports = mongoose.model('Organisation', OrganisationSchema);
+module.exports = mongoose.model('PendingOrganisation', PendingOrganisationSchema);
