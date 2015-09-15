@@ -102,6 +102,29 @@ TestSchema.statics.test = function() {
 Then to call that method through the API, use `https://my.api/api/_call/test`. 
 If you POST, all variables will be passed through to the method.
 
+###Adding custom permission logic
+
+Maybe you want to do some more checks on permissions than the "crud" we offer. You can catch 
+the user object in your model as a virtual attribute. (I suppose you could use a real Mixed attribute too.)
+
+Eg.
+
+```
+var sender;
+
+LedgerSchema.virtual("__user").set(function(usr) {
+	sender = usr;
+});
+```
+
+And then later, say in your pre- or post-save...
+
+```
+(!sender.admin)) {
+	return next(new Error( "Verboten!"));
+}
+```
+
 */
 
 var express = require('express');
