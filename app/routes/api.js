@@ -582,6 +582,7 @@ router.route('/:modelname')
 			_populateItem(item, req.body);
 			if (req.user) {
 				item._owner_id = req.user._id;
+				item.__user = req.user;
 			}
 			item.save(function(err, result) {
 				if (err) {
@@ -681,6 +682,9 @@ router.route('/:modelname/batch')
 		data = JSON.parse(req.body.json);
 		data.forEach(function(data) {
 			var item = new Model();
+			if (req.user) {
+				item.__user = req.user;
+			}
 			_populateItem(item, data);
 			_versionItem(item);
 			if (req.user) {
@@ -806,6 +810,9 @@ router.route('/:modelname/:item_id')
 						_populateItem(item, req.body);
 						_versionItem(item);
 						try {
+							if (req.user) {
+								item.__user = req.user;
+							}
 							item.save(function(err, data) {
 								if (err) {
 									res.status(500).send(err);
@@ -840,6 +847,9 @@ router.route('/:modelname/:item_id')
 				console.error("Error: ", err);
 				res.status(500).send(err);
 				return;
+			}
+			if (req.user) {
+				item.__user = req.user;
 			}
 			if (Model.schema.paths.hasOwnProperty("_deleted")) {
 				console.log("Soft deleting");

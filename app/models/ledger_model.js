@@ -8,6 +8,8 @@ var User = require("./user_model");
 var Organisation = require("./organisation_model");
 var Source = require("./source_model");
 
+var Q = require("q");
+
 var LedgerSchema   = new Schema({
 	user_id: { type: Objectid, index: true, ref: "User", required: true },
 	organisation_id: { type: Objectid, index: true, ref: "Organisation" },
@@ -21,48 +23,55 @@ var LedgerSchema   = new Schema({
 	reserve_expires: { type: Date, default: Date.now },
 	cred_type: { type: String, validate: /space|stuff/, index: true, required: true },
 	email: String,
+	transaction_type: { type: String, validate: /credit|debit|reserve/ },
 	_owner_id: Objectid
 });
 
 LedgerSchema.set("_perms", {
 	admin: "crud",
 	owner: "cr",
-	user: "c"
+	user: "c",
+	all: ""
 });
 
-LedgerSchema.statics.move = function() { //Move all old reserves, credits and debits into here
-	var Ledger = this;
-	var Credit = require("./credit_model");
-	var Purchase = require("./purchase_model");
-	var Reserve = require("./reserve_model");
-	Credit.find(function(err, data) {
-		data.forEach(function(row) {
-			try {
-				var ledger = new Ledger(row);
-				ledger.save();
-			} catch(e) {
-				console.log("Error", e, ledger);
-			}
-		});
-	});
-	Purchase.find(function(err, data) {
-		data.forEach(function(row) {
-			var ledger = new Ledger(row);
-			ledger.save();
-		});
-	});
-	Reserve.find(function(err, data) {
-		data.forEach(function(row) {
-			var ledger = new Ledger(row);
-			ledger.reserve = true;
-			ledger.save();
-		});
-	});
-	return "Okay";
-}
+// LedgerSchema.statics.move = function() { //Move all old reserves, credits and debits into here
+// 	var Ledger = this;
+// 	var Credit = require("./credit_model");
+// 	var Purchase = require("./purchase_model");
+// 	var Reserve = require("./reserve_model");
+// 	Credit.find(function(err, data) {
+// 		data.forEach(function(row) {
+// 			try {
+// 				var ledger = new Ledger(row);
+// 				ledger.save();
+// 			} catch(e) {
+// 				console.log("Error", e, ledger);
+// 			}
+// 		});
+// 	});
+// 	Purchase.find(function(err, data) {
+// 		data.forEach(function(row) {
+// 			var ledger = new Ledger(row);
+// 			ledger.save();
+// 		});
+// 	});
+// 	Reserve.find(function(err, data) {
+// 		data.forEach(function(row) {
+// 			var ledger = new Ledger(row);
+// 			ledger.reserve = true;
+// 			ledger.save();
+// 		});
+// 	});
+// 	return "Okay";
+// }
 
 var _calcOrg = function(organisation) {
+	deferred = Q.defer();
 	require("./ledger_model").where("organisation_id", organisation._id).exec(function(err, transactions) {
+		if (err) {
+			deferred.reject(err);
+			return;
+		}
 		var totals = {
 			stuff: 0,
 			space: 0
@@ -74,7 +83,9 @@ var _calcOrg = function(organisation) {
 		organisation.space_total = totals.space;
 		organisation.save();
 		console.log("Totals", organisation.name, totals);
+		deferred.resolve(totals);
 	});
+	return deferred.promise;
 }
 
 LedgerSchema.statics.sync = function() {
@@ -93,25 +104,35 @@ LedgerSchema.statics.syncOrg = function(organisation_id) {
 	});
 }
 
+var sender = null;
+
+LedgerSchema.virtual("__user").set(function(usr) {
+	sender = usr;
+});
+
 LedgerSchema.pre("save", function(next) {
 	var transaction = this;
 	var search_criteria = { _id: transaction.user_id };
 	if (!transaction.user_id) {
 		search_criteria = { email: transaction.email };
 	}
+	if (!search_criteria) {
+		transaction.invalidate("user_id", "could not find user");
+		return next(new Error("user_id or email required"));
+	}
 	User.findOne(search_criteria, function(err, user) {
 		if (err) {
-			console.warn("Err", err);
-			next(new Error('Unknown Error'));
-			return;
+			console.error("Err", err);
+			return next(new Error('Unknown Error'));
 		}
 		if (!user) {
-			console.log("Could not find user", transaction.user_id || transaction.email );
+			console.error("Could not find user", transaction.user_id || transaction.email );
 			transaction.invalidate("user_id", "could not find user");
 			return next(new Error('Could not find user'));
 		} else {
 			transaction.user_id = user._id;
 			Organisation.findOne({ _id: user.organisation_id }, function(err, organisation) {
+				transaction.organisation_id = organisation._id;
 				if (err) {
 					console.warn("Err", err);
 					return next(new Error('Could not find organisation'));
@@ -121,24 +142,45 @@ LedgerSchema.pre("save", function(next) {
 					transaction.invalidate("user_id", "could not find organisation associated with user");
 					return next(new Error('could not find organisation associated with user'));
 				} else {
-					// (organisation[transaction.cred_type + "_total"]) ? test = organisation[transaction.cred_type + "_total"] + transaction.amount : test = transaction.amount;
-					// if (test < 0) {
-					// 	console.log(transaction.amount, organisation[transaction.cred_type + "_total"]);
-					// 	console.warn("Insufficient Credit", this);
-					// 	transaction.invalidate("amount", "insufficient credit");
-  			// 			return next(new Error('Insufficient Credit'));
-					// }
+					// Reserves must be negative
+					if ((transaction.amount > 0) && (transaction.reserve)) {
+						transaction.invalidate("amount", "Reserves must be a negative value");
+						return next(new Error("Reserves must be a negative value"));
+					}
+					// Set Transaction Type
+					if (transaction.amount >= 0) {
+						transaction.transaction_type = "credit";
+					} else {
+						if (transaction.reserve) {
+							transaction.transaction_type = "reserve";
+						} else {
+							transaction.transaction_type = "debit";
+						}
+					}
+					// Only admins can assign Credit
+					if ((transaction.amount > 0) && (!sender.admin)) {
+						transaction.invalidate("amount", "Only admins can give credit. Amount must be less than zero.");
+						return next(new Error( "Only admins can give credit. Amount must be less than zero."));
+					}
+					// Make sure we have credit
+					_calcOrg(organisation).then(function(totals) {
+						var test = transaction.amount + totals[transaction.cred_type];
+						if (test < 0) {
+							transaction.invalidate("amount", "insufficient credit");
+							return next(new Error( "Insufficient Credit"));
+						} else {
+							next();
+						}
+					});
 				}
-				transaction.organisation_id = organisation._id;
-				next();
+				
+				
 			});
 		}
 	});
 });
 
 LedgerSchema.post("save", function(transaction) { //Keep our running total up to date
-	var Ledger = require("./ledger_model");
-	// console.log("This", this);
 	User.findOne({ _id: transaction.user_id }, function(err, user) {
 		if (err) {
 			console.log("Err", err);
@@ -157,7 +199,7 @@ LedgerSchema.post("save", function(transaction) { //Keep our running total up to
 				console.log("Could not find organisation", user.organisation_id);
 				return;
 			}
-			_calcOrg(organisation, Ledger);
+			_calcOrg(organisation);
 		});
 	});
 });
