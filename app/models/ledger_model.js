@@ -79,10 +79,11 @@ var _calcOrg = function(organisation) {
 			space: 0
 		};
 		transactions.forEach(function(transaction) {
-			totals[transaction.cred_type] += transaction.amount;
+			totals[transaction.cred_type] += Math.round(transaction.amount * 100) / 100;
 		});
-		organisation.stuff_total = totals.stuff;
-		organisation.space_total = totals.space;
+		organisation.stuff_total = Math.round(totals.stuff * 100) / 100;
+		organisation.space_total = Math.round(totals.space * 100) / 100;
+		// console.log(organisation);
 		organisation.save();
 		console.log("Totals", organisation.name, totals);
 		deferred.resolve(totals);
@@ -99,12 +100,28 @@ LedgerSchema.statics.sync = function() {
 	return "Reconciled organisations";
 }
 
-LedgerSchema.statics.syncOrg = function(organisation_id) {
-	console.log(organisation_id);
-	Organisation.findOne({"_id": req.query.organisation_id}, function(err, organisation) {
-		_calcOrg(organisation);
+_syncOrg = function(organisation_id) {
+	console.log("Syncing", organisation_id);
+	var deferred = Q.defer();
+	Organisation.findOne({"_id": organisation_id}, function(err, organisation) {
+		_calcOrg(organisation)
+		.then(function(result) {
+			deferred.resolve(result);
+		}, function(err) {
+			deferred.reject(err);
+		})
 	});
+	return deferred.promise;
 }
+
+LedgerSchema.statics.syncOrg = function(data) {
+	console.log(data);
+	_syncOrg(data.organisation_id)
+	.then(function(result) {
+		console.log(result);
+		return result;
+	});
+};
 
 var sender = null;
 
@@ -134,7 +151,6 @@ LedgerSchema.pre("save", function(next) {
 		} else {
 			transaction.user_id = user._id;
 			Organisation.findOne({ _id: user.organisation_id }, function(err, organisation) {
-				transaction.organisation_id = organisation._id;
 				if (err) {
 					console.warn("Err", err);
 					return next(new Error('Could not find organisation'));
@@ -144,6 +160,7 @@ LedgerSchema.pre("save", function(next) {
 					transaction.invalidate("user_id", "could not find organisation associated with user");
 					return next(new Error('could not find organisation associated with user'));
 				} else {
+					transaction.organisation_id = organisation._id;
 					// Reserves must be negative
 					if ((transaction.amount > 0) && (transaction.reserve)) {
 						transaction.invalidate("amount", "Reserves must be a negative value");
@@ -167,7 +184,7 @@ LedgerSchema.pre("save", function(next) {
 					// Make sure we have credit
 					_calcOrg(organisation).then(function(totals) {
 						var test = transaction.amount + totals[transaction.cred_type];
-						if (test < 0) {
+						if ((transaction.amount < 0) && (test < 0)) {
 							transaction.invalidate("amount", "insufficient credit");
 							return next(new Error( "Insufficient Credit"));
 						} else {
