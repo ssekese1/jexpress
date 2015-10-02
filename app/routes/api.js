@@ -102,6 +102,29 @@ TestSchema.statics.test = function() {
 Then to call that method through the API, use `https://my.api/api/_call/test`. 
 If you POST, all variables will be passed through to the method.
 
+###Adding custom permission logic
+
+Maybe you want to do some more checks on permissions than the "crud" we offer. You can catch 
+the user object in your model as a virtual attribute. (I suppose you could use a real Mixed attribute too.)
+
+Eg.
+
+```
+var sender;
+
+LedgerSchema.virtual("__user").set(function(usr) {
+	sender = usr;
+});
+```
+
+And then later, say in your pre- or post-save...
+
+```
+(!sender.admin)) {
+	return next(new Error( "Verboten!"));
+}
+```
+
 */
 
 var express = require('express');
@@ -389,8 +412,8 @@ router.use('/:modelname', function(req, res, next) {
 		Model = require('../models/' + modelname + "_model");
 		next();
 	} catch(err) {
+		console.log("Err", err);
 		res.status(404).send("Model " + modelname + " not found");
-
 	}
 });
 
@@ -582,6 +605,7 @@ router.route('/:modelname')
 			_populateItem(item, req.body);
 			if (req.user) {
 				item._owner_id = req.user._id;
+				item.__user = req.user;
 			}
 			item.save(function(err, result) {
 				if (err) {
@@ -596,6 +620,7 @@ router.route('/:modelname')
 			});
 		} catch(err) {
 			res.status(500).send("An error occured:" + err);
+			return;
 		}
 	})
 	.get(auth, function(req, res) {
@@ -603,13 +628,16 @@ router.route('/:modelname')
 		try {
 			filters = format_filter(req.query.filter, res);
 		} catch(err) {
-			res.status(500).send("An error occured:" + err)
+			res.status(500).send("An error occured:" + err);
+			return;
 		}
-		var checkDeleted = null;
-		if (Model.schema.paths.hasOwnProperty("_deleted")) {
-			checkDeleted = [ { _deleted: false }, { _deleted: null }];
-		}
+		checkDeleted = [ { _deleted: false }, { _deleted: null }];
 		Model.find(filters).or(checkDeleted).count(function(err, count) {
+			if (err) {
+				console.log(err);
+				res.status(500).send("An error occured: " + err);
+				return;
+			}
 			var result = {};
 			result.count = count;
 			var q = Model.find(filters).or(checkDeleted);
@@ -635,8 +663,13 @@ router.route('/:modelname')
 				result.sort = req.query.sort;
 			}
 			if (req.query.populate) {
-				q.populate(req.query.populate);
-				result.populate = req.query.populate;
+				try {
+					q.populate(req.query.populate);
+					result.populate = req.query.populate;
+				} catch(err) {
+					res.status(500).send("An error occured:", err);
+					return;
+				}
 			}
 			if (req.query.autopopulate) {
 				for(var key in Model.schema.paths) {
@@ -647,14 +680,20 @@ router.route('/:modelname')
 				}
 				result.autopopulate = true;
 			}
-			q.exec(function(err, items) {
-				if (err) {
-					res.status(500).send(err);
-				} else {
-					result.data = items;
-					res.json(result);
-				}
-			});
+			try {
+				q.exec(function(err, items) {
+					if (err) {
+						console.log("Error", err);
+						res.status(500).send(err);
+					} else {
+						result.data = items;
+						res.json(result);
+					}
+				});
+			} catch(err) {
+				res.status(500).send("An error occured:", err);
+				return;
+			}
 		});
 	});
 
@@ -666,6 +705,9 @@ router.route('/:modelname/batch')
 		data = JSON.parse(req.body.json);
 		data.forEach(function(data) {
 			var item = new Model();
+			if (req.user) {
+				item.__user = req.user;
+			}
 			_populateItem(item, data);
 			_versionItem(item);
 			if (req.user) {
@@ -791,6 +833,9 @@ router.route('/:modelname/:item_id')
 						_populateItem(item, req.body);
 						_versionItem(item);
 						try {
+							if (req.user) {
+								item.__user = req.user;
+							}
 							item.save(function(err, data) {
 								if (err) {
 									res.status(500).send(err);
@@ -800,15 +845,18 @@ router.route('/:modelname/:item_id')
 								}
 							});
 						} catch(err) {
-							res.status(500).send("An error occured:", err)
+							res.status(500).send("An error occured:", err);
+							return;
 						}
 					} else {
 						res.status(404).send("Document not found");
+						return;
 					}
 				}
 			});
 		} catch(err) {
-			res.status(500).send("An error occured:", err)
+			res.status(500).send("An error occured:", err);
+			return;
 		}
 	})
 	.delete(auth, function(req, res) {
@@ -822,6 +870,9 @@ router.route('/:modelname/:item_id')
 				console.error("Error: ", err);
 				res.status(500).send(err);
 				return;
+			}
+			if (req.user) {
+				item.__user = req.user;
 			}
 			if (Model.schema.paths.hasOwnProperty("_deleted")) {
 				console.log("Soft deleting");

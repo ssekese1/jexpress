@@ -1,4 +1,5 @@
 var express = require('express');
+var compress = require('compression');
 var path = require('path');
 var favicon = require('serve-favicon');
 var logger = require('morgan');
@@ -9,6 +10,9 @@ var routes = require('./app/routes/index');
 var cors = require('cors');
 
 var app = express();
+
+/* Compression */
+app.use(compress());  
 
 // view engine setup
 app.set('views', path.join(__dirname, 'app', 'views'));
@@ -30,8 +34,11 @@ mongoose.connect('mongodb://' + config.mongo_server + '/' + config.mongo_db, fun
     if (err) {
         console.log("Connection error", err);
     }
-}); // connect to our database
+}, { db: { safe:true } }); // connect to our database
 
+if (app.get('env') === 'development') {
+    console.log("Jexpress is in Development Mode");
+}
 
 app.use('/', routes);
 
@@ -51,22 +58,22 @@ app.use(function(req, res, next) {
 if (app.get('env') === 'development') {
     app.use(function(err, req, res, next) {
         res.status(err.status || 500);
-        res.render('error', {
+        res.status(500).json({
             message: err.message,
             error: err
         });
     });
-}
+} else {
 
-// production error handler
-// no stacktraces leaked to user
-app.use(function(err, req, res, next) {
-    res.status(err.status || 500);
-    res.render('error', {
-        message: err.message,
-        error: {}
+    // production error handler
+    // no stacktraces leaked to user
+    app.use(function(err, req, res, next) {
+        res.status(err.status || 500);
+        res.status(500).json({
+            message: err.message,
+            error: {}
+        });
     });
-});
-
+}
 
 module.exports = app;
