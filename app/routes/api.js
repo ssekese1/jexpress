@@ -90,6 +90,8 @@ _deleted: { type: Boolean, default: false, index: true },
 If _deleted equals true, the document will not show up when you get the list of 
 documents, and calling it directly will result in a 404.
 
+To show deleted documents when you get a list, add showDeleted=true to your query.
+
 ###Calling Static Methods
 
 You can define a method for a Model in the model as follows:
