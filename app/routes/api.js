@@ -610,7 +610,7 @@ router.route('/:modelname')
 			item.save(function(err, result) {
 				if (err) {
 					console.log(err);
-					res.status(500).send("An error occured:" + err);
+					res.status(500).send(err);
 					return;
 				} else {
 					websocket.emit(modelname, { method: "post", _id: result._id });
@@ -619,7 +619,7 @@ router.route('/:modelname')
 				}
 			});
 		} catch(err) {
-			res.status(500).send("An error occured:" + err);
+			res.status(500).send(err);
 			return;
 		}
 	})
