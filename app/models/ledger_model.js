@@ -10,6 +10,12 @@ var Source = require("./source_model");
 
 var Q = require("q");
 
+var bunyan = require("bunyan");
+var log = bunyan.createLogger({ 
+	name: "jexpress-ledger",
+	serializers: {req: bunyan.stdSerializers.req}
+});
+
 var LedgerSchema   = new Schema({
 	user_id: { type: Objectid, index: true, ref: "User", required: true },
 	organisation_id: { type: Objectid, index: true, ref: "Organisation" },
@@ -83,9 +89,8 @@ var _calcOrg = function(organisation) {
 		});
 		organisation.stuff_total = Math.round(totals.stuff * 100) / 100;
 		organisation.space_total = Math.round(totals.space * 100) / 100;
-		// console.log(organisation);
 		organisation.save();
-		console.log("Totals", organisation.name, totals);
+		log.debug("Totals", organisation.name, totals);
 		deferred.resolve(totals);
 	});
 	return deferred.promise;
@@ -101,7 +106,7 @@ LedgerSchema.statics.sync = function() {
 }
 
 _syncOrg = function(organisation_id) {
-	console.log("Syncing", organisation_id);
+	log.debug("Syncing", organisation_id);
 	var deferred = Q.defer();
 	Organisation.findOne({"_id": organisation_id}, function(err, organisation) {
 		_calcOrg(organisation)
@@ -115,10 +120,10 @@ _syncOrg = function(organisation_id) {
 }
 
 LedgerSchema.statics.syncOrg = function(data) {
-	console.log(data);
+	log.debug(data);
 	_syncOrg(data.organisation_id)
 	.then(function(result) {
-		console.log(result);
+		log.debug(result);
 		return result;
 	});
 };
@@ -141,29 +146,30 @@ LedgerSchema.pre("save", function(next) {
 	}
 	User.findOne(search_criteria, function(err, user) {
 		if (err) {
-			console.error("Err", err);
+			log.error(err);
 			return next(new Error('Unknown Error'));
 		}
 		if (!user) {
-			console.error("Could not find user", transaction.user_id || transaction.email );
+			log.error("Could not find user", transaction.user_id || transaction.email );
 			transaction.invalidate("user_id", "could not find user");
 			return next(new Error('Could not find user'));
 		} else {
 			transaction.user_id = user._id;
 			Organisation.findOne({ _id: user.organisation_id }, function(err, organisation) {
 				if (err) {
-					console.warn("Err", err);
+					log.error(err);
 					return next(new Error('Could not find organisation'));
 				}
 				if (!organisation) {
-					console.log("Could not find organisation", user.organisation_id);
 					transaction.invalidate("user_id", "could not find organisation associated with user");
-					return next(new Error('could not find organisation associated with user'));
+					log.error("Could not find organisation associated with user", user.organisation_id);
+					return next(new Error('Could not find organisation associated with user'));
 				} else {
 					transaction.organisation_id = organisation._id;
 					// Reserves must be negative
 					if ((transaction.amount > 0) && (transaction.reserve)) {
 						transaction.invalidate("amount", "Reserves must be a negative value");
+						log.error("Reserves must be a negative value");
 						return next(new Error("Reserves must be a negative value"));
 					}
 					// Set Transaction Type
@@ -179,13 +185,15 @@ LedgerSchema.pre("save", function(next) {
 					// Only admins can assign Credit
 					if ((transaction.amount > 0) && (!sender.admin)) {
 						transaction.invalidate("amount", "Only admins can give credit. Amount must be less than zero.");
-						return next(new Error( "Only admins can give credit. Amount must be less than zero."));
+						log.error("Only admins can give credit. Amount must be less than zero.");
+						return next(new Error("Only admins can give credit. Amount must be less than zero."));
 					}
 					// Make sure we have credit
 					_calcOrg(organisation).then(function(totals) {
 						var test = transaction.amount + totals[transaction.cred_type];
 						if ((transaction.amount < 0) && (test < 0)) {
 							transaction.invalidate("amount", "insufficient credit");
+							log.error("Insufficient credit");
 							return next(new Error( "Insufficient Credit"));
 						} else {
 							next();
@@ -202,20 +210,20 @@ LedgerSchema.pre("save", function(next) {
 LedgerSchema.post("save", function(transaction) { //Keep our running total up to date
 	User.findOne({ _id: transaction.user_id }, function(err, user) {
 		if (err) {
-			console.log("Err", err);
+			log.error(err);
 			return;
 		}
 		if (!user) {
-			console.log("Could not find user", transaction.user_id);
+			log.error("Could not find user", transaction.user_id);
 			return;
 		}
 		Organisation.findOne({ _id: user.organisation_id }, function(err, organisation) {
 			if (err) {
-				console.log("Err", err);
+				log.error(err);
 				return;
 			}
 			if (!user) {
-				console.log("Could not find organisation", user.organisation_id);
+				log.error("Could not find organisation", user.organisation_id);
 				return;
 			}
 			_calcOrg(organisation);
