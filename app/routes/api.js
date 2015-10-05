@@ -631,8 +631,14 @@ router.route('/:modelname')
 			res.status(500).send("An error occured:" + err);
 			return;
 		}
+		var qcount = Model.find(filters);
+		q = Model.find(filters);
 		checkDeleted = [ { _deleted: false }, { _deleted: null }];
-		Model.find(filters).or(checkDeleted).count(function(err, count) {
+		if (!req.query.showDeleted) {
+			qcount.or(checkDeleted);
+			q.or(checkDeleted);
+		}
+		qcount.count(function(err, count) {
 			if (err) {
 				console.log(err);
 				res.status(500).send("An error occured: " + err);
@@ -640,7 +646,7 @@ router.route('/:modelname')
 			}
 			var result = {};
 			result.count = count;
-			var q = Model.find(filters).or(checkDeleted);
+			// var q = Model.find(filters).or(checkDeleted);
 			var limit = parseInt(req.query.limit);
 			if (limit) {
 				q.limit(limit);
