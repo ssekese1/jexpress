@@ -817,13 +817,13 @@ var getOne = function(item_id, params) {
 	}
 	query.exec(function(err, item) {
 		if (err) {
-			req.log.error(err);
+			log.error(err);
 			deferred.reject({ code: 500, msg: err });
 			// res.status(500).send(err);
 			return;
 		} else {
 			if (!item || item._deleted) {
-				req.log.error("Could not find document");
+				log.error("Could not find document");
 				deferred.reject({ code: 404, msg: "Could not find document" });
 				return;
 			}
