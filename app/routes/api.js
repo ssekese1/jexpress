@@ -443,7 +443,7 @@ router.use('/:modelname', function(req, res, next) {
 		Model = require('../models/' + modelname + "_model");
 		next();
 	} catch(err) {
-		req.log.error(err);
+		log.error(err);
 		res.status(404).send("Model " + modelname + " not found");
 	}
 });
@@ -453,7 +453,7 @@ router.use('/:modelname', function(req, res, next) {
 	if (req.body["password"] && !(req.query["password_override"])) {
 		var password = encPassword(req.body["password"]);
 		req.body["password"] = password;
-		req.log.debug("Password encrypted")
+		log.debug("Password encrypted");
 	}
 	next();
 });
@@ -631,6 +631,7 @@ var _versionItem = function(item) {
 router.route('/:modelname')
 .post(auth, function(req, res, next) {
 	req.log.debug("Normal post");
+	// req.log.info(req.body);
 	try {
 		var item = new Model();
 		_populateItem(item, req.body);
