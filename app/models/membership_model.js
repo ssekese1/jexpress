@@ -25,6 +25,7 @@ var MembershipSchema   = new Schema({
 	boardroom_discount: Number,
 	discount_multiplier: { type: Number, default: 1 },
 	special: Boolean,
+	sage: mongoose.Schema.Types.Mixed,
 	_owner_id: Objectid,
 	_deleted: { type: Boolean, default: false, index: true },
 });
