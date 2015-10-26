@@ -29,6 +29,7 @@ var OrganisationSchema   = new Schema({
 	stuff_credits_per_month_override: Number,
 	bandwidth_per_month_override: Number,
 	cost_per_month_override: Number,
+	items: mongoose.Schema.Types.Mixed,
 	_owner_id: Objectid,
 	_deleted: { type: Boolean, default: false, index: true },
 });
