@@ -362,18 +362,18 @@ router.route("/login/logout").get(function(req, res, next) {
 	var apikey = req.query.apikey;
 	APIKey.findOne({ apikey: apikey }, function(err, apikey) {
 		if (err) { 
-			req.log.error(err);
+			log.error(err);
 			deny(req, res, next);
 			return;
 		}
 		if (!apikey) {
-			req.log.error("API Key not found");
+			log.error("API Key not found");
 			deny(req, res, next);
 			return;
 		}
 		apikey.remove(function(err, item) {
 			if (err) { 
-				req.log.error(err);
+				log.error(err);
 				deny(req, res, next);
 				return;
 			}
