@@ -792,14 +792,19 @@ router.route('/:modelname/_call/:method_name')
 		overviewLog.info({ action_id: 7, action: "Method called", type: req.params.modelname, method: req.params.method_name, user: req.user });
 		res.json(item);
 	}, function(err) {
-		req.log.error(err);
-		res.status(500).send(err.toString())
+		req.log.error("Error 0.795", err);
+		res.status(500).send(err.toString());
 	});
 })
 .post(auth, function(req, res) {
-	var result = Model[req.params.method_name](req.body);
-	overviewLog.info({ action_id: 7, action: "Method called", type: req.params.modelname, id: item._id, method: req.params.method_name, user: req.user });
-	res.json(result);
+	overviewLog.info({ action_id: 7, action: "Method called", type: req.params.modelname, method: req.params.method_name, user: req.user });
+	Model[req.params.method_name](req.body)
+	.then(function(result) {
+		res.json(result);
+	}, function(err) {
+		req.log.error("Error 0.805", err);
+		res.status(500).send(err.toString());
+	});
 });
 
 var getOne = function(item_id, params) {
