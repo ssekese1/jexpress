@@ -43,7 +43,6 @@ BookingSchema.pre("save", function(next) {
 	console.log("Looking for existing reserve");
 	transaction = this;
 	try {
-		
 		//Remove the reserve if it already exists
 		Ledger.findOne({
 			source_type: "booking",
@@ -54,12 +53,11 @@ BookingSchema.pre("save", function(next) {
 				item.remove();
 			}
 		});
-		
 	} catch(err) {
 		console.log("Error", err);
 		// throw(err);
 	}
-
+	
 	//Is this free? If so, cool, don't do any more
 	if (!transaction.cost) {
 		return next();
@@ -83,7 +81,7 @@ BookingSchema.pre("save", function(next) {
 				source_id: transaction._id,
 				reserve: true
 			});
-			console.log(reserve);
+			console.log("RESERVE::", reserve);
 			reserve.save(function(err) {
 				if (err) {
 					console.error(err);
@@ -113,7 +111,7 @@ var deleteReserve = function(transaction) {
 			}
 			if (!item) {
 				console.log("Could not find Reserve");
-				return;
+				return new Error("Could not find Reserve");
 			}
 			console.log("Deleting", item);
 			item.remove();
@@ -125,8 +123,9 @@ var deleteReserve = function(transaction) {
 }
 
 BookingSchema.post("save", function(transaction) {
-	console.log("Transaction", transaction);
+	// console.log("Transaction", transaction);
 	if (transaction._deleted) {
+		console.log("Fake delete but still delete reserve")
 		deleteReserve(transaction);
 	}
 });
