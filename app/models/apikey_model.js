@@ -7,7 +7,7 @@ var Objectid = mongoose.Schema.Types.ObjectId;
 var APIKeySchema   = new Schema({
 	user_id: Objectid,
 	apikey: String,
-	created: { type: Date, default: Date.now, expires: config.apikey_lifespan },
+	created: { type: Date, default: Date.now, expires: config.apikey_lifespan || 86400 },
 });
 
 APIKeySchema.set("_perms", {
