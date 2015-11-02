@@ -392,28 +392,28 @@ router.use("/login", function(req, res, next) {
 		password = user[1];
 	}
 	if ((!password) || (!email)) {
-		req.log.error("Missing email or password");
+		log.error("Missing email or password");
 		deny(req, res, next);
 		return;
 	}
 	User.findOne({ email: email }, function(err, user) {
 		if (err) { 
-			req.log.error(err); 
+			log.error(err); 
 			return done(err); 
 		}
 		if (!user) {
-			req.log.error("Incorrect username");
+			log.error("Incorrect username");
 			deny(req, res, next);
 			return;
 		}
 		try {
 			if (!bcrypt.compareSync(password, user.password)) {
-				req.log.error("Incorrect password");
+				log.error("Incorrect password");
 				deny(req, res, next);
 				return;
 			}
 		} catch (err) {
-			req.log.error(err);
+			log.error(err);
 			deny(req, res, next);
 			return;
 		}
@@ -424,7 +424,7 @@ router.use("/login", function(req, res, next) {
 
 		apikey.save(function(err) {
 			if (err) {
-				req.log.error(err);
+				log.error(err);
 				deny(req, res, next);
 				return;
 			}
