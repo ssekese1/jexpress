@@ -4,13 +4,14 @@ var Schema       = mongoose.Schema;
 var Objectid = mongoose.Schema.Types.ObjectId;
 var Membership = require('./membership_model');
 var Location = require('./location_model');
+var Sageitems = require('./sageitem_model');
 var User = require('./user_model');
 
 var OrganisationSchema   = new Schema({
 	name: { type: String, unique: true, index: true },
 	tel: String,
 	mobile: String,
-	email: String,
+	email: { type: String, unique: true, index: true },
 	website: String,
 	address: String,
 	twitter: String,
@@ -30,6 +31,8 @@ var OrganisationSchema   = new Schema({
 	bandwidth_per_month_override: Number,
 	cost_per_month_override: Number,
 	items: mongoose.Schema.Types.Mixed,
+	status: { type: String, validate: /active|inactive|hidden|prospect/, index: true, default: "active" },
+	quote_member_count: Number,
 	_owner_id: Objectid,
 	_deleted: { type: Boolean, default: false, index: true },
 });
