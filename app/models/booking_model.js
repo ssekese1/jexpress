@@ -26,6 +26,7 @@ var BookingSchema   = new Schema({
 	cost: Number,
 	created: { type: Date, default: Date.now },
 	public_event: { type: Boolean, default: false },
+	event_client: { type: Boolean, default: false },
 	img: String,
 	layout: { type: Objectid, ref: "Layout" },
 	_owner_id: Objectid,
