@@ -7,7 +7,7 @@ var GuestSchema   = new Schema({
 	name: String,
 	organisation: String,
 	location_id: Objectid,
-	email: { type: String, unique: true, index: true },
+	email: { type: String, index: true },
 	mobile: String,
 	invited_by: [ Objectid ],
 	created_date: { type: Date, default: Date.now },
