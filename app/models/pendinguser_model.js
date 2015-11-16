@@ -6,6 +6,7 @@ var Objectid = mongoose.Schema.Types.ObjectId;
 var PendinguserSchema   = new Schema({
 	name: String,
 	organisation: String,
+	organisation_id: { type: Objectid, ref: "Organisation" },
 	location_id: Objectid,
 	email: { type: String, unique: true, index: true },
 	mobile: String,
@@ -14,11 +15,32 @@ var PendinguserSchema   = new Schema({
 	referal_method: String,
 	url: String,
 	newsletter: Boolean,
+	otp: { type: String, get: function(otp) {
+		return "<obfuscated>";
+		} 
+	}
 });
 
 PendinguserSchema.set("_perms", {
 	admin: "crud",
+	owner: "crd",
+	user: "r",
 	all: "c",
 });
+
+
+
+// PendinguserSchema.statics.confirm(function(data) {
+// 	var User = require("./user_model");
+
+// });
+
+PendinguserSchema.pre("save", function(next) {
+	var pendinguser = this;
+	this.otp = require('rand-token').generate(16);
+	next();
+});
+
+
 
 module.exports = mongoose.model('Pendinguser', PendinguserSchema);
