@@ -41,7 +41,7 @@ OrganisationSchema.set("_perms", {
 	admin: "crud",
 	owner: "crud",
 	user: "cr",
-	all: "r"
+	all: "cr"
 });
 
 module.exports = mongoose.model('Organisation', OrganisationSchema);
