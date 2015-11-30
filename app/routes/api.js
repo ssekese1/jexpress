@@ -90,6 +90,8 @@ _deleted: { type: Boolean, default: false, index: true },
 If _deleted equals true, the document will not show up when you get the list of 
 documents, and calling it directly will result in a 404.
 
+To show deleted documents when you get a list, add showDeleted=true to your query.
+
 ###Calling Static Methods
 
 You can define a method for a Model in the model as follows:
@@ -137,11 +139,32 @@ var querystring = require('querystring');
 var websocket = require('../middleware/websockets.js').connect();
 var Q = require("q");
 
-var modelname = "";
-var Model = false;
+//Logging
+var bunyan = require("bunyan");
+var log = bunyan.createLogger({ 
+	name: "jexpress",
+	serializers: {req: bunyan.stdSerializers.req}
+});
+
+/**
+ * Logger for an overview of actions on the system
+ * action_id = {
+ *	1: login,
+ *	2: getItem,
+ *  3: getList,
+ *  4: post,
+ *  5: put,
+ *  6: delete,
+ *  7: method,
+ *  8: batch
+ * }
+ */
+var overviewLog = bunyan.createLogger({
+	name: "jexpress.overview"
+});
 
 var deny = function(req, res, next) {
-	console.log("Denying auth");
+	req.log.error("Denying auth");
 	res.status(403).send("Unauthorized");
 	req.authorized = false;
 }
@@ -151,7 +174,7 @@ var encPassword = function(password) {
 }
 
 var changeUrlParams = function(req, key, val) {
-	console.log(req);
+	req.log.debug(req);
 	var q = req.query;
 	q[key] = val;
 	var pathname = require("url").parse(req.url).pathname;
@@ -221,7 +244,6 @@ router.route("/_models").get(function(req, res, next) {
 		files.forEach(function(file) {
 			var modelname = path.basename(file, ".js").replace("_model", "");
 			var modelobj = require("../models/" + file);
-			console.log(modelobj.schema.get("_perms").size);
 			if (modelobj.schema.get("_perms") && (modelobj.schema.get("_perms").admin || modelobj.schema.get("_perms").user || modelobj.schema.get("_perms").owner || modelobj.schema.get("_perms").all)) {
 				var model = {
 					model: modelname,
@@ -235,37 +257,35 @@ router.route("/_models").get(function(req, res, next) {
 	})
 });
 
-router.route('/_websocket_test')
-	.get(function(req, res) {
-		// io.on('connection', function (socket) {
-			websocket.emit('testing', { hello: 'world'});
-			res.send("Sent testing");
-		// 	socket.emit('news', { hello: 'world' });
-		// 	socket.on('test', function (data) {
-		// 		console.log(data);
-		// 		res.json(data);
-		// 	});
-		// });
-	});
+router.get('/_websocket_test', function(req, res) {
+	websocket.emit('testing', { hello: 'world'});
+	res.send("Sent testing");
+});
 
 /* Password recovery */
 router.route("/login/recover").post(function(req, res, next) {
 	var email = req.body.email;
 	if (!email) {
-		console.log("Missing email");
+		req.log.error("Missing email");
 		deny(req, res, next);
 		return;
 	}
 	User.findOne({ email: email }, function(err, user) {
-		if (err) { console.log("Err"); return done(err); }
+		if (err) { 
+			req.log.error(err);
+			return done(err); 
+		}
 		if (!user) {
-			console.log("Incorrect username");
+			req.log.error("Incorrect username");
 			deny(req, res, next);
 			return;
 		}
 		user.temp_hash = require('rand-token').generate(16);
 		user.save(function(err) {
-			if (err) { console.log("Err"); return done(err); }
+			if (err) { 
+				req.log.error(err); 
+				return done(err); 
+			}
 			var nodemailer = require('nodemailer');
 			var smtpTransport = require('nodemailer-smtp-transport');
 			// create reusable transporter object using SMTP transport
@@ -292,7 +312,7 @@ router.route("/login/recover").post(function(req, res, next) {
 				html: html
 			},
 			function(result) {
-				console.log("Mailer result", result);
+				req.log.debug({ msg: "Mailer result", result: result });
 			});
 			res.send("Sent recovery email");
 		});
@@ -303,26 +323,32 @@ router.route("/login/reset").post(function(req, res, next) {
 	var password = req.body.password;
 	var temp_hash = req.body.temp_hash;
 	if (temp_hash.length < 16) {
-		console.log("Hash error");
+		req.log.error("Hash error");
 		deny(req, res, next);
 		return;
 	}
 	if (password.length < 4) {
-		console.log("Password too short");
+		req.log.error("Password too short");
 		deny(req, res, next);
 		return;
 	}
 	User.findOne({ temp_hash: temp_hash }, function(err, user) {
-		if (err) { console.log("Err"); return done(err); }
+		if (err) { 
+			req.log.error(err); 
+			return done(err); 
+		}
 		if (!user) {
-			console.log("Hash not found");
+			req.log.error("Hash not found");
 			deny(req, res, next);
 			return;
 		}
 		user.password = encPassword(password);
 		user.temp_hash = "";
 		user.save(function(err) {
-			if (err) { console.log("Err"); return done(err); }
+			if (err) { 
+				req.log.error(err); 
+				return done(err); 
+			}
 			res.send("User updated");
 			return;
 		});
@@ -333,18 +359,18 @@ router.route("/login/logout").get(function(req, res, next) {
 	var apikey = req.query.apikey;
 	APIKey.findOne({ apikey: apikey }, function(err, apikey) {
 		if (err) { 
-			console.log("Err", err);
+			log.error(err);
 			deny(req, res, next);
 			return;
 		}
 		if (!apikey) {
-			console.log("API Key not found");
+			log.error("API Key not found");
 			deny(req, res, next);
 			return;
 		}
 		apikey.remove(function(err, item) {
 			if (err) { 
-				console.log("Err", err);
+				log.error(err);
 				deny(req, res, next);
 				return;
 			}
@@ -363,26 +389,28 @@ router.use("/login", function(req, res, next) {
 		password = user[1];
 	}
 	if ((!password) || (!email)) {
-		console.log("Missing email or password");
+		log.error("Missing email or password");
 		deny(req, res, next);
 		return;
 	}
 	User.findOne({ email: email }, function(err, user) {
-		if (err) { console.log("Err"); return done(err); }
+		if (err) {
+			log.error(err); 
+			return done(err); 
+		}
 		if (!user) {
-			console.log("Incorrect username");
+			log.error("Incorrect username");
 			deny(req, res, next);
 			return;
 		}
 		try {
 			if (!bcrypt.compareSync(password, user.password)) {
-				console.log("Incorrect password");
+				log.error("Incorrect password");
 				deny(req, res, next);
 				return;
 			}
 		} catch (err) {
-			console.log("Erm, something went wrong");
-			console.log(err);
+			log.error(err);
 			deny(req, res, next);
 			return;
 		}
@@ -393,11 +421,11 @@ router.use("/login", function(req, res, next) {
 
 		apikey.save(function(err) {
 			if (err) {
-				console.log("Error", err);
+				log.error(err);
 				deny(req, res, next);
 				return;
 			}
-			// console.log(user);
+			overviewLog.info({ action_id: 1, action: "User logged on", user: user });
 			res.json(apikey);
 		});
 	});
@@ -407,33 +435,35 @@ router.use("/login", function(req, res, next) {
 
 /* This middleware prepares the correct Model */
 router.use('/:modelname', function(req, res, next) {
-	modelname = req.params.modelname;
+	var modelname = req.params.modelname;
+	req.modelname = modelname;
 	try {
-		Model = require('../models/' + modelname + "_model");
+		req.Model = require('../models/' + modelname + "_model");
 		next();
 	} catch(err) {
-		console.log("Err", err);
+		log.error(err);
 		res.status(404).send("Model " + modelname + " not found");
 	}
 });
 
 /* Deal with Passwords. Just always encrypt anything called 'password' */
 router.use('/:modelname', function(req, res, next) {
-
 	if (req.body["password"] && !(req.query["password_override"])) {
 		var password = encPassword(req.body["password"]);
 		req.body["password"] = password;
-		console.log("Password generated: " + password)
+		log.debug("Password encrypted");
 	}
 	next();
 });
 
 /* This is our security module. See header for instructions */
 var auth = function(req, res, next) {
-	// console.log("permAuth");
+	//Set up our child logger
+	req.log = log.child({ req: req, user: req.user });
+	req.log.debug("Started Auth");
 	// Check against model as to whether we're allowed to edit this model
 	var user = req.user;
-	var perms = Model.schema.get("_perms");
+	var perms = req.Model.schema.get("_perms");
 	var passed = {
 		admin: false,
 		owner: false,
@@ -449,22 +479,22 @@ var auth = function(req, res, next) {
 	} else if (req.method == "DELETE") {
 		var method = "d";
 	} else {
-		console.log("Unsupported method", req.method);
+		req.log.error("Unsupported method", req.method);
 		deny(req, res, next);
 		return;
 	}
 	req.authorized = false;
+	req.log.debug("perms", perms.admin);
 	//If no perms are set, then this isn't an available model
-	console.log("perms", perms.admin);
 	if (!perms.admin) {
-		console.log("Model not available");
+		req.log.error("Model not available");
 		deny(req, res, next);
 		return;
 	}
 	//First check if "all" is able to do this. If so, let's get on with it.
 	if (perms["all"]) {
 		if (perms["all"].indexOf(method) !== -1) {
-			console.log("Matched permission 'all':", method);
+			req.log.info("Matched permission 'all':" + method);
 			req.authorized = true;
 			next();
 			return;
@@ -476,31 +506,31 @@ var auth = function(req, res, next) {
 		//Let's check perms in this order - admin, user, owner
 		//Admin check
 		if ((perms["admin"]) && (perms["admin"].indexOf(method) !== -1)) {
-			console.log("Matched permission 'admin':", method);
+			req.log.info("Matched permission 'admin':" + method);
 			req.authorized = true;
 			next();
 			return;
 		}
 		//User check
 		if ((perms["user"]) && (perms["user"].indexOf(method) !== -1)) {
-			console.log("Matched permission 'user':", method);
+			req.log.info("Matched permission 'user':" + method);
 			req.authorized = true;
 			next();
 			return;
 		}
 		//Owner check
 		var owner_id = false;
-		Model.findById(req.params.item_id, function(err, item) {
+		req.Model.findById(req.params.item_id, function(err, item) {
 			if (err) {
-				console.log("Err", err);
+				req.log.error(err);
 			}
 			if ((item) && (item._owner_id) && (item._owner_id.toString() == user._id.toString()) && ((perms["owner"]) && (perms["owner"].indexOf(method) !== -1))) {
-					console.log("Matched permission 'owner':", method);
+					req.log.info("Matched permission 'owner':" + method);
 					req.authorized = true;
 					next();
 					return;
 			} else {
-				console.log("All authorizations failed");
+				req.log.error("All authorizations failed");
 				if(!req.authorized) {
 					deny(req, res, next);
 					return;
@@ -508,7 +538,7 @@ var auth = function(req, res, next) {
 			}
 		});
 	}, function(code, err) {
-		console.log("API key fail", code, err);
+		req.log.error({ msg: "API key fail", code: code, err: err });
 		res.status(code).send(err);
 		return;
 	});
@@ -537,7 +567,7 @@ function format_filter(filter) {
 			}
 		});
 	}
-	console.log("Filter:", filter);
+	log.debug("Filter:", filter);
 	return filter;
 }
 
@@ -595,165 +625,187 @@ var _versionItem = function(item) {
 	}
 }
 
-
 /* Routes */
 router.route('/:modelname')
-	.post(auth, function(req, res, next) {
-		console.log("Normal post");
-		try {
-			var item = new Model();
-			_populateItem(item, req.body);
-			if (req.user) {
-				item._owner_id = req.user._id;
-				item.__user = req.user;
+.post(auth, function(req, res, next) {
+	req.log.debug("Normal post", req.modelname);
+	// req.log.info(req.body);
+	try {
+		var item = new req.Model();
+		_populateItem(item, req.body);
+		if (req.user) {
+			item._owner_id = req.user._id;
+			item.__user = req.user;
+		}
+		item.save(function(err, result) {
+			if (err) {
+				req.log.error(err);
+				res.status(500).send(err.toString());
+				return;
+			} else {
+				req.log.info({ method: "post", user: req.user, data: result });
+				overviewLog.info({ action_id: 4, action: "Post", type: req.modelname, id: result._id, user: req.user });
+				websocket.emit(req.modelname, { method: "post", _id: result._id });
+				res.status(200).json({ message: req.modelname + " created ", data: item });
+				return;
 			}
-			item.save(function(err, result) {
+		});
+	} catch(err) {
+		req.log.error(err);
+		res.status(500).send(err.toString());
+		return;
+	}
+})
+.get(auth, function(req, res) {
+	var filters = {};
+	try {
+		filters = format_filter(req.query.filter, res);
+	} catch(err) {
+		req.log.error(err);
+		res.status(500).send(err.toString());
+		return;
+	}
+	var qcount = req.Model.find(filters);
+	q = req.Model.find(filters);
+	checkDeleted = [ { _deleted: false }, { _deleted: null }];
+	if (!req.query.showDeleted) {
+		qcount.or(checkDeleted);
+		q.or(checkDeleted);
+	}
+	qcount.count(function(err, count) {
+		if (err) {
+			req.log.error(err);
+			res.status(500).send(err.toString());
+			return;
+		}
+		var result = {};
+		result.count = count;
+		// var q = req.Model.find(filters).or(checkDeleted);
+		var limit = parseInt(req.query.limit);
+		if (limit) {
+			q.limit(limit);
+			result.limit = limit;
+			var page_count = Math.ceil(count / limit);
+			result.page_count = page_count;
+			var page = parseInt(req.query.page);
+			page = (page) ? page : 1;
+			result.page = page;
+			if (page < page_count) {
+				result.next = changeUrlParams(req, "page", (page + 1));
+			}
+			if (page > 1) {
+				result.prev = changeUrlParams(req, "page", (page - 1));
+				q.skip(limit * (page - 1));
+			}
+		}
+		if (req.query.sort) {
+			q.sort(req.query.sort);
+			result.sort = req.query.sort;
+		}
+		if (req.query.populate) {
+			try {
+				q.populate(req.query.populate);
+				result.populate = req.query.populate;
+			} catch(err) {
+				req.log.error(err);
+				res.status(500).send(err.toString());
+				return;
+			}
+		}
+		if (req.query.autopopulate) {
+			for(var key in req.Model.schema.paths) {
+				var path = req.Model.schema.paths[key];
+				if ((path.instance == "ObjectID") && (path.options.ref)) {
+					q.populate(path.path);
+				}
+			}
+			result.autopopulate = true;
+		}
+		try {
+			q.exec(function(err, items) {
 				if (err) {
-					console.log(err);
-					res.status(500).send("An error occured:" + err);
-					return;
+					req.log.error(err);
+					res.status(500).send(err.toString());
 				} else {
-					websocket.emit(modelname, { method: "post", _id: result._id });
-					res.status(200).json({ message: modelname + " created ", data: item });
-					return;
+					overviewLog.info({ action_id: 3, action: "Fetched documents", type: req.modelname, count: result.count, autopopulate: result.autopopulate, limit: result.limit, page: result.page, filters: filters, user: req.user });
+					result.data = items;
+					res.json(result);
 				}
 			});
 		} catch(err) {
-			res.status(500).send("An error occured:" + err);
+			req.log.error(err);
+			res.status(500).send(err.toString());
 			return;
 		}
-	})
-	.get(auth, function(req, res) {
-		var filters = {};
-		try {
-			filters = format_filter(req.query.filter, res);
-		} catch(err) {
-			res.status(500).send("An error occured:" + err);
-			return;
-		}
-		checkDeleted = [ { _deleted: false }, { _deleted: null }];
-		Model.find(filters).or(checkDeleted).count(function(err, count) {
-			if (err) {
-				console.log(err);
-				res.status(500).send("An error occured: " + err);
-				return;
-			}
-			var result = {};
-			result.count = count;
-			var q = Model.find(filters).or(checkDeleted);
-			var limit = parseInt(req.query.limit);
-			if (limit) {
-				q.limit(limit);
-				result.limit = limit;
-				var page_count = Math.ceil(count / limit);
-				result.page_count = page_count;
-				var page = parseInt(req.query.page);
-				page = (page) ? page : 1;
-				result.page = page;
-				if (page < page_count) {
-					result.next = changeUrlParams(req, "page", (page + 1));
-				}
-				if (page > 1) {
-					result.prev = changeUrlParams(req, "page", (page - 1));
-					q.skip(limit * (page - 1));
-				}
-			}
-			if (req.query.sort) {
-				q.sort(req.query.sort);
-				result.sort = req.query.sort;
-			}
-			if (req.query.populate) {
-				try {
-					q.populate(req.query.populate);
-					result.populate = req.query.populate;
-				} catch(err) {
-					res.status(500).send("An error occured:", err);
-					return;
-				}
-			}
-			if (req.query.autopopulate) {
-				for(var key in Model.schema.paths) {
-					var path = Model.schema.paths[key];
-					if ((path.instance == "ObjectID") && (path.options.ref)) {
-						q.populate(path.path);
-					}
-				}
-				result.autopopulate = true;
-			}
-			try {
-				q.exec(function(err, items) {
-					if (err) {
-						console.log("Error", err);
-						res.status(500).send(err);
-					} else {
-						result.data = items;
-						res.json(result);
-					}
-				});
-			} catch(err) {
-				res.status(500).send("An error occured:", err);
-				return;
-			}
-		});
 	});
+});
 
 /* Batch routes */
 router.route('/:modelname/batch')
-	.post(auth, function(req, res, next) {
-		console.log("Batch post");
-		var items = [];
-		data = JSON.parse(req.body.json);
-		data.forEach(function(data) {
-			var item = new Model();
-			if (req.user) {
-				item.__user = req.user;
-			}
-			_populateItem(item, data);
-			_versionItem(item);
-			if (req.user) {
-				item._owner_id = req.user._id;
-			}
-			items.push(item);
-		});
-		Model.create(items, function(err, docs) {
-			if (err) {
-				console.log(err);
-				res.status(500).send("An error occured:" + err)
-			} else {
-				// websocket.emit(modelname, { method: "post", _id: result._id });
-				res.json({ message: modelname + " created ", data: items.length });
-				return;
-			}
-		});
+.post(auth, function(req, res, next) {
+	req.log.debug("Batch post");
+	var items = [];
+	data = JSON.parse(req.body.json);
+	data.forEach(function(data) {
+		var item = new req.Model();
+		if (req.user) {
+			item.__user = req.user;
+		}
+		_populateItem(item, data);
+		_versionItem(item);
+		if (req.user) {
+			item._owner_id = req.user._id;
+		}
+		items.push(item);
 	});
+	req.Model.create(items, function(err, docs) {
+		if (err) {
+			req.log.error(err);
+			res.status(500).send(err.toString())
+		} else {
+			// websocket.emit(modelname, { method: "post", _id: result._id });
+			overviewLog.info({ action_id: 8, action: "Batch insert", type: req.modelname, count: items.length, user: req.user });
+			res.json({ message: req.modelname + " created ", data: items.length });
+			return;
+		}
+	});
+});
 
 router.route('/:modelname/_describe')
-	.get(auth, function(req, res) {
-		console.log(Model.schema.paths);
-		res.json(Model.schema.paths);
-	});
+.get(auth, function(req, res) {
+	req.log.debug(Model.schema.paths);
+	res.json(Model.schema.paths);
+});
 
 router.route('/:modelname/_test')
-	.get(auth, function(req, res) {
-		console.log(Model);
-		res.send(Model.schema.get("test"));
-	});
+.get(auth, function(req, res) {
+	req.model.debug(req.Model);
+	res.send(req.Model.schema.get("test"));
+});
 
 router.route('/:modelname/_call/:method_name')
 .get(auth, function(req, res) {
-	Model[req.params.method_name]()
+	req.Model[req.params.method_name]()
 	.then(function(item) {
+		overviewLog.info({ action_id: 7, action: "Method called", type: req.modelname, method: req.params.method_name, user: req.user });
 		res.json(item);
 	}, function(err) {
-		res.status(500).send(err)
+		req.log.error("Error 0.795", err);
+		res.status(500).send(err.toString());
 	});
 })
 .post(auth, function(req, res) {
-	var result = Model[req.params.method_name](req.body);
-	res.json(result);
+	overviewLog.info({ action_id: 7, action: "Method called", type: req.modelname, method: req.params.method_name, user: req.user });
+	req.Model[req.params.method_name](req.body)
+	.then(function(result) {
+		res.json(result);
+	}, function(err) {
+		req.log.error("Error 0.805", err);
+		res.status(500).send(err.toString());
+	});
 });
 
-var getOne = function(item_id, params) {
+var getOne = function(Model, item_id, params) {
 	var deferred = Q.defer();
 	var query = Model.findById(item_id);
 	if (params.populate) {
@@ -769,14 +821,14 @@ var getOne = function(item_id, params) {
 	}
 	query.exec(function(err, item) {
 		if (err) {
+			log.error(err);
 			deferred.reject({ code: 500, msg: err });
 			// res.status(500).send(err);
 			return;
 		} else {
 			if (!item || item._deleted) {
-				// console.log("Err 404", item);
+				log.error("Could not find document");
 				deferred.reject({ code: 404, msg: "Could not find document" });
-				// res.status(404).send("Could not find document");
 				return;
 			}
 			//Don't ever return passwords
@@ -790,114 +842,126 @@ var getOne = function(item_id, params) {
 
 router.route('/:modelname/:item_id/:method_name')
 .get(function(req, res) {
-	Model.findById(req.params.item_id, function(err, item) {
+	req.Model.findById(req.params.item_id, function(err, item) {
 		if (!item) {
 			res.status(404).send("Document not found for " + req.params.method_name);
 			return;
 		}
 		if (err) {
-			console.log("Err", err);
+			req.log.error(err);
 			res.status(500).send(err);
 			return;
 		}
-		Model[req.params.method_name](item)
+		req.Model[req.params.method_name](item)
 		.then(function(item) {
+			overviewLog.info({ action_id: 7, action: "Method called", type: req.modelname, id: item._id, method: req.params.method_name, user: req.user });
 			res.json(item);
 		}, function(err) {
-			res.status(500).send(err)
+			req.log.error(err);
+			res.status(500).send(err.toString())
 		});
 	});
 });
 
 router.route('/:modelname/:item_id')
-	.get(auth, function(req, res) {
-		getOne(req.params.item_id, req.query)
-		.then(function(item) {
-			res.send(item);
-		}, function(err) {
-			console.log("Err", err);
-			if (err.code) {
-				res.status(err.code).send(err.msg);
+.get(auth, function(req, res) {
+	getOne(req.Model, req.params.item_id, req.query)
+	.then(function(item) {
+		overviewLog.info({ action_id: 2, action: "Fetched single document", type: req.modelname, id: req.params.item_id, user: req.user });
+		res.send(item);
+	}, function(err) {
+		req.log.error(err);
+		if (err.code) {
+			res.status(err.code).send(err.msg);
+		} else {
+			res.status(500).send(err.toString());
+		}
+	});
+})
+.put(auth, function(req, res) {
+	try {
+		req.Model.findById(req.params.item_id, function(err, item) {
+			if (err) {
+				res.status(500).send(err.toString());
 			} else {
-				res.status(500).send(err);
-			}
-		});
-	})
-	.put(auth, function(req, res) {
-		try {
-			Model.findById(req.params.item_id, function(err, item) {
-				if (err) {
-					res.status(500).send(err);
-				} else {
-					if (item) {
-						_populateItem(item, req.body);
-						_versionItem(item);
-						try {
-							if (req.user) {
-								item.__user = req.user;
-							}
-							item.save(function(err, data) {
-								if (err) {
-									res.status(500).send(err);
-								} else {
-									websocket.emit(modelname, { method: "put", _id: item._id });
-									res.json({ message: modelname + " updated ", data: data });
-								}
-							});
-						} catch(err) {
-							res.status(500).send("An error occured:", err);
-							return;
+				if (item) {
+					_populateItem(item, req.body);
+					_versionItem(item);
+					try {
+						if (req.user) {
+							item.__user = req.user;
 						}
-					} else {
-						res.status(404).send("Document not found");
+						item.save(function(err, data) {
+							if (err) {
+								req.log.error(err);
+								res.status(500).send(err.toString());
+							} else {
+								overviewLog.info({ action_id: 5, action: "Put", type: req.modelname, id: item._id, user: req.user });
+								websocket.emit(req.modelname, { method: "put", _id: item._id });
+								res.json({ message: req.modelname + " updated ", data: data });
+							}
+						});
+					} catch(err) {
+						req.log.error(err);
+						res.status(500).send(err.toString());
 						return;
 					}
+				} else {
+					req.log.error("Document not found");
+					res.status(404).send("Document not found");
+					return;
 				}
-			});
-		} catch(err) {
-			res.status(500).send("An error occured:", err);
-			return;
-		}
-	})
-	.delete(auth, function(req, res) {
-		Model.findById(req.params.item_id, function(err, item) {
-			if (!item) {
-				console.log("Couldn't find item for delete");
-				res.status(404).send("Could not find document");
-				return;
-			}
-			if (err) {
-				console.error("Error: ", err);
-				res.status(500).send(err);
-				return;
-			}
-			if (req.user) {
-				item.__user = req.user;
-			}
-			if (Model.schema.paths.hasOwnProperty("_deleted")) {
-				console.log("Soft deleting");
-				item._deleted = true;
-				_versionItem(item);
-				item.save(function(err) {
-					if (err) {
-						res.status(500).send(err);
-					} else {
-						websocket.emit(modelname, { method: "delete", _id: item._id });
-						res.json({ message: modelname + ' deleted' });
-					}
-				})
-			} else {
-				console.log("Hard deleting");
-				item.remove(function(err) {
-					if (err) {
-						res.status(500).send(err);
-					} else {
-						websocket.emit(modelname, { method: "delete", _id: item._id });
-						res.json({ message: modelname + ' deleted' });
-					}
-				});
 			}
 		});
+	} catch(err) {
+		req.log.error(err);
+		res.status(500).send(err.toString());
+		return;
+	}
+})
+.delete(auth, function(req, res) {
+	req.Model.findById(req.params.item_id, function(err, item) {
+		if (!item) {
+			req.log.error("Couldn't find item for delete");
+			res.status(404).send("Could not find document");
+			return;
+		}
+		if (err) {
+			req.log.error(err);
+			res.status(500).send(err.toString());
+			return;
+		}
+		if (req.user) {
+			item.__user = req.user;
+		}
+		if (req.Model.schema.paths.hasOwnProperty("_deleted")) {
+			req.log.debug("Soft deleting");
+			item._deleted = true;
+			_versionItem(item);
+			item.save(function(err) {
+				if (err) {
+					req.log.error(err);
+					res.status(500).send(err.toString());
+				} else {
+					overviewLog.info({ action_id: 6, action: "Delete", type: req.modelname, softDelete: true, id: item._id, user: req.user });
+					websocket.emit(req.modelname, { method: "delete", _id: item._id });
+					res.json({ message: req.modelname + ' deleted' });
+				}
+			})
+		} else {
+			req.log.debug("Hard deleting");
+			item.remove(function(err) {
+				if (err) {
+					req.log.error(err);
+					res.status(500).send(err.toString());
+				} else {
+					overviewLog.info({ action_id: 6, action: "Delete", type: req.modelname, softDelete: false, id: item._id, user: req.user });
+					websocket.emit(req.modelname, { method: "delete", _id: item._id });
+					res.json({ message: req.modelname + ' deleted' });
+				}
+			});
+		}
 	});
+});
 
 module.exports = router;
