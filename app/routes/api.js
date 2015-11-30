@@ -163,9 +163,6 @@ var overviewLog = bunyan.createLogger({
 	name: "jexpress.overview"
 });
 
-var modelname = "";
-var Model = false;
-
 var deny = function(req, res, next) {
 	req.log.error("Denying auth");
 	res.status(403).send("Unauthorized");
@@ -397,7 +394,7 @@ router.use("/login", function(req, res, next) {
 		return;
 	}
 	User.findOne({ email: email }, function(err, user) {
-		if (err) { 
+		if (err) {
 			log.error(err); 
 			return done(err); 
 		}
@@ -438,9 +435,10 @@ router.use("/login", function(req, res, next) {
 
 /* This middleware prepares the correct Model */
 router.use('/:modelname', function(req, res, next) {
-	modelname = req.params.modelname;
+	var modelname = req.params.modelname;
+	req.modelname = modelname;
 	try {
-		Model = require('../models/' + modelname + "_model");
+		req.Model = require('../models/' + modelname + "_model");
 		next();
 	} catch(err) {
 		log.error(err);
@@ -465,7 +463,7 @@ var auth = function(req, res, next) {
 	req.log.debug("Started Auth");
 	// Check against model as to whether we're allowed to edit this model
 	var user = req.user;
-	var perms = Model.schema.get("_perms");
+	var perms = req.Model.schema.get("_perms");
 	var passed = {
 		admin: false,
 		owner: false,
@@ -522,7 +520,7 @@ var auth = function(req, res, next) {
 		}
 		//Owner check
 		var owner_id = false;
-		Model.findById(req.params.item_id, function(err, item) {
+		req.Model.findById(req.params.item_id, function(err, item) {
 			if (err) {
 				req.log.error(err);
 			}
@@ -630,10 +628,10 @@ var _versionItem = function(item) {
 /* Routes */
 router.route('/:modelname')
 .post(auth, function(req, res, next) {
-	req.log.debug("Normal post");
+	req.log.debug("Normal post", req.modelname);
 	// req.log.info(req.body);
 	try {
-		var item = new Model();
+		var item = new req.Model();
 		_populateItem(item, req.body);
 		if (req.user) {
 			item._owner_id = req.user._id;
@@ -646,9 +644,9 @@ router.route('/:modelname')
 				return;
 			} else {
 				req.log.info({ method: "post", user: req.user, data: result });
-				overviewLog.info({ action_id: 4, action: "Post", type: req.params.modelname, id: result._id, user: req.user });
-				websocket.emit(modelname, { method: "post", _id: result._id });
-				res.status(200).json({ message: modelname + " created ", data: item });
+				overviewLog.info({ action_id: 4, action: "Post", type: req.modelname, id: result._id, user: req.user });
+				websocket.emit(req.modelname, { method: "post", _id: result._id });
+				res.status(200).json({ message: req.modelname + " created ", data: item });
 				return;
 			}
 		});
@@ -667,8 +665,8 @@ router.route('/:modelname')
 		res.status(500).send(err.toString());
 		return;
 	}
-	var qcount = Model.find(filters);
-	q = Model.find(filters);
+	var qcount = req.Model.find(filters);
+	q = req.Model.find(filters);
 	checkDeleted = [ { _deleted: false }, { _deleted: null }];
 	if (!req.query.showDeleted) {
 		qcount.or(checkDeleted);
@@ -682,7 +680,7 @@ router.route('/:modelname')
 		}
 		var result = {};
 		result.count = count;
-		// var q = Model.find(filters).or(checkDeleted);
+		// var q = req.Model.find(filters).or(checkDeleted);
 		var limit = parseInt(req.query.limit);
 		if (limit) {
 			q.limit(limit);
@@ -715,8 +713,8 @@ router.route('/:modelname')
 			}
 		}
 		if (req.query.autopopulate) {
-			for(var key in Model.schema.paths) {
-				var path = Model.schema.paths[key];
+			for(var key in req.Model.schema.paths) {
+				var path = req.Model.schema.paths[key];
 				if ((path.instance == "ObjectID") && (path.options.ref)) {
 					q.populate(path.path);
 				}
@@ -729,7 +727,7 @@ router.route('/:modelname')
 					req.log.error(err);
 					res.status(500).send(err.toString());
 				} else {
-					overviewLog.info({ action_id: 3, action: "Fetched documents", type: req.params.modelname, count: result.count, autopopulate: result.autopopulate, limit: result.limit, page: result.page, filters: filters, user: req.user });
+					overviewLog.info({ action_id: 3, action: "Fetched documents", type: req.modelname, count: result.count, autopopulate: result.autopopulate, limit: result.limit, page: result.page, filters: filters, user: req.user });
 					result.data = items;
 					res.json(result);
 				}
@@ -749,7 +747,7 @@ router.route('/:modelname/batch')
 	var items = [];
 	data = JSON.parse(req.body.json);
 	data.forEach(function(data) {
-		var item = new Model();
+		var item = new req.Model();
 		if (req.user) {
 			item.__user = req.user;
 		}
@@ -760,36 +758,36 @@ router.route('/:modelname/batch')
 		}
 		items.push(item);
 	});
-	Model.create(items, function(err, docs) {
+	req.Model.create(items, function(err, docs) {
 		if (err) {
 			req.log.error(err);
 			res.status(500).send(err.toString())
 		} else {
 			// websocket.emit(modelname, { method: "post", _id: result._id });
-			overviewLog.info({ action_id: 8, action: "Batch insert", type: req.params.modelname, count: items.length, user: req.user });
-			res.json({ message: modelname + " created ", data: items.length });
+			overviewLog.info({ action_id: 8, action: "Batch insert", type: req.modelname, count: items.length, user: req.user });
+			res.json({ message: req.modelname + " created ", data: items.length });
 			return;
 		}
 	});
 });
 
 router.route('/:modelname/_describe')
-	.get(auth, function(req, res) {
-		req.log.debug(Model.schema.paths);
-		res.json(Model.schema.paths);
-	});
+.get(auth, function(req, res) {
+	req.log.debug(Model.schema.paths);
+	res.json(Model.schema.paths);
+});
 
 router.route('/:modelname/_test')
-	.get(auth, function(req, res) {
-		req.model.debug(Model);
-		res.send(Model.schema.get("test"));
-	});
+.get(auth, function(req, res) {
+	req.model.debug(req.Model);
+	res.send(req.Model.schema.get("test"));
+});
 
 router.route('/:modelname/_call/:method_name')
 .get(auth, function(req, res) {
-	Model[req.params.method_name]()
+	req.Model[req.params.method_name]()
 	.then(function(item) {
-		overviewLog.info({ action_id: 7, action: "Method called", type: req.params.modelname, method: req.params.method_name, user: req.user });
+		overviewLog.info({ action_id: 7, action: "Method called", type: req.modelname, method: req.params.method_name, user: req.user });
 		res.json(item);
 	}, function(err) {
 		req.log.error("Error 0.795", err);
@@ -797,8 +795,8 @@ router.route('/:modelname/_call/:method_name')
 	});
 })
 .post(auth, function(req, res) {
-	overviewLog.info({ action_id: 7, action: "Method called", type: req.params.modelname, method: req.params.method_name, user: req.user });
-	Model[req.params.method_name](req.body)
+	overviewLog.info({ action_id: 7, action: "Method called", type: req.modelname, method: req.params.method_name, user: req.user });
+	req.Model[req.params.method_name](req.body)
 	.then(function(result) {
 		res.json(result);
 	}, function(err) {
@@ -807,7 +805,7 @@ router.route('/:modelname/_call/:method_name')
 	});
 });
 
-var getOne = function(item_id, params) {
+var getOne = function(Model, item_id, params) {
 	var deferred = Q.defer();
 	var query = Model.findById(item_id);
 	if (params.populate) {
@@ -844,7 +842,7 @@ var getOne = function(item_id, params) {
 
 router.route('/:modelname/:item_id/:method_name')
 .get(function(req, res) {
-	Model.findById(req.params.item_id, function(err, item) {
+	req.Model.findById(req.params.item_id, function(err, item) {
 		if (!item) {
 			res.status(404).send("Document not found for " + req.params.method_name);
 			return;
@@ -854,9 +852,9 @@ router.route('/:modelname/:item_id/:method_name')
 			res.status(500).send(err);
 			return;
 		}
-		Model[req.params.method_name](item)
+		req.Model[req.params.method_name](item)
 		.then(function(item) {
-			overviewLog.info({ action_id: 7, action: "Method called", type: req.params.modelname, id: item._id, method: req.params.method_name, user: req.user });
+			overviewLog.info({ action_id: 7, action: "Method called", type: req.modelname, id: item._id, method: req.params.method_name, user: req.user });
 			res.json(item);
 		}, function(err) {
 			req.log.error(err);
@@ -867,9 +865,9 @@ router.route('/:modelname/:item_id/:method_name')
 
 router.route('/:modelname/:item_id')
 .get(auth, function(req, res) {
-	getOne(req.params.item_id, req.query)
+	getOne(req.Model, req.params.item_id, req.query)
 	.then(function(item) {
-		overviewLog.info({ action_id: 2, action: "Fetched single document", type: req.params.modelname, id: req.params.item_id, user: req.user });
+		overviewLog.info({ action_id: 2, action: "Fetched single document", type: req.modelname, id: req.params.item_id, user: req.user });
 		res.send(item);
 	}, function(err) {
 		req.log.error(err);
@@ -882,7 +880,7 @@ router.route('/:modelname/:item_id')
 })
 .put(auth, function(req, res) {
 	try {
-		Model.findById(req.params.item_id, function(err, item) {
+		req.Model.findById(req.params.item_id, function(err, item) {
 			if (err) {
 				res.status(500).send(err.toString());
 			} else {
@@ -898,9 +896,9 @@ router.route('/:modelname/:item_id')
 								req.log.error(err);
 								res.status(500).send(err.toString());
 							} else {
-								overviewLog.info({ action_id: 5, action: "Put", type: req.params.modelname, id: item._id, user: req.user });
-								websocket.emit(modelname, { method: "put", _id: item._id });
-								res.json({ message: modelname + " updated ", data: data });
+								overviewLog.info({ action_id: 5, action: "Put", type: req.modelname, id: item._id, user: req.user });
+								websocket.emit(req.modelname, { method: "put", _id: item._id });
+								res.json({ message: req.modelname + " updated ", data: data });
 							}
 						});
 					} catch(err) {
@@ -922,7 +920,7 @@ router.route('/:modelname/:item_id')
 	}
 })
 .delete(auth, function(req, res) {
-	Model.findById(req.params.item_id, function(err, item) {
+	req.Model.findById(req.params.item_id, function(err, item) {
 		if (!item) {
 			req.log.error("Couldn't find item for delete");
 			res.status(404).send("Could not find document");
@@ -936,7 +934,7 @@ router.route('/:modelname/:item_id')
 		if (req.user) {
 			item.__user = req.user;
 		}
-		if (Model.schema.paths.hasOwnProperty("_deleted")) {
+		if (req.Model.schema.paths.hasOwnProperty("_deleted")) {
 			req.log.debug("Soft deleting");
 			item._deleted = true;
 			_versionItem(item);
@@ -945,9 +943,9 @@ router.route('/:modelname/:item_id')
 					req.log.error(err);
 					res.status(500).send(err.toString());
 				} else {
-					overviewLog.info({ action_id: 6, action: "Delete", type: req.params.modelname, softDelete: true, id: item._id, user: req.user });
-					websocket.emit(modelname, { method: "delete", _id: item._id });
-					res.json({ message: modelname + ' deleted' });
+					overviewLog.info({ action_id: 6, action: "Delete", type: req.modelname, softDelete: true, id: item._id, user: req.user });
+					websocket.emit(req.modelname, { method: "delete", _id: item._id });
+					res.json({ message: req.modelname + ' deleted' });
 				}
 			})
 		} else {
@@ -957,9 +955,9 @@ router.route('/:modelname/:item_id')
 					req.log.error(err);
 					res.status(500).send(err.toString());
 				} else {
-					overviewLog.info({ action_id: 6, action: "Delete", type: req.params.modelname, softDelete: false, id: item._id, user: req.user });
-					websocket.emit(modelname, { method: "delete", _id: item._id });
-					res.json({ message: modelname + ' deleted' });
+					overviewLog.info({ action_id: 6, action: "Delete", type: req.modelname, softDelete: false, id: item._id, user: req.user });
+					websocket.emit(req.modelname, { method: "delete", _id: item._id });
+					res.json({ message: req.modelname + ' deleted' });
 				}
 			});
 		}
