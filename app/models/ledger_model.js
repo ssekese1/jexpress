@@ -7,6 +7,7 @@ var Objectid = mongoose.Schema.Types.ObjectId;
 var User = require("./user_model");
 var Organisation = require("./organisation_model");
 var Source = require("./source_model");
+var moment = require("moment");
 
 var Q = require("q");
 
@@ -285,5 +286,46 @@ LedgerSchema.post("save", function(transaction) { //Keep our running total up to
 		});
 	});
 });
+
+LedgerSchema.statics.report = function(params) {
+	var deferred = Q.defer();
+	var Ledger = require("./ledger_model");
+	params = params || {};
+	find = {}
+	params.start_date = params.start_date || moment().subtract(1, "month").toISOString();
+	params.end_date = params.end_date || moment().toISOString();
+	find.date = { "$gte": params.start_date, "$lte": params.end_date };
+	if (params.cred_type && (params.cred_type != "*")) {
+		find.cred_type = params.cred_type
+	} else {
+		params.cred_type = "*";
+	}
+	if (params.partner_id && (params.partner_id != "*")) {
+		find.partner_id = params.partner_id;
+	} else {
+		params.partner_id = "*";
+	}
+	Ledger.find(find).sort({ date: 1 }).exec(function(err, entries) {
+		if (!entries) {
+			deferred.reject("No entries found");
+			return;
+		}
+		console.log("Entries found", entries);
+		var tot = 0;
+		var debs = 0;
+		var creds = 0;
+		entries.forEach(function(entry) {
+			tot += entry.amount;
+			if (entry.amount >= 0) {
+				creds += entry.amount;
+			} else {
+				debs += entry.amount;
+			}
+		});
+		var avg = tot / entries.length;
+		deferred.resolve({ params: params, total: tot, average: avg, count: entries.length, debits: debs, credits: creds });
+	});
+	return deferred.promise;
+};
 
 module.exports = mongoose.model('Ledger', LedgerSchema);
