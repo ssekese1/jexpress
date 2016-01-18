@@ -250,8 +250,7 @@ var basicAuth = function(req) {
 }
 
 var apiKeyAuth = function(req, res, next, fail) {
-	if (req.headers.authorization) {
-		console.log("Checking headers");
+	if (req.headers.authorization) { // Basic Auth 
 		var ba = basicAuth(req);
 		if (Array.isArray(ba) && (ba.length == 2)) {
 			var email = ba[0];
@@ -338,7 +337,7 @@ router.route("/_models").get(function(req, res, next) {
 		files.forEach(function(file) {
 			var modelname = path.basename(file, ".js").replace("_model", "");
 			var modelobj = require("../models/" + file);
-			if (modelobj.schema.get("_perms") && (modelobj.schema.get("_perms").admin || modelobj.schema.get("_perms").user || modelobj.schema.get("_perms").owner || modelobj.schema.get("_perms").all)) {
+			if (modelobj.schema && modelobj.schema.get("_perms") && (modelobj.schema.get("_perms").admin || modelobj.schema.get("_perms").user || modelobj.schema.get("_perms").owner || modelobj.schema.get("_perms").all)) {
 				var model = {
 					model: modelname,
 					file: file,
