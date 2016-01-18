@@ -228,7 +228,8 @@ var encPassword = function(password) {
 }
 
 var changeUrlParams = function(req, key, val) {
-	req.log.debug(req);
+	if (req.log)
+		req.log.debug(req);
 	var q = req.query;
 	q[key] = val;
 	var pathname = require("url").parse(req.url).pathname;
@@ -249,47 +250,79 @@ var basicAuth = function(req) {
 }
 
 var apiKeyAuth = function(req, res, next, fail) {
-	var apikey = false;
-	if (req.query.apikey) {
-		apikey = req.query.apikey;
-	} else if (req.headers.authorization) {
-		try {
-			parts = req.headers.authorization.split(" ");
-			if (parts[0].toLowerCase() == "api_key") {
-				apikey = parts[1];
-			}
-		} catch(err) {
-			// Do nothing
+	if (req.headers.authorization) {
+		console.log("Checking headers");
+		var ba = basicAuth(req);
+		if (Array.isArray(ba) && (ba.length == 2)) {
+			var email = ba[0];
+			var password = ba[1];
+			User.findOne({ email: email }, function(err, user) {
+				if (err) {
+					log.error(err); 
+					return done(err); 
+				}
+				if (!user) {
+					log.error("Incorrect username");
+					deny(req, res, next);
+					return;
+				}
+				try {
+					if (!bcrypt.compareSync(password, user.password)) {
+						log.error("Incorrect password");
+						deny(req, res, next);
+						return;
+					}
+				} catch (err) {
+					log.error(err);
+					deny(req, res, next);
+					return;
+				}
+				req.user = user;
+				var Groups = require("../models/usergroups_model.js");;
+				Groups.findOne({ user_id: user._id }, function(err, userGroup) {
+					if (err) {
+						return fail(500, err);
+					}
+					req.groups = (userGroup && userGroup.groups) ? userGroup.groups : [];
+					return next(user);
+				});
+			});
 		}
-	}
-	if (!apikey) {
-		return fail(403, "Unauthorized");
-	}
-	APIKey.findOne({ apikey: apikey }, function(err, apikey) {
-		if (err) {
-			return fail(500, err);
+	} else {
+		if (!req.query.apikey) {
+			log.error("No auth method found");
+			return fail(403, "Unauthorized");
 		}
+		var apikey = req.query.apikey;
 		if (!apikey) {
 			return fail(403, "Unauthorized");
 		}
-		User.findOne({ _id: apikey.user_id }, function(err, user) {
+		APIKey.findOne({ apikey: apikey }, function(err, apikey) {
 			if (err) {
 				return fail(500, err);
 			}
-			if (!user) {
+			if (!apikey) {
 				return fail(403, "Unauthorized");
 			}
-			req.user = user;
-			var Groups = require("../models/usergroups_model.js");;
-			Groups.findOne({ user_id: user._id }, function(err, userGroup) {
+			User.findOne({ _id: apikey.user_id }, function(err, user) {
 				if (err) {
 					return fail(500, err);
 				}
-				req.groups = (userGroup && userGroup.groups) ? userGroup.groups : [];
-				return next(user);
+				if (!user) {
+					return fail(403, "Unauthorized");
+				}
+				req.user = user;
+				var Groups = require("../models/usergroups_model.js");;
+				Groups.findOne({ user_id: user._id }, function(err, userGroup) {
+					if (err) {
+						return fail(500, err);
+					}
+					req.groups = (userGroup && userGroup.groups) ? userGroup.groups : [];
+					return next(user);
+				});
 			});
 		});
-	});
+	}
 }
 
 router.route("/_models").get(function(req, res, next) {
