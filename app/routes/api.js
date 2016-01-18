@@ -73,11 +73,64 @@ Possible permission keys are:
 "user"  | any registered user
 "all"   | the w0rld
 
+(See below for adding group permissions)
+
 Possible values are:
 "c"  | create
 "r"  | read
 "u"  | update
 "d"  | delete
+
+###Groups
+
+To define groups, you need a usergroups model. It should look like this:
+
+```
+var mongoose     = require('mongoose');
+var Schema       = mongoose.Schema;
+var Objectid = mongoose.Schema.Types.ObjectId;
+var UserGroupSchema   = new Schema({
+	user_id: Objectid,
+	groups: [String],
+	_date: { type: Date, default: Date.now },
+});
+module.exports = mongoose.model('Usergroup', UserGroupSchema);
+```
+
+Note that it doesn't have a _perm section, because it is accessed directly,
+not through the API. If you do want to access it through the API, feel free
+to add a _perm section, but make sure you lock down permissions.
+
+To add a user to a group, call the API as follows:
+Type: POST 
+End-point: /_groups/:user_id 
+Data: { group: "group_name" }
+
+To remove a user from a group
+TYPE: DELETE
+End-point: /_groups/:user_id
+Data: { group: "group_name" }
+
+To check a user's groups:
+Type: GET 
+End-point: /_groups/:user_id 
+
+Only Admins can use the /_groups endpoint.
+
+To add permissions for a group to a model, just use the name, and give it permissions.
+Eg:
+
+```
+TestSchema.set("_perms", {
+	admin: "crud",
+	no_delete: "cru",
+	read_only: "r"
+});
+```
+
+Admins would be able to do anything, users in the "no_delete" group would be able to create, read and update, and users in the read_only group would only be able to read.
+
+Note that groups *do not fail* permissions, so if the user passes for admin, owner, or user, and not for group, the transaction will still go ahead.
 
 ###Soft Delete
 
@@ -164,7 +217,8 @@ var overviewLog = bunyan.createLogger({
 });
 
 var deny = function(req, res, next) {
-	req.log.error("Denying auth");
+	if (req.log)
+		req.log.error("Denying auth");
 	res.status(403).send("Unauthorized");
 	req.authorized = false;
 }
@@ -226,7 +280,14 @@ var apiKeyAuth = function(req, res, next, fail) {
 				return fail(403, "Unauthorized");
 			}
 			req.user = user;
-			return next(user);
+			var Groups = require("../models/usergroups_model.js");;
+			Groups.findOne({ user_id: user._id }, function(err, userGroup) {
+				if (err) {
+					return fail(500, err);
+				}
+				req.groups = (userGroup && userGroup.groups) ? userGroup.groups : [];
+				return next(user);
+			});
 		});
 	});
 }
@@ -431,7 +492,102 @@ router.use("/login", function(req, res, next) {
 	});
 });
 
-
+/* Groups */
+router.route("/_groups/:user_id")
+.post(function(req, res, next) {
+	apiKeyAuth(req, res, function(user) {
+		if (!user.admin) {
+			deny(req, res, next);
+			return;
+		}
+		var Groups = require("../models/usergroups_model.js");
+		var user_id = req.params.user_id;
+		var group = req.body.group;
+		if (!group) {
+			res.status(400).send("Group required");
+			return;
+		}
+		Groups.findOne({ user_id: user_id }, function(err, userGroup) {
+			if (err) {
+				res.status(500).send(err);
+				return;
+			}
+			if (!userGroup) {
+				userGroup = new Groups();
+				userGroup.user_id = user_id;
+				userGroup.groups = [];
+			}
+			var i = userGroup.groups.indexOf(group);
+			if (i == -1) {
+				userGroup.groups.push(group);
+			}
+			userGroup.save(function(err, result) {
+				if (err) {
+					res.status(500).send(err);
+					return;
+				}
+				res.send(result);
+			});
+		});
+	});
+})
+.get(function(req, res, next) {
+	apiKeyAuth(req, res, function(user) {
+		if (!user.admin) {
+			deny(req, res, next);
+			return;
+		}
+		var Groups = require("../models/usergroups_model.js");
+		var user_id = req.params.user_id;
+		Groups.findOne({ user_id: user_id }, function(err, userGroup) {
+			if (err) {
+				res.status(500).send(err);
+				return;
+			}
+			if (!userGroup) {
+				res.status(400).send("User not found");
+				return;
+			}
+			res.send(userGroup);
+		});
+	});
+})
+.delete(function(req, res, next) {
+	apiKeyAuth(req, res, function(user) {
+		if (!user.admin) {
+			deny(req, res, next);
+			return;
+		}
+		var Groups = require("../models/usergroups_model.js");
+		var user_id = req.params.user_id;
+		var group = req.body.group;
+		if (!group) {
+			res.status(400).send("Group required");
+			return;
+		}
+		Groups.findOne({ user_id: user_id }, function(err, userGroup) {
+			if (err) {
+				res.status(500).send(err);
+				return;
+			}
+			if (!userGroup) {
+				res.status(400).send("User not found");
+				return;
+			}
+			var i = userGroup.groups.indexOf(group);
+			if (i > -1) {
+				userGroup.groups.splice(i, 1);
+			}
+			userGroup.save(function(err, result) {
+				if (err) {
+					res.status(500).send(err);
+					return;
+				}
+				res.send(result);
+			});
+		});
+	});
+});
 
 /* This middleware prepares the correct Model */
 router.use('/:modelname', function(req, res, next) {
@@ -462,7 +618,6 @@ var auth = function(req, res, next) {
 	req.log = log.child({ req: req, user: req.user });
 	req.log.debug("Started Auth");
 	// Check against model as to whether we're allowed to edit this model
-	var user = req.user;
 	var perms = req.Model.schema.get("_perms");
 	var passed = {
 		admin: false,
@@ -503,9 +658,9 @@ var auth = function(req, res, next) {
 	
 	//This isn't an 'all' situation, so let's log the user in and go from there
 	apiKeyAuth(req, res, function(user) {
-		//Let's check perms in this order - admin, user, owner
+		//Let's check perms in this order - admin, user, group, owner
 		//Admin check
-		if ((perms["admin"]) && (perms["admin"].indexOf(method) !== -1)) {
+		if ((req.user.admin) && (perms["admin"]) && (perms["admin"].indexOf(method) !== -1)) {
 			req.log.info("Matched permission 'admin':" + method);
 			req.authorized = true;
 			next();
@@ -518,6 +673,15 @@ var auth = function(req, res, next) {
 			next();
 			return;
 		}
+		//Group check
+		req.groups.forEach(function(group) {
+			if ((perms[group]) && (perms[group].indexOf(method) !== -1)) {
+				req.log.info("Matched permission '" + group + "':" + method);
+				req.authorized = true;
+				next();
+				return;
+			}
+		});
 		//Owner check
 		var owner_id = false;
 		req.Model.findById(req.params.item_id, function(err, item) {
