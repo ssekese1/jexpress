@@ -236,7 +236,7 @@ var changeUrlParams = function(req, key, val) {
 	var q = req.query;
 	q[key] = val;
 	var pathname = require("url").parse(req.url).pathname;
-	return req.protocol + '://' + req.get('host') + req._parsedOriginalUrl.pathname + "?" + querystring.stringify(q);
+	return config.url + req._parsedOriginalUrl.pathname + "?" + querystring.stringify(q);
 }
 
 var basicAuth = function(req) {
@@ -482,12 +482,7 @@ router.route("/login/oauth/:provider").get(function(req, res, next) { // Log in 
 		return;
 	}
 	var state = Math.random().toString(36).substring(7);
-	var requrl = url.format({
-		protocol: req.protocol,
-		host: req.get('host'),
-		pathname: "/api/login/oauth/callback/",
-	});
-	var uri = provider_config.auth_uri + "?client_id=" + provider_config.app_id + "&redirect_uri=" + requrl + req.params.provider + "&scope=" + provider_config.scope + "&state=" + state + "&response_type=code";
+	var uri = provider_config.auth_uri + "?client_id=" + provider_config.app_id + "&redirect_uri=" + config.url + "/api/login/oauth/callback/" + req.params.provider + "&scope=" + provider_config.scope + "&state=" + state + "&response_type=code";
 	// req.session.sender = req.query.sender;
 	res.redirect(uri);
 });
@@ -508,12 +503,7 @@ router.route("/login/oauth/callback/:provider").get(function(req, res, next) {
 		res.redirect(config.oauth.fail_uri + "?error=unknown");
 		return;
 	}
-	var requrl = url.format({
-		protocol: req.protocol,
-		host: req.get('host'),
-		pathname: "/api/login/oauth/callback/",
-	});
-	rest.post(provider_config.token_uri, { data: { client_id: provider_config.app_id, redirect_uri: requrl + req.params.provider, client_secret: provider_config.app_secret, code: code, grant_type: "authorization_code" } })
+	rest.post(provider_config.token_uri, { data: { client_id: provider_config.app_id, redirect_uri: config.url + "/api/login/oauth/callback/" + req.params.provider, client_secret: provider_config.app_secret, code: code, grant_type: "authorization_code" } })
 	.then(function(result) {
 		console.log("Got token");
 		token = result;
