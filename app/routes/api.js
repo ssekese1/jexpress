@@ -190,7 +190,9 @@ var router = express.Router();
 var config = require('../../config');
 var querystring = require('querystring');
 var websocket = require('../middleware/websockets.js').connect();
+var rest = require("restler-q");
 var Q = require("q");
+var jwt = require("jsonwebtoken");
 
 //Logging
 var bunyan = require("bunyan");
@@ -469,6 +471,91 @@ router.route("/login/logout").get(function(req, res, next) {
 			}
 			res.send("User logged out");
 		});
+	});
+});
+
+router.route("/login/oauth/:provider").get(function(req, res, next) { // Log in through an OAuth2 provider, defined in config.js
+	var provider_config = config.oauth[req.params.provider];
+	if (!provider_config) {
+		res.status(500).send(req.params.provider + " config not defined");
+		return;
+	}
+	var state = Math.random().toString(36).substring(7);
+	var uri = provider_config.auth_uri + "?client_id=" + provider_config.app_id + "&redirect_uri=" + req.protocol + '://' + req.get('host') + "/api/login/oauth/callback/" + req.params.provider + "&scope=" + provider_config.scope + "&state=" + state + "&response_type=code";
+	// req.session.sender = req.query.sender;
+	res.redirect(uri);
+});
+
+router.route("/login/oauth/callback/:provider").get(function(req, res, next) {
+	console.log("Got callback", req.query);
+	var provider = req.params.provider;
+	var provider_config = config.oauth[provider];
+	var code = req.query.code;
+	var data = null;
+	var token = false;
+	var user = null;
+	if (req.query.error) {
+		res.redirect(config.oauth.fail_uri + "?error=" + req.query.error);
+		return;
+	}
+	if (!code) {
+		res.redirect(config.oauth.fail_uri + "?error=unknown");
+		return;
+	}
+	rest.post(provider_config.token_uri, { data: { client_id: provider_config.app_id, redirect_uri: req.protocol + '://' + req.get('host') + "/api/login/oauth/callback/" + req.params.provider, client_secret: provider_config.app_secret, code: code, grant_type: "authorization_code" } })
+	.then(function(result) {
+		console.log("Got token");
+		token = result;
+		if (!token.access_token) {
+			res.redirect(config.oauth.fail_uri + "?error=unknown");
+			return;
+		}
+		return rest.get(provider_config.api_uri, { accessToken: token.access_token });
+	})
+	.then(function(result) {
+		data = result;
+		if (!result.email) {
+			res.redirect(config.oauth.fail_uri + "?error=missing_data");
+			return;
+		}
+		return User.findOne({ email: result.email });
+	})
+	.then(function(result) {
+		user = result;
+		console.log(user);
+		if (!user) {
+			res.redirect(config.oauth.fail_uri + "?error=no_user");
+			return;
+		}
+		user[provider] = data;
+		return user.save();
+	})
+	.then(function(result) {
+		console.log("Saved", result);
+		//Generate new API key
+		var apikey = new APIKey();
+		apikey.user_id = user._id;
+		apikey.apikey = require('rand-token').generate(16);
+		apikey.save(function(err) {
+			if (err) {
+				log.error(err);
+				res.redirect(config.oauth.fail_uri + "?error=unknown");
+				// deny(req, res, next);
+				return;
+			}
+			overviewLog.info({ action_id: 1, action: "User logged on", user: user });
+			// res.json(apikey);
+			var token = jwt.sign({ apikey: apikey.apikey, user: user }, config.shared_secret, {
+				expiresIn: "1m"
+			});
+			res.redirect(config.oauth.success_uri + "?token=" + token);
+			return;
+		});
+	})
+	.then(null, function(err) {
+		console.log("Err", err);
+		res.redirect(config.oauth.fail_uri + "?error=unknown");
+		return;
 	});
 });
 
