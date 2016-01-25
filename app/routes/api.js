@@ -193,6 +193,7 @@ var websocket = require('../middleware/websockets.js').connect();
 var rest = require("restler-q");
 var Q = require("q");
 var jwt = require("jsonwebtoken");
+var url = require('url');
 
 //Logging
 var bunyan = require("bunyan");
@@ -481,7 +482,12 @@ router.route("/login/oauth/:provider").get(function(req, res, next) { // Log in 
 		return;
 	}
 	var state = Math.random().toString(36).substring(7);
-	var uri = provider_config.auth_uri + "?client_id=" + provider_config.app_id + "&redirect_uri=" + req.protocol + '://' + req.get('host') + "/api/login/oauth/callback/" + req.params.provider + "&scope=" + provider_config.scope + "&state=" + state + "&response_type=code";
+	var requrl = url.format({
+		protocol: req.protocol,
+		host: req.get('host'),
+		pathname: "/api/login/oauth/callback/",
+	});
+	var uri = provider_config.auth_uri + "?client_id=" + provider_config.app_id + "&redirect_uri=" + requrl + req.params.provider + "&scope=" + provider_config.scope + "&state=" + state + "&response_type=code";
 	// req.session.sender = req.query.sender;
 	res.redirect(uri);
 });
@@ -502,7 +508,12 @@ router.route("/login/oauth/callback/:provider").get(function(req, res, next) {
 		res.redirect(config.oauth.fail_uri + "?error=unknown");
 		return;
 	}
-	rest.post(provider_config.token_uri, { data: { client_id: provider_config.app_id, redirect_uri: req.protocol + '://' + req.get('host') + "/api/login/oauth/callback/" + req.params.provider, client_secret: provider_config.app_secret, code: code, grant_type: "authorization_code" } })
+	var requrl = url.format({
+		protocol: req.protocol,
+		host: req.get('host'),
+		pathname: "/api/login/oauth/callback/",
+	});
+	rest.post(provider_config.token_uri, { data: { client_id: provider_config.app_id, redirect_uri: requrl + req.params.provider, client_secret: provider_config.app_secret, code: code, grant_type: "authorization_code" } })
 	.then(function(result) {
 		console.log("Got token");
 		token = result;
