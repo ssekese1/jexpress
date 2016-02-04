@@ -38,6 +38,7 @@ var SagetaxinvoiceSchema   = new Schema({
 	anticipated_date: Date,
 	lines: mongoose.Schema.Types.Mixed,
 	sales_representative: mongoose.Schema.Types.Mixed,
+	lines: [mongoose.Schema.Types.Mixed],
 	_owner_id: Objectid
 });
 
