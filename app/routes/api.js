@@ -194,6 +194,7 @@ var rest = require("restler-q");
 var Q = require("q");
 var jwt = require("jsonwebtoken");
 var url = require('url');
+var datamunging = require("../libs/datamunging");
 
 //Logging
 var bunyan = require("bunyan");
@@ -913,14 +914,15 @@ var _versionItem = function(item) {
 router.route('/:modelname')
 .post(auth, function(req, res, next) {
 	req.log.debug("Normal post", req.modelname);
-	// req.log.info(req.body);
+	req.log.info(req.body);
 	try {
 		var item = new req.Model();
-		_populateItem(item, req.body);
+		_populateItem(item, datamunging.deserialize(req.body));
 		if (req.user) {
 			item._owner_id = req.user._id;
 			item.__user = req.user;
 		}
+
 		item.save(function(err, result) {
 			if (err) {
 				req.log.error(err);
@@ -1169,7 +1171,7 @@ router.route('/:modelname/:item_id')
 				res.status(500).send(err.toString());
 			} else {
 				if (item) {
-					_populateItem(item, req.body);
+					_populateItem(item, datamunging.deserialize(req.body));
 					_versionItem(item);
 					try {
 						if (req.user) {
