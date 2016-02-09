@@ -5,11 +5,13 @@ var Objectid = mongoose.Schema.Types.ObjectId;
 var Mixed = mongoose.Schema.Types.Mixed;
 var Organisation = require("./organisation_model");
 var Location = require("./location_model");
+var Membership = require("./membership_model");
 
 var UserSchema   = new Schema({
 	name: String,
 	organisation_id: { type: Objectid, ref: "Organisation" },
 	location_id: { type: Objectid, ref: "Location" },
+	membership_id: { type: Objectid, ref: "Membership" },
 	email: { type: String, unique: true, index: true },
 	emails: [String],
 	password: String,
@@ -42,6 +44,7 @@ UserSchema.set("_perms", {
 	admin: "crud",
 	owner: "cru",
 	user: "r",
+	full_user: "r"
 });
 
 var UserModel = mongoose.model('User', UserSchema);
