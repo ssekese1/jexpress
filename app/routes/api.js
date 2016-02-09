@@ -101,10 +101,17 @@ Note that it doesn't have a _perm section, because it is accessed directly,
 not through the API. If you do want to access it through the API, feel free
 to add a _perm section, but make sure you lock down permissions.
 
-To add a user to a group, call the API as follows:
+To set a user's groups, call the API as follows:
 Type: POST 
 End-point: /_groups/:user_id 
 Data: { group: "group_name" }
+
+To add a user to a group, call the API as follows:
+Type: PUT 
+End-point: /_groups/:user_id 
+Data: { group: "group_name" }
+
+* For POST and PUT, you can send multiple groups at once.
 
 To remove a user from a group
 TYPE: DELETE
@@ -613,9 +620,25 @@ router.use("/login", function(req, res, next) {
 	});
 });
 
+var fixArrays = function(req, res, next) {
+	if (req.body) {
+		for(var i in req.body) {
+			if (i.search(/\[\d+\]/) > -1) {
+				var parts = i.match(/(^[A-Za-z]+)(\[)/);
+				var el = parts[1];
+				if (!req.body[el]) {
+					req.body[el] = [];
+				}
+				req.body[el].push(req.body[i]);
+			}
+		}
+	}
+	next();
+}
+
 /* Groups */
 router.route("/_groups/:user_id")
-.post(function(req, res, next) {
+.put(fixArrays, function(req, res, next) {
 	apiKeyAuth(req, res, function(user) {
 		if (!user.admin) {
 			deny(req, res, next);
@@ -638,8 +661,54 @@ router.route("/_groups/:user_id")
 				userGroup.user_id = user_id;
 				userGroup.groups = [];
 			}
-			var i = userGroup.groups.indexOf(group);
-			if (i == -1) {
+			if (Array.isArray(group)) {
+				group.forEach(function(g) {
+					var i = userGroup.groups.indexOf(g);
+					if (i == -1) {
+						userGroup.groups.push(g);
+					}
+				});
+			} else {
+				var i = userGroup.groups.indexOf(group);
+				if (i == -1) {
+					userGroup.groups.push(group);
+				}
+			}
+			userGroup.save(function(err, result) {
+				if (err) {
+					res.status(500).send(err);
+					return;
+				}
+				res.send(result);
+			});
+		});
+	});
+})
+.post(fixArrays, function(req, res, next) {
+	apiKeyAuth(req, res, function(user) {
+		if (!user.admin) {
+			deny(req, res, next);
+			return;
+		}
+		var Groups = require("../models/usergroups_model.js");
+		var user_id = req.params.user_id;
+		var group = req.body.group;
+		if (!group) {
+			group = [];
+		}
+		Groups.findOne({ user_id: user_id }, function(err, userGroup) {
+			if (err) {
+				res.status(500).send(err);
+				return;
+			}
+			if (!userGroup) {
+				userGroup = new Groups();
+				userGroup.user_id = user_id;
+			}
+			userGroup.groups = [];
+			if (Array.isArray(group)) {
+				userGroup.groups = group;
+			} else {
 				userGroup.groups.push(group);
 			}
 			userGroup.save(function(err, result) {
