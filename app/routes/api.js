@@ -735,7 +735,7 @@ router.route("/_groups/:user_id")
 				return;
 			}
 			if (!userGroup) {
-				res.status(400).send("User not found");
+				res.send({ groups: [] });
 				return;
 			}
 			res.send(userGroup);
