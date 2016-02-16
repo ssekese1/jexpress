@@ -14,6 +14,7 @@ var RoomSchema   = new Schema({
 	description: String,
 	capacity: Number,
 	layout: [{ type: Objectid, ref: "Layout" }],
+	private: { type: Boolean, default: false },
 	_deleted: { type: Boolean, default: false, index: true },
 });
 
