@@ -1,6 +1,8 @@
 var mongoose     = require('mongoose');
 var Schema       = mongoose.Schema;
 
+var friendly = require("mongoose-friendly");
+
 var Objectid = mongoose.Schema.Types.ObjectId;
 var Mixed = mongoose.Schema.Types.Mixed;
 var Organisation = require("./organisation_model");
@@ -8,11 +10,12 @@ var Location = require("./location_model");
 var Membership = require("./membership_model");
 
 var UserSchema   = new Schema({
-	name: String,
+	name: { type: String },
+	urlid: { type: String, unique: true, index: true },
 	organisation_id: { type: Objectid, ref: "Organisation" },
 	location_id: { type: Objectid, ref: "Location" },
 	membership_id: { type: Objectid, ref: "Membership" },
-	email: { type: String, unique: true, index: true },
+	email: { type: String, unique: true, index: true, set: toLower },
 	emails: [String],
 	password: String,
 	admin: Boolean,
@@ -33,7 +36,7 @@ var UserSchema   = new Schema({
 	referal_method: String,
 	status: { type: String, validate: /active|inactive|hidden/, index: true, default: "inactive" },
 	newsletter: Boolean,
-	radius_username: String,
+	radius_id: Number,
 	pin: String,
 	card: String,
 	_owner_id: Objectid,
@@ -44,7 +47,8 @@ UserSchema.set("_perms", {
 	admin: "crud",
 	owner: "cru",
 	user: "r",
-	full_user: "r"
+	member: "r",
+	api: "r"
 });
 
 var UserModel = mongoose.model('User', UserSchema);
@@ -112,5 +116,18 @@ UserSchema.post("save", function(user) {
 		}
 	});
 });
+
+UserSchema.path('name').validate(function (v) {
+	return v.length > 0;
+}, 'Name cannot be empty');
+
+UserSchema.plugin(friendly, {
+	source: 'name',
+	friendly: 'urlid'
+});
+
+function toLower (v) {
+	return v.toLowerCase();
+};
 
 module.exports = mongoose.model('User', UserSchema);

@@ -1,6 +1,9 @@
 var mongoose     = require('mongoose');
 var Schema       = mongoose.Schema;
 
+// var monguurl = require("monguurl");
+var friendly = require("mongoose-friendly");
+
 var Objectid = mongoose.Schema.Types.ObjectId;
 var Membership = require('./membership_model');
 var Location = require('./location_model');
@@ -9,9 +12,10 @@ var User = require('./user_model');
 
 var OrganisationSchema   = new Schema({
 	name: { type: String, unique: true, index: true },
+	urlid: { type: String, unique: true, index: true },
 	tel: String,
 	mobile: String,
-	email: { type: String, unique: true, index: true },
+	email: { type: String, unique: true, index: true, set: toLower },
 	website: String,
 	address: String,
 	twitter: String,
@@ -33,6 +37,8 @@ var OrganisationSchema   = new Schema({
 	items: mongoose.Schema.Types.Mixed,
 	status: { type: String, validate: /active|inactive|hidden|prospect/, index: true, default: "active" },
 	quote_member_count: Number,
+	datatill_customer_account_id: Number,
+	datatill_radius_account_id: Number,
 	_owner_id: Objectid,
 	_deleted: { type: Boolean, default: false, index: true },
 });
@@ -42,6 +48,19 @@ OrganisationSchema.set("_perms", {
 	owner: "crud",
 	user: "cr",
 	all: "cr"
+});
+
+OrganisationSchema.path('name').validate(function (v) {
+	return v.length > 0;
+}, 'Name cannot be empty');
+
+function toLower (v) {
+	return v.toLowerCase();
+}
+
+OrganisationSchema.plugin(friendly, {
+	source: 'name',
+	friendly: 'urlid'
 });
 
 module.exports = mongoose.model('Organisation', OrganisationSchema);

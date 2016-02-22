@@ -26,6 +26,7 @@ var MembershipSchema   = new Schema({
 	discount_multiplier: { type: Number, default: 1 },
 	special: Boolean,
 	sage: mongoose.Schema.Types.Mixed,
+	datatill_product: Number,
 	_owner_id: Objectid,
 	_deleted: { type: Boolean, default: false, index: true },
 });
