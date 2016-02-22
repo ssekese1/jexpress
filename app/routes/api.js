@@ -909,7 +909,7 @@ router.route('/:modelname')
 				overviewLog.info({ action_id: 4, action: "Post", type: req.modelname, id: result._id, user: req.user });
 				websocket.emit(req.modelname, { method: "post", _id: result._id });
 				messagequeue.action(req.modelname, "post", req.user, result);
-				res.status(200).json({ message: req.modelname + " created ", data: item });
+				res.status(200).json({ message: req.modelname + " created", data: item });
 				return;
 			}
 		});
