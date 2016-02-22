@@ -202,6 +202,8 @@ var Q = require("q");
 var jwt = require("jsonwebtoken");
 var url = require('url');
 var datamunging = require("../libs/datamunging");
+var messagequeue = require("../libs/messagequeue");
+var security = require("../libs/security");
 
 //Logging
 var bunyan = require("bunyan");
@@ -234,10 +236,6 @@ var deny = function(req, res, next) {
 	req.authorized = false;
 }
 
-var encPassword = function(password) {
-	return hash = bcrypt.hashSync(password, 4);
-}
-
 var changeUrlParams = function(req, key, val) {
 	if (req.log)
 		req.log.debug(req);
@@ -245,94 +243,6 @@ var changeUrlParams = function(req, key, val) {
 	q[key] = val;
 	var pathname = require("url").parse(req.url).pathname;
 	return config.url + req._parsedOriginalUrl.pathname + "?" + querystring.stringify(q);
-}
-
-var basicAuth = function(req) {
-	if (!req.headers.authorization) {
-		return false;
-	}
-	try {
-		auth = req.headers.authorization.split(" ")[1];
-	} catch(err) {
-		return false;
-	}
-	decoded = new Buffer(auth, 'base64').toString();
-	return decoded.split(":");
-}
-
-var apiKeyAuth = function(req, res, next, fail) {
-	if (req.headers.authorization) { // Basic Auth 
-		var ba = basicAuth(req);
-		if (Array.isArray(ba) && (ba.length == 2)) {
-			var email = ba[0];
-			var password = ba[1];
-			User.findOne({ email: email }, function(err, user) {
-				if (err) {
-					log.error(err); 
-					return done(err); 
-				}
-				if (!user) {
-					log.error("Incorrect username");
-					deny(req, res, next);
-					return;
-				}
-				try {
-					if (!bcrypt.compareSync(password, user.password)) {
-						log.error("Incorrect password");
-						deny(req, res, next);
-						return;
-					}
-				} catch (err) {
-					log.error(err);
-					deny(req, res, next);
-					return;
-				}
-				req.user = user;
-				var Groups = require("../models/usergroups_model.js");;
-				Groups.findOne({ user_id: user._id }, function(err, userGroup) {
-					if (err) {
-						return fail(500, err);
-					}
-					req.groups = (userGroup && userGroup.groups) ? userGroup.groups : [];
-					return next(user);
-				});
-			});
-		}
-	} else {
-		if (!req.query.apikey) {
-			log.error("No auth method found");
-			return fail(403, "Unauthorized");
-		}
-		var apikey = req.query.apikey;
-		if (!apikey) {
-			return fail(403, "Unauthorized");
-		}
-		APIKey.findOne({ apikey: apikey }, function(err, apikey) {
-			if (err) {
-				return fail(500, err);
-			}
-			if (!apikey) {
-				return fail(403, "Unauthorized");
-			}
-			User.findOne({ _id: apikey.user_id }, function(err, user) {
-				if (err) {
-					return fail(500, err);
-				}
-				if (!user) {
-					return fail(403, "Unauthorized");
-				}
-				req.user = user;
-				var Groups = require("../models/usergroups_model.js");;
-				Groups.findOne({ user_id: user._id }, function(err, userGroup) {
-					if (err) {
-						return fail(500, err);
-					}
-					req.groups = (userGroup && userGroup.groups) ? userGroup.groups : [];
-					return next(user);
-				});
-			});
-		});
-	}
 }
 
 router.route("/_models").get(function(req, res, next) {
@@ -446,7 +356,7 @@ router.route("/login/reset").post(function(req, res, next) {
 			deny(req, res, next);
 			return;
 		}
-		user.password = encPassword(password);
+		user.password = security.encPassword(password);
 		user.temp_hash = "";
 		user.save(function(err) {
 			if (err) { 
@@ -572,7 +482,7 @@ router.route("/login/oauth/callback/:provider").get(function(req, res, next) {
 router.use("/login", function(req, res, next) {
 	var email = req.body.email;
 	var password = req.body.password;
-	var user = basicAuth(req);
+	var user = security.basicAuth(req);
 	if (user) {
 		email = user[0];
 		password = user[1];
@@ -603,22 +513,16 @@ router.use("/login", function(req, res, next) {
 			deny(req, res, next);
 			return;
 		}
-		//Generate new API key
-		var apikey = new APIKey();
-		apikey.user_id = user._id;
-		apikey.apikey = require('rand-token').generate(16);
-
-		apikey.save(function(err) {
-			if (err) {
-				log.error(err);
-				deny(req, res, next);
-				return;
-			}
-			overviewLog.info({ action_id: 1, action: "User logged on", user: user });
-			res.json(apikey);
+		security.generateApiKey(user)
+		.then(function(result) {
+			res.json(result);
+		}, function(err) {
+			deny(req, res, next);
 		});
 	});
 });
+
+
 
 var fixArrays = function(req, res, next) {
 	if (req.body) {
@@ -639,7 +543,7 @@ var fixArrays = function(req, res, next) {
 /* Groups */
 router.route("/_groups/:user_id")
 .put(fixArrays, function(req, res, next) {
-	apiKeyAuth(req, res, function(user) {
+	security.apiKeyAuth(req, res, function(user) {
 		if (!user.admin) {
 			deny(req, res, next);
 			return;
@@ -685,7 +589,7 @@ router.route("/_groups/:user_id")
 	});
 })
 .post(fixArrays, function(req, res, next) {
-	apiKeyAuth(req, res, function(user) {
+	security.apiKeyAuth(req, res, function(user) {
 		if (!user.admin) {
 			deny(req, res, next);
 			return;
@@ -722,7 +626,7 @@ router.route("/_groups/:user_id")
 	});
 })
 .get(function(req, res, next) {
-	apiKeyAuth(req, res, function(user) {
+	security.apiKeyAuth(req, res, function(user) {
 		if (!user.admin) {
 			deny(req, res, next);
 			return;
@@ -743,7 +647,7 @@ router.route("/_groups/:user_id")
 	});
 })
 .delete(function(req, res, next) {
-	apiKeyAuth(req, res, function(user) {
+	security.apiKeyAuth(req, res, function(user) {
 		if (!user.admin) {
 			deny(req, res, next);
 			return;
@@ -795,7 +699,7 @@ router.use('/:modelname', function(req, res, next) {
 /* Deal with Passwords. Just always encrypt anything called 'password' */
 router.use('/:modelname', function(req, res, next) {
 	if (req.body["password"] && !(req.query["password_override"])) {
-		var password = encPassword(req.body["password"]);
+		var password = security.encPassword(req.body["password"]);
 		req.body["password"] = password;
 		log.debug("Password encrypted");
 	}
@@ -815,6 +719,9 @@ var auth = function(req, res, next) {
 		user: false,
 		all: false
 	};
+	for (i in perms) { // Add any user-defined perms to our passed table
+		passed[i] = false;
+	}
 	if (req.method == "GET") {
 		var method = "r";
 	} else if (req.method == "POST") {
@@ -847,7 +754,7 @@ var auth = function(req, res, next) {
 	}
 	
 	//This isn't an 'all' situation, so let's log the user in and go from there
-	apiKeyAuth(req, res, function(user) {
+	security.apiKeyAuth(req, res, function(user) {
 		//Let's check perms in this order - admin, user, group, owner
 		//Admin check
 		if ((req.user.admin) && (perms["admin"]) && (perms["admin"].indexOf(method) !== -1)) {
@@ -1001,6 +908,7 @@ router.route('/:modelname')
 				req.log.info({ method: "post", user: req.user, data: result });
 				overviewLog.info({ action_id: 4, action: "Post", type: req.modelname, id: result._id, user: req.user });
 				websocket.emit(req.modelname, { method: "post", _id: result._id });
+				messagequeue.action(req.modelname, "post", req.user, result);
 				res.status(200).json({ message: req.modelname + " created ", data: item });
 				return;
 			}
@@ -1253,6 +1161,7 @@ router.route('/:modelname/:item_id')
 							} else {
 								overviewLog.info({ action_id: 5, action: "Put", type: req.modelname, id: item._id, user: req.user });
 								websocket.emit(req.modelname, { method: "put", _id: item._id });
+								messagequeue.action(req.modelname, "put", req.user, data);
 								res.json({ message: req.modelname + " updated ", data: data });
 							}
 						});
@@ -1300,6 +1209,7 @@ router.route('/:modelname/:item_id')
 				} else {
 					overviewLog.info({ action_id: 6, action: "Delete", type: req.modelname, softDelete: true, id: item._id, user: req.user });
 					websocket.emit(req.modelname, { method: "delete", _id: item._id });
+					messagequeue.action(req.modelname, "delete-soft", req.user, item);
 					res.json({ message: req.modelname + ' deleted' });
 				}
 			})
@@ -1312,6 +1222,7 @@ router.route('/:modelname/:item_id')
 				} else {
 					overviewLog.info({ action_id: 6, action: "Delete", type: req.modelname, softDelete: false, id: item._id, user: req.user });
 					websocket.emit(req.modelname, { method: "delete", _id: item._id });
+					messagequeue.action(req.modelname, "delete", req.user, item);
 					res.json({ message: req.modelname + ' deleted' });
 				}
 			});
