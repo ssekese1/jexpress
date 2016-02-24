@@ -129,7 +129,7 @@ var Security = {
 	},
 	auth: function(req, res, next) {
 		//Set up our child logger
-		req.log = log.child({ req: req, user: req.user });
+		req.log = log.child({ user: req.user });
 		req.log.debug("Started Auth");
 		// Check against model as to whether we're allowed to edit this model
 		var perms = req.Model.schema.get("_perms");
@@ -204,8 +204,9 @@ var Security = {
 			req.Model.findById(req.params.item_id, function(err, item) {
 				if (err) {
 					req.log.error(err);
+					return fail(res, 500, err);
 				}
-				if ((item) && (item._owner_id) && (item._owner_id.toString() == user._id.toString()) && ((perms["owner"]) && (perms["owner"].indexOf(method) !== -1))) {
+				if ((item) && (item._owner_id) && (item._owner_id.toString() == req.user._id.toString()) && ((perms["owner"]) && (perms["owner"].indexOf(method) !== -1))) {
 						req.log.info("Matched permission 'owner':" + method);
 						req.authorized = true;
 						next();
