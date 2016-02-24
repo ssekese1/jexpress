@@ -105,7 +105,7 @@ function reset(req, res, next) { // Insecure - This is going to get deprecated
 }
 
 function logout(req, res, next) {
-	var apikey = req.query.apikey;
+	var apikey = req.query.apikey || req.body.apikey;
 	APIKey.findOne({ apikey: apikey }, function(err, apikey) {
 		if (err) { 
 			log.error(err);
@@ -251,13 +251,48 @@ function login(req, res, next) {
 	});
 }
 
+function getJWT(req, res, next) {
+	var user = null;
+	if (!req.user.admin) {
+		res.status(403).json({ status: "fail", message: "Unauthorized" });
+		return;
+	}
+	var email = req.body.email;
+	if (!email) {
+		res.status(400).json({ status: "fail", message: "Email required" });
+		return;
+	}
+	User.findOne({ email: email }, function(err, result) {
+		if (err) {
+			res.status(500).json({ status: "error", error: err });
+			return;
+		}
+		if (!result || !result._id) {
+			res.status(404).json({ status: "fail", message: "User not found" });
+			return;
+		}
+		user = result;
+		security.generateApiKey(user)
+		.then(function(result) {
+			var token = jwt.sign({ apikey: result.apikey, email: user.email }, config.shared_secret, {
+				expiresIn: "2d"
+			});
+			res.json({ email: user.email, token: token });
+		}, function(err) {
+			deny(req, res, next);
+		});
+	})
+	return;
+}
+
 var Login = {
 	recover: recover,
 	reset: reset,
 	logout: logout,
 	oauth: oauth,
 	oauth_callback: oauth_callback,
-	login: login
+	login: login,
+	getJWT: getJWT
 }
 
 module.exports = Login;

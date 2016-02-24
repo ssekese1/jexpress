@@ -281,49 +281,11 @@ router.route("/login/recover").post(login.recover);
 
 router.route("/login/reset").post(login.reset);
 
-var fail = function(res, code, message) {
-	res.status(code).send({ status: "error", message: message });
-}
-
-
 // Generates a JWT with email and apikey that can be used to log in
 // Only accessible for admins
-router.route("/login/getjwt").post(security.apiKeyAuth, function(req, res, next) {
-	var user = null;
-	if (!req.user.admin) {
-		fail(res, 403, "Unauthorized");
-		return;
-	}
-	var email = req.body.email;
-	if (!email) {
-		fail(res, 400, "Email required");
-		return;
-	}
-	User.findOne({ email: email }, function(err, result) {
-		if (err) {
-			fail(res, 500, err);
-			return;
-		}
-		if (!result || !result._id) {
-			fail(res, 404, "User not found");
-			return;
-		}
-		user = result;
-		security.generateApiKey(user)
-		.then(function(result) {
-			var token = jwt.sign({ apikey: result.apikey, email: user.email }, config.shared_secret, {
-				expiresIn: "2d"
-			});
-			res.json({ email: user.email, token: token });
-		}, function(err) {
-			deny(req, res, next);
-		});
-	})
-	return;
-	
-});
+router.route("/login/getjwt").post(security.apiKeyAuth, login.getJWT);
 
-router.route("/login/logout").get(login.logout);
+router.route("/login/logout").get(login.logout).post(login.logout);
 
 router.route("/login/oauth/:provider").get(login.oauth);
 
@@ -331,8 +293,6 @@ router.route("/login/oauth/callback/:provider").get(login.oauth_callback);
 
 /* Our login endpoint. I'm afraid you can never have a model called login. */
 router.use("/login", login.login);
-
-
 
 var fixArrays = function(req, res, next) {
 	if (req.body) {
