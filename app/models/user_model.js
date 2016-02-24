@@ -39,6 +39,7 @@ var UserSchema   = new Schema({
 	radius_id: Number,
 	pin: String,
 	card: String,
+	first_login: { type: Boolean, default: true },
 	_owner_id: Objectid,
 	_deleted: { type: Boolean, default: false, index: true },
 });
@@ -55,6 +56,7 @@ var UserModel = mongoose.model('User', UserSchema);
 
 UserSchema.pre("save", function(next) {
 	var self = this;
+	this._owner_id = this._id; // Ensure the owner is always the user for this model
 	var emails = this.emails;
 	if (emails.length) {
 		emails.forEach(function(email) {
