@@ -274,7 +274,7 @@ function getJWT(req, res, next) {
 		user = result;
 		security.generateApiKey(user)
 		.then(function(result) {
-			var token = jwt.sign({ apikey: result.apikey, email: user.email }, config.shared_secret, {
+			var token = jwt.sign({ apikey: result.apikey, email: user.email, id: user._id }, config.shared_secret, {
 				expiresIn: "2d"
 			});
 			res.json({ email: user.email, token: token });
