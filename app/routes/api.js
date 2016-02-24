@@ -197,13 +197,13 @@ var router = express.Router();
 var config = require('../../config');
 var querystring = require('querystring');
 var websocket = require('../middleware/websockets.js').connect();
-var rest = require("restler-q");
 var Q = require("q");
 var jwt = require("jsonwebtoken");
 var url = require('url');
 var datamunging = require("../libs/datamunging");
 var messagequeue = require("../libs/messagequeue");
 var security = require("../libs/security");
+var login = require("./login");
 
 //Logging
 var bunyan = require("bunyan");
@@ -276,251 +276,61 @@ router.get('/_websocket_test', function(req, res) {
 	res.send("Sent testing");
 });
 
-/* Password recovery */
-router.route("/login/recover").post(function(req, res, next) {
+/* Login Routes */
+router.route("/login/recover").post(login.recover);
+
+router.route("/login/reset").post(login.reset);
+
+var fail = function(res, code, message) {
+	res.status(code).send({ status: "error", message: message });
+}
+
+
+// Generates a JWT with email and apikey that can be used to log in
+// Only accessible for admins
+router.route("/login/getjwt").post(security.apiKeyAuth, function(req, res, next) {
+	var user = null;
+	if (!req.user.admin) {
+		fail(res, 403, "Unauthorized");
+		return;
+	}
 	var email = req.body.email;
 	if (!email) {
-		req.log.error("Missing email");
-		deny(req, res, next);
+		fail(res, 400, "Email required");
 		return;
 	}
-	User.findOne({ email: email }, function(err, user) {
-		if (err) { 
-			req.log.error(err);
-			return done(err); 
-		}
-		if (!user) {
-			req.log.error("Incorrect username");
-			deny(req, res, next);
-			return;
-		}
-		user.temp_hash = require('rand-token').generate(16);
-		user.save(function(err) {
-			if (err) { 
-				req.log.error(err); 
-				return done(err); 
-			}
-			var nodemailer = require('nodemailer');
-			var smtpTransport = require('nodemailer-smtp-transport');
-			// create reusable transporter object using SMTP transport
-			var transporter = nodemailer.createTransport(smtpTransport({
-				host: config.smtp_server,
-				port: 25,
-				auth: {
-					user: config.smtp_username,
-					pass: config.smtp_password,
-				},
-				// secure: true,
-				tls: { rejectUnauthorized: false }
-			}));
-			var html = text = "Someone (hopefully you) requested a password reset. Please click on the following url to recover your password. If you did not request a password reset, you can ignore this message. \n" + config.password_recovery_url + "/" + user.temp_hash;
-			if (req.body.mail_format) {
-				html = req.body.mail_format;
-				html = html.replace(/\{\{recover_url\}\}/i, config.password_recovery_url + "/" + user.temp_hash);
-			}
-			transporter.sendMail({
-				from: config.smtp_from,
-				to: user.email,
-				subject: "Password Recovery",
-				text: text,
-				html: html
-			},
-			function(result) {
-				req.log.debug({ msg: "Mailer result", result: result });
-			});
-			res.send("Sent recovery email");
-		});
-	});
-});
-
-router.route("/login/reset").post(function(req, res, next) {
-	var password = req.body.password;
-	var temp_hash = req.body.temp_hash;
-	if (temp_hash.length < 16) {
-		req.log.error("Hash error");
-		deny(req, res, next);
-		return;
-	}
-	if (password.length < 4) {
-		req.log.error("Password too short");
-		deny(req, res, next);
-		return;
-	}
-	User.findOne({ temp_hash: temp_hash }, function(err, user) {
-		if (err) { 
-			req.log.error(err); 
-			return done(err); 
-		}
-		if (!user) {
-			req.log.error("Hash not found");
-			deny(req, res, next);
-			return;
-		}
-		user.password = security.encPassword(password);
-		user.temp_hash = "";
-		user.save(function(err) {
-			if (err) { 
-				req.log.error(err); 
-				return done(err); 
-			}
-			res.send("User updated");
-			return;
-		});
-	})
-});
-
-router.route("/login/logout").get(function(req, res, next) {
-	var apikey = req.query.apikey;
-	APIKey.findOne({ apikey: apikey }, function(err, apikey) {
-		if (err) { 
-			log.error(err);
-			deny(req, res, next);
-			return;
-		}
-		if (!apikey) {
-			log.error("API Key not found");
-			deny(req, res, next);
-			return;
-		}
-		apikey.remove(function(err, item) {
-			if (err) { 
-				log.error(err);
-				deny(req, res, next);
-				return;
-			}
-			res.send("User logged out");
-		});
-	});
-});
-
-router.route("/login/oauth/:provider").get(function(req, res, next) { // Log in through an OAuth2 provider, defined in config.js
-	var provider_config = config.oauth[req.params.provider];
-	if (!provider_config) {
-		res.status(500).send(req.params.provider + " config not defined");
-		return;
-	}
-	var state = Math.random().toString(36).substring(7);
-	var uri = provider_config.auth_uri + "?client_id=" + provider_config.app_id + "&redirect_uri=" + config.url + "/api/login/oauth/callback/" + req.params.provider + "&scope=" + provider_config.scope + "&state=" + state + "&response_type=code";
-	// req.session.sender = req.query.sender;
-	res.redirect(uri);
-});
-
-router.route("/login/oauth/callback/:provider").get(function(req, res, next) {
-	console.log("Got callback", req.query);
-	var provider = req.params.provider;
-	var provider_config = config.oauth[provider];
-	var code = req.query.code;
-	var data = null;
-	var token = false;
-	var user = null;
-	if (req.query.error) {
-		res.redirect(config.oauth.fail_uri + "?error=" + req.query.error);
-		return;
-	}
-	if (!code) {
-		res.redirect(config.oauth.fail_uri + "?error=unknown");
-		return;
-	}
-	rest.post(provider_config.token_uri, { data: { client_id: provider_config.app_id, redirect_uri: config.url + "/api/login/oauth/callback/" + req.params.provider, client_secret: provider_config.app_secret, code: code, grant_type: "authorization_code" } })
-	.then(function(result) {
-		console.log("Got token");
-		token = result;
-		if (!token.access_token) {
-			res.redirect(config.oauth.fail_uri + "?error=unknown");
-			return;
-		}
-		return rest.get(provider_config.api_uri, { accessToken: token.access_token });
-	})
-	.then(function(result) {
-		data = result;
-		if (!result.email) {
-			res.redirect(config.oauth.fail_uri + "?error=missing_data");
-			return;
-		}
-		return User.findOne({ email: result.email });
-	})
-	.then(function(result) {
-		user = result;
-		console.log(user);
-		if (!user) {
-			res.redirect(config.oauth.fail_uri + "?error=no_user");
-			return;
-		}
-		user[provider] = data;
-		return user.save();
-	})
-	.then(function(result) {
-		console.log("Saved", result);
-		//Generate new API key
-		var apikey = new APIKey();
-		apikey.user_id = user._id;
-		apikey.apikey = require('rand-token').generate(16);
-		apikey.save(function(err) {
-			if (err) {
-				log.error(err);
-				res.redirect(config.oauth.fail_uri + "?error=unknown");
-				// deny(req, res, next);
-				return;
-			}
-			overviewLog.info({ action_id: 1, action: "User logged on", user: user });
-			// res.json(apikey);
-			var token = jwt.sign({ apikey: apikey.apikey, user: user }, config.shared_secret, {
-				expiresIn: "1m"
-			});
-			res.redirect(config.oauth.success_uri + "?token=" + token);
-			return;
-		});
-	})
-	.then(null, function(err) {
-		console.log("Err", err);
-		res.redirect(config.oauth.fail_uri + "?error=unknown");
-		return;
-	});
-});
-
-/* Our login endpoint. I'm afraid you can never have a model called login. */
-router.use("/login", function(req, res, next) {
-	var email = req.body.email;
-	var password = req.body.password;
-	var user = security.basicAuth(req);
-	if (user) {
-		email = user[0];
-		password = user[1];
-	}
-	if ((!password) || (!email)) {
-		log.error("Missing email or password");
-		deny(req, res, next);
-		return;
-	}
-	User.findOne({ email: email }, function(err, user) {
+	User.findOne({ email: email }, function(err, result) {
 		if (err) {
-			log.error(err); 
-			return done(err); 
-		}
-		if (!user) {
-			log.error("Incorrect username");
-			deny(req, res, next);
+			fail(res, 500, err);
 			return;
 		}
-		try {
-			if (!bcrypt.compareSync(password, user.password)) {
-				log.error("Incorrect password");
-				deny(req, res, next);
-				return;
-			}
-		} catch (err) {
-			log.error(err);
-			deny(req, res, next);
+		if (!result || !result._id) {
+			fail(res, 404, "User not found");
 			return;
 		}
+		user = result;
 		security.generateApiKey(user)
 		.then(function(result) {
-			res.json(result);
+			var token = jwt.sign({ apikey: result.apikey, email: user.email }, config.shared_secret, {
+				expiresIn: "2d"
+			});
+			res.json({ email: user.email, token: token });
 		}, function(err) {
 			deny(req, res, next);
 		});
-	});
+	})
+	return;
+	
 });
+
+router.route("/login/logout").get(login.logout);
+
+router.route("/login/oauth/:provider").get(login.oauth);
+
+router.route("/login/oauth/callback/:provider").get(login.oauth_callback);
+
+/* Our login endpoint. I'm afraid you can never have a model called login. */
+router.use("/login", login.login);
 
 
 
@@ -544,7 +354,7 @@ var fixArrays = function(req, res, next) {
 router.route("/_groups/:user_id")
 .put(fixArrays, function(req, res, next) {
 	security.apiKeyAuth(req, res, function(user) {
-		if (!user.admin) {
+		if (!req.user.admin) {
 			deny(req, res, next);
 			return;
 		}
@@ -590,7 +400,7 @@ router.route("/_groups/:user_id")
 })
 .post(fixArrays, function(req, res, next) {
 	security.apiKeyAuth(req, res, function(user) {
-		if (!user.admin) {
+		if (!req.user.admin) {
 			deny(req, res, next);
 			return;
 		}
@@ -627,7 +437,7 @@ router.route("/_groups/:user_id")
 })
 .get(function(req, res, next) {
 	security.apiKeyAuth(req, res, function(user) {
-		if (!user.admin) {
+		if (!req.user.admin) {
 			deny(req, res, next);
 			return;
 		}
@@ -648,7 +458,7 @@ router.route("/_groups/:user_id")
 })
 .delete(function(req, res, next) {
 	security.apiKeyAuth(req, res, function(user) {
-		if (!user.admin) {
+		if (!req.user.admin) {
 			deny(req, res, next);
 			return;
 		}
@@ -705,105 +515,6 @@ router.use('/:modelname', function(req, res, next) {
 	}
 	next();
 });
-
-/* This is our security module. See header for instructions */
-var auth = function(req, res, next) {
-	//Set up our child logger
-	req.log = log.child({ req: req, user: req.user });
-	req.log.debug("Started Auth");
-	// Check against model as to whether we're allowed to edit this model
-	var perms = req.Model.schema.get("_perms");
-	var passed = {
-		admin: false,
-		owner: false,
-		user: false,
-		all: false
-	};
-	for (i in perms) { // Add any user-defined perms to our passed table
-		passed[i] = false;
-	}
-	if (req.method == "GET") {
-		var method = "r";
-	} else if (req.method == "POST") {
-		var method = "c";
-	} else if (req.method == "PUT") {
-		var method = "u";
-	} else if (req.method == "DELETE") {
-		var method = "d";
-	} else {
-		req.log.error("Unsupported method", req.method);
-		deny(req, res, next);
-		return;
-	}
-	req.authorized = false;
-	req.log.debug("perms", perms.admin);
-	//If no perms are set, then this isn't an available model
-	if (!perms.admin) {
-		req.log.error("Model not available");
-		deny(req, res, next);
-		return;
-	}
-	//First check if "all" is able to do this. If so, let's get on with it.
-	if (perms["all"]) {
-		if (perms["all"].indexOf(method) !== -1) {
-			req.log.info("Matched permission 'all':" + method);
-			req.authorized = true;
-			next();
-			return;
-		}
-	}
-	
-	//This isn't an 'all' situation, so let's log the user in and go from there
-	security.apiKeyAuth(req, res, function(user) {
-		//Let's check perms in this order - admin, user, group, owner
-		//Admin check
-		if ((req.user.admin) && (perms["admin"]) && (perms["admin"].indexOf(method) !== -1)) {
-			req.log.info("Matched permission 'admin':" + method);
-			req.authorized = true;
-			next();
-			return;
-		}
-		//User check
-		if ((perms["user"]) && (perms["user"].indexOf(method) !== -1)) {
-			req.log.info("Matched permission 'user':" + method);
-			req.authorized = true;
-			next();
-			return;
-		}
-		//Group check
-		req.groups.forEach(function(group) {
-			if ((perms[group]) && (perms[group].indexOf(method) !== -1)) {
-				req.log.info("Matched permission '" + group + "':" + method);
-				req.authorized = true;
-				next();
-				return;
-			}
-		});
-		//Owner check
-		var owner_id = false;
-		req.Model.findById(req.params.item_id, function(err, item) {
-			if (err) {
-				req.log.error(err);
-			}
-			if ((item) && (item._owner_id) && (item._owner_id.toString() == user._id.toString()) && ((perms["owner"]) && (perms["owner"].indexOf(method) !== -1))) {
-					req.log.info("Matched permission 'owner':" + method);
-					req.authorized = true;
-					next();
-					return;
-			} else {
-				req.log.error("All authorizations failed");
-				if(!req.authorized) {
-					deny(req, res, next);
-					return;
-				}
-			}
-		});
-	}, function(code, err) {
-		req.log.error({ msg: "API key fail", code: code, err: err });
-		res.status(code).send(err);
-		return;
-	});
-};
 
 function format_filter(filter) {
 	if (typeof(filter) == "object") {
@@ -888,7 +599,7 @@ var _versionItem = function(item) {
 
 /* Routes */
 router.route('/:modelname')
-.post(auth, function(req, res, next) {
+.post(security.auth, function(req, res, next) {
 	req.log.debug("Normal post", req.modelname);
 	req.log.info(req.body);
 	try {
@@ -919,7 +630,7 @@ router.route('/:modelname')
 		return;
 	}
 })
-.get(auth, function(req, res) {
+.get(security.auth, function(req, res) {
 	var filters = {};
 	try {
 		filters = format_filter(req.query.filter, res);
@@ -1005,7 +716,7 @@ router.route('/:modelname')
 
 /* Batch routes */
 router.route('/:modelname/batch')
-.post(auth, function(req, res, next) {
+.post(security.auth, function(req, res, next) {
 	req.log.debug("Batch post");
 	var items = [];
 	data = JSON.parse(req.body.json);
@@ -1035,19 +746,19 @@ router.route('/:modelname/batch')
 });
 
 router.route('/:modelname/_describe')
-.get(auth, function(req, res) {
+.get(security.auth, function(req, res) {
 	req.log.debug(Model.schema.paths);
 	res.json(Model.schema.paths);
 });
 
 router.route('/:modelname/_test')
-.get(auth, function(req, res) {
+.get(security.auth, function(req, res) {
 	req.model.debug(req.Model);
 	res.send(req.Model.schema.get("test"));
 });
 
 router.route('/:modelname/_call/:method_name')
-.get(auth, function(req, res) {
+.get(security.auth, function(req, res) {
 	req.Model[req.params.method_name]()
 	.then(function(item) {
 		overviewLog.info({ action_id: 7, action: "Method called", type: req.modelname, method: req.params.method_name, user: req.user });
@@ -1057,7 +768,7 @@ router.route('/:modelname/_call/:method_name')
 		res.status(500).send(err.toString());
 	});
 })
-.post(auth, function(req, res) {
+.post(security.auth, function(req, res) {
 	overviewLog.info({ action_id: 7, action: "Method called", type: req.modelname, method: req.params.method_name, user: req.user });
 	req.Model[req.params.method_name](req.body)
 	.then(function(result) {
@@ -1127,7 +838,7 @@ router.route('/:modelname/:item_id/:method_name')
 });
 
 router.route('/:modelname/:item_id')
-.get(auth, function(req, res) {
+.get(security.auth, function(req, res) {
 	getOne(req.Model, req.params.item_id, req.query)
 	.then(function(item) {
 		overviewLog.info({ action_id: 2, action: "Fetched single document", type: req.modelname, id: req.params.item_id, user: req.user });
@@ -1141,7 +852,7 @@ router.route('/:modelname/:item_id')
 		}
 	});
 })
-.put(auth, function(req, res) {
+.put(security.auth, function(req, res) {
 	try {
 		req.Model.findById(req.params.item_id, function(err, item) {
 			if (err) {
@@ -1183,7 +894,7 @@ router.route('/:modelname/:item_id')
 		return;
 	}
 })
-.delete(auth, function(req, res) {
+.delete(security.auth, function(req, res) {
 	req.Model.findById(req.params.item_id, function(err, item) {
 		if (!item) {
 			req.log.error("Couldn't find item for delete");
