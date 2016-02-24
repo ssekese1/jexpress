@@ -26,15 +26,14 @@ function recover(req, res, next) {
 		}
 		if (!user) {
 			log.error("Could not find email");
-			res.status(500).json({ status: "fail", message: "Could not find email" });
+			res.status(404).json({ status: "fail", message: "Could not find email" });
 			return;
 		}
-		user.temp_hash = require('rand-token').generate(16);
-		user.save(function(err) {
-			if (err) { 
-				log.error(err); 
-				return done(err); 
-			}
+		security.generateApiKey(user)
+		.then(function(result) {
+			var token = jwt.sign({ apikey: result.apikey, email: user.email, id: user._id }, config.shared_secret, {
+				expiresIn: "2d"
+			});
 			var nodemailer = require('nodemailer');
 			var smtpTransport = require('nodemailer-smtp-transport');
 			// create reusable transporter object using SMTP transport
@@ -48,10 +47,10 @@ function recover(req, res, next) {
 				// secure: true,
 				tls: { rejectUnauthorized: false }
 			}));
-			var html = text = "Someone (hopefully you) requested a password reset. Please click on the following url to recover your password. If you did not request a password reset, you can ignore this message. \n" + config.password_recovery_url + "/" + user.temp_hash;
+			var html = text = "Someone (hopefully you) requested a password reset. Please click on the following url to recover your password. If you did not request a password reset, you can ignore this message. \n" + config.password_recovery_url + "/" + token;
 			if (req.body.mail_format) {
 				html = req.body.mail_format;
-				html = html.replace(/\{\{recover_url\}\}/i, config.password_recovery_url + "/" + user.temp_hash);
+				html = html.replace(/\{\{recover_url\}\}/i, config.password_recovery_url + "/" + token);
 			}
 			transporter.sendMail({
 				from: config.smtp_from,
@@ -64,44 +63,14 @@ function recover(req, res, next) {
 				log.debug({ msg: "Mailer result", result: result });
 			});
 			res.json({ status: "ok", message: "Sent recovery email" });
+		}, function(err) {
+			deny(req, res, next);
 		});
 	});
 }
 
 function reset(req, res, next) { // Insecure - This is going to get deprecated
-	var password = req.body.password;
-	var temp_hash = req.body.temp_hash;
-	if (temp_hash.length < 16) {
-		log.error("Hash error");
-		deny(req, res, next);
-		return;
-	}
-	if (password.length < 4) {
-		log.error("Password too short");
-		deny(req, res, next);
-		return;
-	}
-	User.findOne({ temp_hash: temp_hash }, function(err, user) {
-		if (err) { 
-			log.error(err); 
-			return done(err); 
-		}
-		if (!user) {
-			log.error("Hash not found");
-			deny(req, res, next);
-			return;
-		}
-		user.password = security.encPassword(password);
-		user.temp_hash = "";
-		user.save(function(err) {
-			if (err) { 
-				log.error(err); 
-				return done(err); 
-			}
-			res.send("User updated");
-			return;
-		});
-	})
+	res.status(404).send({ status: "depricated", message: "This feature has been deprecated. Please use the JWT Token feature to reset passwords"});
 }
 
 function logout(req, res, next) {
