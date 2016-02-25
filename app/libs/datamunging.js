@@ -149,7 +149,7 @@ test4 = {
 
 var arrayMatch = /\[\d+\]/;
 var objMatch = /\[[a-zA-Z][a-zA-Z\d]*\]/;
-var allMatch = /^[a-zA-Z\d_\-]+|\[[a-zA-Z_\-][a-zA-Z_\-\d]*\]|\[\d+\]/g;
+var allMatch = /^[a-zA-Z\d_\-]+|\[[a-zA-Z\d_\-][a-zA-Z_\-\d]*\]|\[\d+\]/g;
 
 /*  Copyright (C) 2012-2014  Kurt Milam - http://xioup.com | Source: https://gist.github.com/1868955
  *   
@@ -275,24 +275,24 @@ var assignPropVal = function(parts, result, val) {
 }
 
 var deserialize = function(input) {
-	console.log("INPUT", input);
+	// console.log("INPUT", input);
 	var result = {};
 	var newobj = {};
 	for (prop in input) {
 		var parts = prop.match(allMatch);
-		console.log(prop, parts);
+		// console.log(prop, parts);
 		var val = input[prop];
 		if (parts) {
 			var tmp = assignPropVal(parts, result, val);
 			newobj = _.deepExtend(newobj, tmp);
 		} else {
-			console.log("NOT ARRAY", parts);
+			// console.log("NOT ARRAY", parts);
 			newobj[prop] = input[prop];
 		}
 		
 	}
 	// input = newobj;
-	console.log("Munge!", newobj);
+	// console.log("Munge!", newobj);
 	return newobj;
 }
 
