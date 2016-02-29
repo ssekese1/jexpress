@@ -561,7 +561,6 @@ var _versionItem = function(item) {
 router.route('/:modelname')
 .post(security.auth, function(req, res, next) {
 	req.log.debug("Normal post", req.modelname);
-	req.log.info(req.body);
 	try {
 		var item = new req.Model();
 		_populateItem(item, datamunging.deserialize(req.body));
@@ -580,7 +579,7 @@ router.route('/:modelname')
 				overviewLog.info({ action_id: 4, action: "Post", type: req.modelname, id: result._id, user: req.user });
 				websocket.emit(req.modelname, { method: "post", _id: result._id });
 				messagequeue.action(req.modelname, "post", req.user, result);
-				res.status(200).json({ message: req.modelname + " created", data: item });
+				res.json({ status: "ok", message: req.modelname + " created", data: item });
 				return;
 			}
 		});
