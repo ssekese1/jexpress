@@ -12,6 +12,7 @@ var User = require('./user_model');
 
 var OrganisationSchema   = new Schema({
 	name: { type: String, unique: true, index: true },
+	legal_name: String,
 	urlid: { type: String, unique: true, index: true },
 	tel: String,
 	mobile: String,
@@ -36,9 +37,13 @@ var OrganisationSchema   = new Schema({
 	cost_per_month_override: Number,
 	items: mongoose.Schema.Types.Mixed,
 	status: { type: String, validate: /active|inactive|hidden|prospect/, index: true, default: "active" },
-	quote_member_count: Number,
 	datatill_customer_account_id: Number,
 	datatill_radius_account_id: Number,
+	products: [ String ],
+	year_founded: Number,
+	employee_count: Number,
+	start_date: { type: Date, default: Date.now },
+	date_created: { type: Date, default: Date.now },
 	_owner_id: Objectid,
 	_deleted: { type: Boolean, default: false, index: true },
 });
