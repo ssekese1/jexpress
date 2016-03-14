@@ -117,26 +117,29 @@ function oauth_callback(req, res, next) {
 	var token = false;
 	var user = null;
 	if (req.query.error) {
-		res.redirect(config.oauth.fail_uri + "?error=" + req.query.error);
+		res.redirect(config.oauth.fail_uri + "?error=" + req.query.error + "&provider=" + provider);
 		return;
 	}
 	if (!code) {
-		res.redirect(config.oauth.fail_uri + "?error=unknown");
+		res.redirect(config.oauth.fail_uri + "?error=unknown&provider=" + provider);
 		return;
 	}
 	rest.post(provider_config.token_uri, { data: { client_id: provider_config.app_id, redirect_uri: config.url + "/api/login/oauth/callback/" + req.params.provider, client_secret: provider_config.app_secret, code: code, grant_type: "authorization_code" } })
 	.then(function(result) {
 		token = result;
 		if (!token.access_token) {
-			res.redirect(config.oauth.fail_uri + "?error=unknown");
+			res.redirect(config.oauth.fail_uri + "?error=unknown&provider=" + provider);
 			return;
 		}
 		return rest.get(provider_config.api_uri, { accessToken: token.access_token });
 	})
 	.then(function(result) {
 		data = result;
+		if (data.emailAddress) {
+			data.email = data.emailAddress;
+		}
 		if (!result.email) {
-			res.redirect(config.oauth.fail_uri + "?error=missing_data");
+			res.redirect(config.oauth.fail_uri + "?error=missing_data&provider=" + provider);
 			return;
 		}
 		return User.findOne({ email: result.email });
@@ -144,7 +147,7 @@ function oauth_callback(req, res, next) {
 	.then(function(result) {
 		user = result;
 		if (!user) {
-			res.redirect(config.oauth.fail_uri + "?error=no_user");
+			res.redirect(config.oauth.fail_uri + "?error=no_user&provider=" + provider);
 			return;
 		}
 		user[provider] = data;
@@ -158,7 +161,7 @@ function oauth_callback(req, res, next) {
 		apikey.save(function(err) {
 			if (err) {
 				log.error(err);
-				res.redirect(config.oauth.fail_uri + "?error=unknown");
+				res.redirect(config.oauth.fail_uri + "?error=unknown&provider=" + provider);
 				return;
 			}
 			log.info({ action_id: 1, action: "User logged on", user: user });
@@ -171,7 +174,7 @@ function oauth_callback(req, res, next) {
 	})
 	.then(null, function(err) {
 		console.log("Err", err);
-		res.redirect(config.oauth.fail_uri + "?error=unknown");
+		res.redirect(config.oauth.fail_uri + "?error=unknown&provider=" + provider);
 		return;
 	});
 }
