@@ -40,6 +40,7 @@ var UserSchema   = new Schema({
 	pin: String,
 	card: String,
 	first_login: { type: Boolean, default: true },
+	date_created: { type: Date, default: Date.now },
 	_owner_id: Objectid,
 	_deleted: { type: Boolean, default: false, index: true },
 });
