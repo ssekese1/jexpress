@@ -17,6 +17,7 @@ var OrganisationSchema   = new Schema({
 	tel: String,
 	mobile: String,
 	email: { type: String, unique: true, index: true, set: toLower },
+	accounts_email: { type: String, set: toLower },
 	website: String,
 	address: String,
 	postal_address: String,
