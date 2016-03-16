@@ -11,7 +11,10 @@ var LicenseSchema   = new Schema({
 	organisation_id: { type: Objectid, ref: 'Organisation' },
 	membership_id: { type: Objectid, ref: 'Membership' },
 	location_id: { type: Objectid, ref: 'Location' },
-	user_id: { type: Objectid, ref: 'User' }
+	user_id: { type: Objectid, ref: 'User' },
+	date_created: { type: Date, default: Date.now },
+	_owner_id: Objectid,
+	_deleted: { type: Boolean, default: false, index: true },
 });
 
 LicenseSchema.set("_perms", {
