@@ -534,6 +534,10 @@ var _populateItem = function(item, data) {
 	for(prop in item) {
 		if (typeof data[prop] != "undefined") {
 			item[prop] = data[prop];
+			// Unset any blank values - essentially 'deleting' values on editing
+			if (data[prop] === "") {
+				item[prop] = null;
+			}
 		}
 		//Check for arrays that come in like param[1]=blah, param[2]=yack
 		if (data[prop + "[0]"]) {
