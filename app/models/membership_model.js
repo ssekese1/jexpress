@@ -2,6 +2,7 @@ var mongoose     = require('mongoose');
 var Schema       = mongoose.Schema;
 
 var Objectid = mongoose.Schema.Types.ObjectId;
+var Sageanalysiscategory = require("./sageanalysiscategory_model");
 
 var MembershipSchema   = new Schema({
 	name: String,
@@ -15,6 +16,7 @@ var MembershipSchema   = new Schema({
 	cost_extra_member: Number,
 	space_credits_per_month_extra_member: Number,
 	stuff_credits_per_month_extra_member: Number,
+	sage_analytics_categories: mongoose.Schema.Types.Mixed,
 	// bandwidth_per_month_extra_member: Number,
 	gigs: Number,
 	business_address: Boolean,
