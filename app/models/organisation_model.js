@@ -46,6 +46,7 @@ var OrganisationSchema   = new Schema({
 	employee_count: Number,
 	discount: Number,
 	discount_expires: Date,
+	pin: String,
 	start_date: { type: Date, default: Date.now },
 	date_created: { type: Date, default: Date.now },
 	_owner_id: Objectid,
