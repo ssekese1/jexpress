@@ -36,6 +36,7 @@ var OrganisationSchema   = new Schema({
 	space_credits_per_month_override: Number,
 	stuff_credits_per_month_override: Number,
 	bandwidth_per_month_override: Number,
+	print_credits_per_month_override: Number,
 	cost_per_month_override: Number,
 	items: mongoose.Schema.Types.Mixed,
 	status: { type: String, validate: /active|inactive|hidden|prospect/, index: true, default: "active" },

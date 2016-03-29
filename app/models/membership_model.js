@@ -8,6 +8,7 @@ var MembershipSchema   = new Schema({
 	name: String,
 	space_credits_per_month: Number,
 	stuff_credits_per_month: Number,
+	print_credits_per_month: Number,
 	// bandwidth_per_month: Number,
 	description: String,
 	cost: Number,
