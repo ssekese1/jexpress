@@ -70,7 +70,7 @@ UserSchema.pre("save", function(next) {
 				if (doc) {
 					if (doc._id.toString() !== self._id.toString()) {
 						console.error("Err", "Alternative email already in use in primary mails", email, doc._id, self._id);
-						self.invalidate("emails", "Alternative email already in use")
+						self.invalidate("emails", "Alternative email already in use");
 						return next(new Error('Alternative email already in use'));
 						// return;
 					}
@@ -84,7 +84,7 @@ UserSchema.pre("save", function(next) {
 					if (doc) {
 						if (doc._id.toString() !== self._id.toString()) {
 							console.error("Err", "Alternative email already in use in alternative mails", email, doc._id, self._id);
-							self.invalidate("emails", "Alternative email already")
+							self.invalidate("emails", "Alternative email already");
 							return next(new Error('Alternative email already in use'));
 							// return;
 						}
@@ -131,6 +131,6 @@ UserSchema.plugin(friendly, {
 
 function toLower (v) {
 	return v.toLowerCase();
-};
+}
 
 module.exports = mongoose.model('User', UserSchema);
