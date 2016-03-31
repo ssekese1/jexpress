@@ -234,7 +234,7 @@ var deny = function(req, res, next) {
 		req.log.error("Denying auth");
 	res.status(403).send("Unauthorized");
 	req.authorized = false;
-}
+};
 
 var changeUrlParams = function(req, key, val) {
 	if (req.log)
@@ -243,7 +243,7 @@ var changeUrlParams = function(req, key, val) {
 	q[key] = val;
 	var pathname = require("url").parse(req.url).pathname;
 	return config.url + req._parsedOriginalUrl.pathname + "?" + querystring.stringify(q);
-}
+};
 
 router.route("/_models").get(function(req, res, next) {
 	var fs = require("fs");
@@ -263,12 +263,12 @@ router.route("/_models").get(function(req, res, next) {
 					model: modelname,
 					file: file,
 					perms: modelobj.schema.get("_perms"),
-				}
+				};
 				models.push(model);
 			}
 		});
 		res.json(models);
-	})
+	});
 });
 
 router.get('/_websocket_test', function(req, res) {
@@ -308,7 +308,7 @@ var fixArrays = function(req, res, next) {
 		}
 	}
 	next();
-}
+};
 
 /* Groups */
 router.route("/_groups/:user_id")
@@ -468,9 +468,9 @@ router.use('/:modelname', function(req, res, next) {
 
 /* Deal with Passwords. Just always encrypt anything called 'password' */
 router.use('/:modelname', function(req, res, next) {
-	if (req.body["password"] && !(req.query["password_override"])) {
-		var password = security.encPassword(req.body["password"]);
-		req.body["password"] = password;
+	if (req.body.password && !(req.query.password_override)) {
+		var password = security.encPassword(req.body.password);
+		req.body.password = password;
 		log.debug("Password encrypted");
 	}
 	next();
@@ -483,7 +483,7 @@ function format_filter(filter) {
 			try {
 				if (val.indexOf(":") !== -1) {
 					var tmp = val.split(":");
-					filter[key] = {}
+					filter[key] = {};
 					filter[key][tmp[0]] = tmp[1];
 				}
 				if (typeof(val) == "object") {
@@ -515,7 +515,7 @@ var _deSerialize = function(data) {
 		}
 		obj[keyPath[lastKeyIndex]] = value;
 	}
-	for(datum in data) {
+	for(var datum in data) {
 		var matches = datum.match(/\[(.+?)\]/g);
 		if (matches) {
 			var params = matches.map(function(match) {
@@ -527,11 +527,11 @@ var _deSerialize = function(data) {
 			}
 		}
 	}
-}
+};
 
 var _populateItem = function(item, data) {
 	_deSerialize(data);
-	for(prop in item) {
+	for(var prop in item) {
 		if (typeof data[prop] != "undefined") {
 			item[prop] = data[prop];
 			// Unset any blank values - essentially 'deleting' values on editing
@@ -550,8 +550,7 @@ var _populateItem = function(item, data) {
 			item[prop] = tmp;
 		}
 	}
-
-}
+};
 
 var _versionItem = function(item) {
 	if (item._version || item._version === 0) {
@@ -559,7 +558,7 @@ var _versionItem = function(item) {
 	} else {
 		item._version = 0;
 	}
-}
+};
 
 /* Routes */
 router.route('/:modelname')
@@ -643,9 +642,9 @@ router.route('/:modelname')
 			try {
 				q.populate(req.query.populate);
 				result.populate = req.query.populate;
-			} catch(err) {
-				req.log.error(err);
-				res.status(500).send(err.toString());
+			} catch(error) {
+				req.log.error(error);
+				res.status(500).send(error.toString());
 				return;
 			}
 		}
@@ -669,9 +668,9 @@ router.route('/:modelname')
 					res.json(result);
 				}
 			});
-		} catch(err) {
-			req.log.error(err);
-			res.status(500).send(err.toString());
+		} catch(error) {
+			req.log.error(error);
+			res.status(500).send(error.toString());
 			return;
 		}
 	});
@@ -698,7 +697,7 @@ router.route('/:modelname/batch')
 	req.Model.create(items, function(err, docs) {
 		if (err) {
 			req.log.error(err);
-			res.status(500).send(err.toString())
+			res.status(500).send(err.toString());
 		} else {
 			// websocket.emit(modelname, { method: "post", _id: result._id });
 			overviewLog.info({ action_id: 8, action: "Batch insert", type: req.modelname, count: items.length, user: req.user });
@@ -775,7 +774,7 @@ var getOne = function(Model, item_id, params) {
 		}
 	});
 	return deferred.promise;
-}
+};
 
 router.route('/:modelname/:item_id/:method_name')
 .get(function(req, res) {
@@ -795,7 +794,7 @@ router.route('/:modelname/:item_id/:method_name')
 			res.json(item);
 		}, function(err) {
 			req.log.error(err);
-			res.status(500).send(err.toString())
+			res.status(500).send(err.toString());
 		});
 	});
 });
@@ -839,9 +838,9 @@ router.route('/:modelname/:item_id')
 								res.json({ message: req.modelname + " updated ", data: data });
 							}
 						});
-					} catch(err) {
-						req.log.error(err);
-						res.status(500).send(err.toString());
+					} catch(error) {
+						req.log.error(error);
+						res.status(500).send(error.toString());
 						return;
 					}
 				} else {
@@ -886,7 +885,7 @@ router.route('/:modelname/:item_id')
 					messagequeue.action(req.modelname, "delete-soft", req.user, item);
 					res.json({ message: req.modelname + ' deleted' });
 				}
-			})
+			});
 		} else {
 			req.log.debug("Hard deleting");
 			item.remove(function(err) {
