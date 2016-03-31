@@ -76,36 +76,59 @@ LedgerSchema.set("_perms", {
 // }
 
 var _calcOrg = function(organisation) {
+	var start = new Date().getTime();
+	if (!organisation || !organisation._id || !organisation.name) {
+		throw("Missing organisation ID or name");
+	}
+	console.log("Starting timer for", organisation._id, organisation.name);
 	deferred = Q.defer();
 	require("./ledger_model").where("organisation_id", organisation._id).exec(function(err, transactions) {
 		if (err) {
 			deferred.reject(err);
 			return;
 		}
+		if (!transactions) {
+			return deferred.reject("No transactions found", organisation._id, organisation.name);
+		}
+		console.log("get ledger lines", new Date().getTime() - start);
 		var totals = {
 			stuff: 0,
 			space: 0
 		};
 		transactions.forEach(function(transaction) {
-			totals[transaction.cred_type] += Math.round(transaction.amount * 100) / 100;
+			totals[transaction.cred_type] += transaction.amount;
 		});
+		console.log("add transactions", new Date().getTime() - start);
 		organisation.stuff_total = Math.round(totals.stuff * 100) / 100;
 		organisation.space_total = Math.round(totals.space * 100) / 100;
 		organisation.save();
+		console.log("save", new Date().getTime() - start);
 		console.log("Totals", organisation.name, totals);
 		deferred.resolve(totals);
 	});
 	return deferred.promise;
-}
+};
 
 LedgerSchema.statics.sync = function() {
+	console.log("Syncing all orgs");
+	var deferred = Q.defer();
 	Organisation.find(function(err, organisations) {
-		organisations.forEach(function(organisation) {
-			_calcOrg(organisation);
+		var tasks = organisations.map(function(organisation) {
+			console.log(organisation.name);
+			return function() {
+				console.log("Calculating", organisation.name, organisation._id);
+				return _calcOrg(organisation);
+			};
 		});
+		tasks.push(function() {
+			deferred.resolve("Organisations synced");
+		});
+		tasks.reduce(function(soFar, f) {
+			return soFar.then(f);
+		}, Q());
 	});
-	return "Reconciled organisations";
-}
+	return deferred.promise;
+};
 
 var findPreviousEntry = function(entry) {
 	var deferred = Q.defer();
@@ -120,7 +143,7 @@ var findPreviousEntry = function(entry) {
 		}
 	});
 	return deferred.promise;
-}
+};
 
 var updateBalance = function(entry, prev) {
 	var deferred = Q.defer();
@@ -138,7 +161,7 @@ var updateBalance = function(entry, prev) {
 		}
 	});
 	return deferred.promise;
-}
+};
 
 LedgerSchema.statics.balances = function() {
 	var deferred = Q.defer();
@@ -157,31 +180,32 @@ LedgerSchema.statics.balances = function() {
 		deferred.resolve({ count: entries.length });
 	});
 	return deferred.promise;
-}
+};
 
 _syncOrg = function(organisation_id) {
 	console.log("Syncing", organisation_id);
 	var deferred = Q.defer();
 	Organisation.findOne({"_id": organisation_id}, function(err, organisation) {
+		if (err) {
+			return deferred.reject(err);
+		}
+		if (!organisation) {
+			return deferred.reject("Organisation not found");
+		}
 		_calcOrg(organisation)
 		.then(function(result) {
 			deferred.resolve(result);
 		}, function(err) {
-			console.log("Err 1.170", err);
+			console.error(err);
 			deferred.reject(err);
-		})
+		});
 	});
 	return deferred.promise;
-}
+};
 
 LedgerSchema.statics.syncOrg = function(data) {
-	var deferred = Q.defer();
 	console.log("Data", data);
-	_syncOrg(data.organisation_id)
-	.then(function(result) {
-		deferred.resolve(result);
-	});
-	return deferred.promise;
+	return _syncOrg(data.organisation_id);
 };
 
 var sender = null;
@@ -291,12 +315,12 @@ LedgerSchema.statics.report = function(params) {
 	var deferred = Q.defer();
 	var Ledger = require("./ledger_model");
 	params = params || {};
-	find = {}
+	find = {};
 	params.start_date = params.start_date || moment().subtract(1, "month").toISOString();
 	params.end_date = params.end_date || moment().toISOString();
 	find.date = { "$gte": params.start_date, "$lte": params.end_date };
 	if (params.cred_type && (params.cred_type != "*")) {
-		find.cred_type = params.cred_type
+		find.cred_type = params.cred_type;
 	} else {
 		params.cred_type = "*";
 	}
