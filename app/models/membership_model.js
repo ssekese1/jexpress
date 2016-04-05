@@ -30,6 +30,7 @@ var MembershipSchema   = new Schema({
 	special: Boolean,
 	sage: mongoose.Schema.Types.Mixed,
 	datatill_product: Number,
+	papercut_group: String,
 	_owner_id: Objectid,
 	_deleted: { type: Boolean, default: false, index: true },
 });
