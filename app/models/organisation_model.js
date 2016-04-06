@@ -14,6 +14,7 @@ var OrganisationSchema   = new Schema({
 	name: { type: String, unique: true, index: true },
 	legal_name: String,
 	urlid: { type: String, unique: true, index: true },
+	short_name: { type: String, unique: true, index: true, set: shortname },
 	tel: String,
 	mobile: String,
 	email: { type: String, unique: true, index: true, set: toLower },
@@ -48,6 +49,7 @@ var OrganisationSchema   = new Schema({
 	discount: Number,
 	discount_expires: Date,
 	pin: String,
+	papercut_username: String,
 	start_date: { type: Date, default: Date.now },
 	date_created: { type: Date, default: Date.now },
 	_owner_id: Objectid,
@@ -67,6 +69,10 @@ OrganisationSchema.path('name').validate(function (v) {
 
 function toLower (v) {
 	return v.toLowerCase();
+}
+
+function shortname(s) {
+	return s.toLowerCase().replace(/[^a-z0-9\-]+/g, "");
 }
 
 OrganisationSchema.plugin(friendly, {
