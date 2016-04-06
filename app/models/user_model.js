@@ -39,6 +39,7 @@ var UserSchema   = new Schema({
 	radius_id: Number,
 	pin: String,
 	card: String,
+	papercut_username: String,
 	first_login: { type: Boolean, default: true },
 	date_created: { type: Date, default: Date.now },
 	_owner_id: Objectid,
