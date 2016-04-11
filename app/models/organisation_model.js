@@ -72,7 +72,7 @@ function toLower (v) {
 }
 
 function shortname(s) {
-	return s.toLowerCase().replace(/[^a-z0-9\-]+/g, "");
+	return (s) ? s.toLowerCase().replace(/[^a-z0-9\-]+/g, "") : null;
 }
 
 OrganisationSchema.plugin(friendly, {
