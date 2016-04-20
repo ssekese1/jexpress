@@ -59,12 +59,24 @@ var UserModel = mongoose.model('User', UserSchema);
 UserSchema.pre("save", function(next) {
 	var self = this;
 	this._owner_id = this._id; // Ensure the owner is always the user for this model
+	this.emails = this.emails.filter(function(email) {
+		if (!email.trim)
+			return false;
+		if (email.trim() === "")
+			return false;
+		return true;
+	});
+	for(var x = 0; x < this.emails.length; x++) {
+		if (this.emails[x].trim && (this.emails[x].trim() === "")) {
+			delete(this.emails[x]);
+		}
+	}
 	var emails = this.emails;
 	if (emails.length) {
 		emails.forEach(function(email) {
-			console.log("Checking email ", email);
+			// console.log("Checking email ", email);
 			UserModel.findOne({ email: email }, function(err, doc) {
-				console.log("Check one");
+				// console.log("Check one");
 				if (err) {
 					return next(err);
 				}
@@ -78,7 +90,7 @@ UserSchema.pre("save", function(next) {
 				}
 			
 				UserModel.findOne({ emails: email }, function(err, doc) {
-					console.log("Check two");
+					// console.log("Check two");
 					if (err) {
 						return next(err);
 					}
