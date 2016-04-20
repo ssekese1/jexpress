@@ -29,6 +29,8 @@ var BookingSchema   = new Schema({
 	event_client: { type: Boolean, default: false },
 	img: String,
 	layout: { type: Objectid, ref: "Layout" },
+	booking_url: String,
+	website: String,
 	_owner_id: Objectid,
 	_deleted: { type: Boolean, default: false, index: true },
 	_version: { type: Number, default: 0 },
@@ -121,12 +123,12 @@ var deleteReserve = function(transaction) {
 		console.log("Error", err);
 		// throw(err);
 	}
-}
+};
 
 BookingSchema.post("save", function(transaction) {
 	// console.log("Transaction", transaction);
 	if (transaction._deleted) {
-		console.log("Fake delete but still delete reserve")
+		console.log("Fake delete but still delete reserve");
 		deleteReserve(transaction);
 	}
 });
