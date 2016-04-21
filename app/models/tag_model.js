@@ -4,12 +4,12 @@ var Schema       = mongoose.Schema;
 var Objectid = mongoose.Schema.Types.ObjectId;
 var Mixed = mongoose.Schema.Types.Mixed;
 
-var TestSchema   = new Schema({
+var TagSchema   = new Schema({
 	name: { type: String, unique: true, index: true, set: toLower },
-	type: String,
+	type: { type: String, index: true }
 });
 
-TestSchema.set("_perms", {
+TagSchema.set("_perms", {
 	admin: "crud",
 	user: "cr",
 	all: "r"
@@ -17,6 +17,6 @@ TestSchema.set("_perms", {
 
 function toLower (v) {
 	return v.toLowerCase();
-};
+}
 
-module.exports = mongoose.model('Test', TestSchema);
+module.exports = mongoose.model('Tag', TagSchema);

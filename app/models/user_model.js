@@ -8,6 +8,7 @@ var Mixed = mongoose.Schema.Types.Mixed;
 var Organisation = require("./organisation_model");
 var Location = require("./location_model");
 var Membership = require("./membership_model");
+var Tag = require("./tag_model");
 
 var UserSchema   = new Schema({
 	name: { type: String },
@@ -42,6 +43,7 @@ var UserSchema   = new Schema({
 	papercut_username: String,
 	first_login: { type: Boolean, default: true },
 	date_created: { type: Date, default: Date.now },
+	tags: [ { type: Objectid, ref: "Tag" } ],
 	_owner_id: Objectid,
 	_deleted: { type: Boolean, default: false, index: true },
 });
@@ -56,9 +58,24 @@ UserSchema.set("_perms", {
 
 var UserModel = mongoose.model('User', UserSchema);
 
+// UserSchema.pre("save", function(next) {
+// 	var self = this;
+// 	// Tags
+// 	console.log("Tags", self.tags);
+// 	if ((self.tags) && !Array.isArray(self.tags)) {
+// 		self.tags = self.tags.split(",");
+// 	}
+// 	next();
+// });
+
 UserSchema.pre("save", function(next) {
 	var self = this;
 	this._owner_id = this._id; // Ensure the owner is always the user for this model
+	//Tags
+	// console.log("Tags", self.tags);
+	// if ((self.tags) && !Array.isArray(self.tags)) {
+	// 	self.tags = self.tags.split(",");
+	// }
 	this.emails = this.emails.filter(function(email) {
 		if (!email.trim)
 			return false;
