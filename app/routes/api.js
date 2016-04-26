@@ -602,8 +602,8 @@ router.route('/:modelname')
 		return;
 	}
 	var qcount = req.Model.find(filters);
-	q = req.Model.find(filters);
-	checkDeleted = [ { _deleted: false }, { _deleted: null }];
+	var q = req.Model.find(filters);
+	var checkDeleted = [ { _deleted: false }, { _deleted: null }];
 	if (!req.query.showDeleted) {
 		qcount.or(checkDeleted);
 		q.or(checkDeleted);
