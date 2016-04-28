@@ -40,7 +40,7 @@ var OrganisationSchema   = new Schema({
 	print_credits_per_month_override: Number,
 	cost_per_month_override: Number,
 	items: mongoose.Schema.Types.Mixed,
-	status: { type: String, validate: /active|inactive|hidden|prospect/, index: true, default: "active" },
+	status: { type: String, validate: /active|inactive|hidden|prospect|pending/, index: true, default: "active" },
 	datatill_customer_account_id: Number,
 	datatill_radius_account_id: Number,
 	products: [ String ],
