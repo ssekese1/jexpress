@@ -43,7 +43,7 @@ var OrganisationSchema   = new Schema({
 	status: { type: String, validate: /active|inactive|hidden|prospect|pending/, index: true, default: "active" },
 	datatill_customer_account_id: Number,
 	datatill_radius_account_id: Number,
-	products: [ String ],
+	product: String,
 	year_founded: Number,
 	employee_count: Number,
 	discount: Number,
