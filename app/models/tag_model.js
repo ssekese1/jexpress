@@ -12,7 +12,7 @@ var TagSchema   = new Schema({
 TagSchema.set("_perms", {
 	admin: "crud",
 	user: "cr",
-	all: "r"
+	all: "cr"
 });
 
 function toLower (v) {
