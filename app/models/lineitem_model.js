@@ -26,6 +26,7 @@ var LineItemSchema   = new Schema({
 LineItemSchema.set("_perms", {
 	admin: "crud",
 	owner: "cr",
+	primary_member: "r",
 	user: "",
 	all: ""
 });

@@ -19,7 +19,7 @@ var LicenseSchema   = new Schema({
 
 LicenseSchema.set("_perms", {
 	admin: "crud",
-	primary_member: "r"
+	primary_member: "ru"
 });
 
 module.exports = mongoose.model('License', LicenseSchema);
