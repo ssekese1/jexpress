@@ -151,7 +151,7 @@ UserSchema.post("save", function(user) {
 });
 
 UserSchema.path('name').validate(function (v) {
-	return v.length > 0;
+	return (v) && (v.length > 0);
 }, 'Name cannot be empty');
 
 UserSchema.plugin(friendly, {
