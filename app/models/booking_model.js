@@ -75,6 +75,7 @@ BookingSchema.pre("save", function(next) {
 			if (parseInt(transaction._owner_id) !== parseInt(transaction.user)) {
 				description += " (Booked by Reception)";
 			}
+			reserve_expires = moment(transaction.start_time).subtract(24, "hours");
 			var reserve = Ledger({
 				user_id: transaction.user,
 				description: description,
@@ -82,7 +83,8 @@ BookingSchema.pre("save", function(next) {
 				cred_type: "space",
 				source_type: "booking",
 				source_id: transaction._id,
-				reserve: true
+				reserve: true,
+				reserve_expires: reserve_expires.format("x")
 			});
 			console.log("RESERVE::", reserve);
 			reserve.save(function(err) {
