@@ -593,13 +593,25 @@ router.route('/:modelname')
 	}
 })
 .get(security.auth, function(req, res) {
+	var parse_search = function(search) {
+		var result = {};
+		for(var i in search) {
+			result[i] = new RegExp(search[i], "i");
+		}
+		return result;
+	};
+
 	var filters = {};
 	try {
-		filters = format_filter(req.query.filter, res);
+		filters = format_filter(req.query.filter);
 	} catch(err) {
 		req.log.error(err);
 		res.status(500).send(err.toString());
 		return;
+	}
+	var search = parse_search(req.query.search);
+	for (var i in search) {
+		filters[i] = search[i];
 	}
 	var qcount = req.Model.find(filters);
 	var q = req.Model.find(filters);
@@ -648,20 +660,26 @@ router.route('/:modelname')
 				return;
 			}
 		}
-		if (req.query.autopopulate) {
-			for(var key in req.Model.schema.paths) {
-				var path = req.Model.schema.paths[key];
-				if ((path.instance == "ObjectID") && (path.options.ref)) {
-					q.populate(path.path);
+		try {
+			if (req.query.autopopulate) {
+				for(var key in req.Model.schema.paths) {
+					var path = req.Model.schema.paths[key];
+					if ((path.instance == "ObjectID") && (path.options.ref)) {
+						q.populate(path.path);
+					}
 				}
+				result.autopopulate = true;
 			}
-			result.autopopulate = true;
+		} catch(error) {
+			req.log.error(error);
+			res.send(500, error.toString());
+			return;
 		}
 		try {
 			q.exec(function(err, items) {
 				if (err) {
 					req.log.error(err);
-					res.status(500).send(err.toString());
+					res.send(500, err.toString());
 				} else {
 					overviewLog.info({ action_id: 3, action: "Fetched documents", type: req.modelname, count: result.count, autopopulate: result.autopopulate, limit: result.limit, page: result.page, filters: filters, user: req.user });
 					result.data = items;
@@ -670,7 +688,7 @@ router.route('/:modelname')
 			});
 		} catch(error) {
 			req.log.error(error);
-			res.status(500).send(error.toString());
+			res.send(500, error.toString());
 			return;
 		}
 	});
