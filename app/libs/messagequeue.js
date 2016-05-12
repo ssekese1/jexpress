@@ -18,6 +18,6 @@ var MessageQueue = {
 		})
 		;
 	}
-}
+};
 
 module.exports = MessageQueue;
