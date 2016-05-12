@@ -2,13 +2,15 @@ var Groups = require("../models/usergroups_model.js");
 
 var actionPut = function(req, res, next) {
 	var user_id = req.params.user_id;
-	var group = req.body.group;
+	var group = req.params.group;
 	if (!group) {
+		console.error("Group required");
 		res.send(400, "Group required");
 		return;
 	}
 	Groups.findOne({ user_id: user_id }, function(err, userGroup) {
 		if (err) {
+			console.error(err);
 			res.send(500, err);
 			return;
 		}
@@ -19,19 +21,18 @@ var actionPut = function(req, res, next) {
 		}
 		if (Array.isArray(group)) {
 			group.forEach(function(g) {
-				var i = userGroup.groups.indexOf(g);
-				if (i == -1) {
+				if (userGroup.groups.indexOf(g) == -1) {
 					userGroup.groups.push(g);
 				}
 			});
 		} else {
-			var i = userGroup.groups.indexOf(group);
-			if (i == -1) {
+			if (userGroup.groups.indexOf(group) == -1) {
 				userGroup.groups.push(group);
 			}
 		}
 		userGroup.save(function(err, result) {
 			if (err) {
+				console.error(err);
 				res.send(500, err);
 				return;
 			}
@@ -42,7 +43,7 @@ var actionPut = function(req, res, next) {
 
 var actionPost = function(req, res, next) {
 	var user_id = req.params.user_id;
-	var group = req.body.group;
+	var group = req.params.group;
 	if (!group) {
 		group = [];
 	}
@@ -88,7 +89,7 @@ var actionGet = function(req, res, next) {
 
 var actionDelete = function(req, res, next) {
 	var user_id = req.params.user_id;
-	var group = req.body.group;
+	var group = req.params.group;
 	if (!group) {
 		res.send(400, "Group required");
 		return;
