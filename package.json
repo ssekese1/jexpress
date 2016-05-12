@@ -1,6 +1,6 @@
 {
-  "name": "nutoobs.dev",
-  "version": "0.0.0",
+  "name": "jexpress",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "start": "node ./bin/www"
@@ -27,7 +27,7 @@
     "q": "^1.4.1",
     "querystring": "^0.2.0",
     "rand-token": "^0.2.1",
-    "restify": "^2.8.3",
+    "restify": "^4.0.4",
     "restler": "^3.2.2",
     "restler-q": "^0.1.1",
     "serve-favicon": "~2.1.3",

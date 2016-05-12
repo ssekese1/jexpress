@@ -26,7 +26,7 @@ var basicAuth = function(req) {
 };
 
 var fail = function(res, code, message) {
-	res.status(code).send({ status: "error", message: message });
+	res.send(code, { status: "error", message: message });
 };
 
 var Security = {
