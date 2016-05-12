@@ -34,7 +34,8 @@ var LedgerSchema   = new Schema({
 	cred_type: { type: String, validate: /space|stuff/, index: true, required: true },
 	email: String,
 	transaction_type: { type: String, validate: /credit|debit|reserve/ },
-	_owner_id: Objectid
+	_owner_id: Objectid,
+	_deleted: { type: Boolean, default: false, index: true },
 });
 
 LedgerSchema.set("_perms", {
@@ -267,6 +268,12 @@ LedgerSchema.pre("save", function(next) {
 						transaction.invalidate("amount", "Only admins can give credit. Amount must be less than zero.");
 						log.error("Only admins can give credit. Amount must be less than zero.");
 						return next(new Error("Only admins can give credit. Amount must be less than zero."));
+					}
+					// Only admins can delete non-reserve
+					if ((transaction._deleted) && (transaction.transaction_type !== "reserve") && (!sender.admin)) {
+						transaction.invalidate("_deleted", "Only admins can delete non-reserved.");
+						log.error("Only admins can delete non-reserved.");
+						return next(new Error("You are not allowed to reverse this transaction"));
 					}
 					// Make sure we have credit
 					_calcOrg(organisation).then(function(totals) {
