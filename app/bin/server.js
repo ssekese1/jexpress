@@ -200,6 +200,21 @@ var url = require('url');
 var messagequeue = require("../libs/messagequeue");
 var security = require("../libs/security");
 
+config.callbacks = {
+	post: function(modelname, item, user) {
+		websocket.emit(modelname, { method: "post", _id: item._id });
+		messagequeue.action(modelname, "post", user, item);
+	},
+	put: function(modelname, item, user) {
+		websocket.emit(modelname, { method: "put", _id: item._id });
+		messagequeue.action(modelname, "put", user, item);
+	},
+	delete: function(modelname, item, user, opts) {
+		websocket.emit(modelname, { method: "delete", _id: item._id });
+		messagequeue.action(modelname, "delete", user, item);
+	}
+};
+
 var server = new JExpress(config);
 
 server.get('/_websocket_test', function(req, res) {

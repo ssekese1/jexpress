@@ -152,8 +152,7 @@ var actionPost = function(req, res, next) {
 				return;
 			} else {
 				console.log({ action_id: 4, action: "Post", type: req.modelname, id: result._id, user: req.user });
-				// websocket.emit(req.modelname, { method: "post", _id: result._id });
-				// messagequeue.action(req.modelname, "post", req.user, result);
+				req.config.callbacks.post.call(null, req.modelname, result, req.user);
 				res.json({ status: "ok", message: req.modelname + " created", data: item });
 				console.timeEnd("POST " + req.modelname);
 				return;
@@ -186,8 +185,7 @@ var actionPut = function(req, res) {
 								res.send(500, err.toString());
 							} else {
 								console.log({ action_id: 5, action: "Put", type: req.modelname, id: item._id, user: req.user });
-								// websocket.emit(req.modelname, { method: "put", _id: item._id });
-								// messagequeue.action(req.modelname, "put", req.user, data);
+								req.config.callbacks.put.call(null, req.modelname, item, req.user);
 								res.json({ status: "ok", message: req.modelname + " updated", data: data });
 								console.timeEnd("PUT " + req.modelname + "/" + req.params.item_id);
 							}
@@ -236,8 +234,7 @@ var actionDelete = function(req, res) {
 					res.send(500, err.toString());
 				} else {
 					console.log({ action_id: 6, action: "Delete", type: req.modelname, softDelete: true, id: item._id, user: req.user });
-					// websocket.emit(req.modelname, { method: "delete", _id: item._id });
-					// messagequeue.action(req.modelname, "delete-soft", req.user, item);
+					req.config.callbacks.delete.call(null, req.modelname, item, req.user, { soft: true });
 					res.json({ status: "ok", message: req.modelname + ' deleted' });
 				}
 			});
@@ -249,8 +246,7 @@ var actionDelete = function(req, res) {
 					res.send(500, err.toString());
 				} else {
 					console.log({ action_id: 6, action: "Delete", type: req.modelname, softDelete: false, id: item._id, user: req.user });
-					// websocket.emit(req.modelname, { method: "delete", _id: item._id });
-					// messagequeue.action(req.modelname, "delete", req.user, item);
+					req.config.callbacks.delete.call(null, req.modelname, item, req.user, { soft: false });
 					res.json({ status: "ok", message: req.modelname + ' deleted' });
 				}
 			});
@@ -508,7 +504,14 @@ var JExpress = function(options) {
 			server: "localhost",
 			db: "openmembers",
 		},
-		url: "http://localhost:3001"
+		url: "http://localhost:3001",
+		callbacks: {
+			put: function() {},
+			post: function() {},
+			delete: function() {},
+			get: function() {},
+			getOne: function() {},
+		}
 	};
 
 	//Override config with passed in options
