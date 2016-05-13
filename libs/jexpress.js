@@ -21,6 +21,14 @@ var middlewareModel = function(req, res, next) {
 	}
 };
 
+var middlewarePasswords = function(req, res, next) {
+	if (req.params.password && !(req.query.password_override)) {
+		req.params.password = security.encPassword(req.params.password);
+		console.log("Password encrypted");
+	}
+	next();
+};
+
 // Actions (verbs)
 var actionGet = function(req, res) {
 	console.time("GET " + req.modelname);
@@ -548,18 +556,11 @@ var JExpress = function(options) {
 
 	// Define our endpoints
 
-	/* 
-	   This has to come first so that we don't get confused with models. 
-	   It's for backward compatibility with our partners, and will hopefully
-	   fall away one day
-	*/
-	server.post("/api/login", login.login);
-
 	/* Our API endpoints */
 	server.get('/api/:modelname', middlewareModel, security.auth, actionGet);
-	server.post('/api/:modelname', middlewareModel, security.auth, actionPost);
 	server.get('/api/:modelname/:item_id', middlewareModel, security.auth, actionGetOne);
-	server.put('/api/:modelname/:item_id', middlewareModel, security.auth, actionPut);
+	server.post('/api/:modelname', middlewareModel, security.auth, middlewarePasswords, actionPost);
+	server.put('/api/:modelname/:item_id', middlewareModel, security.auth, middlewarePasswords, actionPut);
 	server.del('/api/:modelname/:item_id', middlewareModel, security.auth, actionDelete);
 
 	/* Batch routes - ROLLED BACK FOR NOW */

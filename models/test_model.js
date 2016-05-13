@@ -10,6 +10,7 @@ var TestSchema   = new Schema({
     bar: { type: String, unique: true, index: true }, // Ah! Some business logic!
     yack: Mixed, // We can put anything in here, including objects
     shmack: [String], // We can store arrays
+    password: String, // Test password encryption
     _owner_id: ObjectId // This is one of the magic fields that will be populated by the API
 });
 

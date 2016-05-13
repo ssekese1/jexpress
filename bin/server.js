@@ -186,52 +186,27 @@ And then later, say in your pre- or post-save...
 	return next(new Error( "Verboten!"));
 }
 ```
-
 */
 
 var JExpress = require("../libs/jexpress");
 var User = require('../models/user_model');
 var APIKey = require('../models/apikey_model');
-var bcrypt = require('bcrypt');
-var config = require('../../config');
-var querystring = require('querystring');
-var websocket = require('../middleware/websockets.js').connect();
-var url = require('url');
-var messagequeue = require("../libs/messagequeue");
+var config = require('../config');
 var security = require("../libs/security");
 
 config.callbacks = {
 	post: function(modelname, item, user) {
-		websocket.emit(modelname, { method: "post", _id: item._id });
-		messagequeue.action(modelname, "post", user, item);
+		console.log("Post callback");
 	},
 	put: function(modelname, item, user) {
-		websocket.emit(modelname, { method: "put", _id: item._id });
-		messagequeue.action(modelname, "put", user, item);
+		console.log("Put callback");
 	},
 	delete: function(modelname, item, user, opts) {
-		websocket.emit(modelname, { method: "delete", _id: item._id });
-		messagequeue.action(modelname, "delete", user, item);
+		console.log("Delete callback");
 	}
 };
 
 var server = new JExpress(config);
-
-server.get('/_websocket_test', function(req, res) {
-	websocket.emit('testing', { hello: 'world'});
-	res.send("Sent testing");
-});
-
-/* Deal with Passwords. Just always encrypt anything called 'password' */
-// server.use('/:modelname', function(req, res, next) {
-// server.use(function(req, res, next) {
-// 	if (req.body.password && !(req.query.password_override)) {
-// 		var password = security.encPassword(req.body.password);
-// 		req.body.password = password;
-// 		console.log("Password encrypted");
-// 	}
-// 	next();
-// });
 
 server.listen(config.port || 4001, function() {
 	console.log('%s listening at %s', server.name, server.url);

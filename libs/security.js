@@ -1,14 +1,6 @@
 var Q = require("q");
-var APIKey = require('../models/apikey_model');
-var bunyan = require("bunyan");
 var bcrypt = require('bcrypt');
-var overviewLog = bunyan.createLogger({
-	name: "jexpress.overview"
-});
-var log = bunyan.createLogger({ 
-	name: "jexpress",
-	// serializers: {req: bunyan.stdSerializers.req}
-});
+var APIKey = require('../models/apikey_model');
 var Groups = require("../models/usergroups_model.js");
 var User = require('../models/user_model');
 
@@ -44,11 +36,11 @@ var Security = {
 
 		apikey.save(function(err) {
 			if (err) {
-				log.error(err);
+				console.error(err);
 				deferred.reject(err);
 				return;
 			}
-			overviewLog.info({ action_id: 1, action: "User logged on", user: user });
+			console.log({ action_id: 1, action: "User logged on", user: user });
 			deferred.resolve(apikey);
 		});
 		return deferred.promise;
@@ -61,20 +53,20 @@ var Security = {
 				var password = ba[1];
 				User.findOne({ email: email }, function(err, user) {
 					if (err) {
-						log.error(err); 
+						console.error(err); 
 						return done(err); 
 					}
 					if (!user) {
-						log.error("Incorrect username");
+						console.error("Incorrect username");
 						return fail(res, 403, "Unauthorized");
 					}
 					try {
 						if (!bcrypt.compareSync(password, user.password)) {
-							log.error("Incorrect password");
+							console.error("Incorrect password");
 							return fail(res, 403, "Unauthorized");
 						}
 					} catch (error) {
-						log.error(error);
+						console.error(error);
 						return fail(res, 403, "Unauthorized");
 					}
 					req.user = user;
@@ -89,7 +81,7 @@ var Security = {
 			}
 		} else {
 			if (!req.query.apikey) {
-				log.error("No auth method found");
+				console.error("No auth method found");
 				return fail(res, 403, "Unauthorized");
 			}
 			var apikey = req.query.apikey;
@@ -126,9 +118,7 @@ var Security = {
 		}
 	},
 	auth: function(req, res, next) {
-		//Set up our child logger
-		req.log = log.child({ user: req.user });
-		req.log.debug("Started Auth");
+		console.log("Started Auth");
 		// Check against model as to whether we're allowed to edit this model
 		var perms = req.Model.schema.get("_perms");
 		var passed = {
@@ -150,20 +140,20 @@ var Security = {
 		} else if (req.method == "DELETE") {
 			method = "d";
 		} else {
-			req.log.error("Unsupported operation", req.method);
+			req.console.error("Unsupported operation", req.method);
 			return fail(res, 500, "Unsupported operation: " + req.method);
 		}
 		req.authorized = false;
-		req.log.debug("perms", perms.admin);
+		console.log("perms", perms.admin);
 		//If no perms are set, then this isn't an available model
 		if (!perms.admin) {
-			req.log.error("Model not available");
+			req.console.error("Model not available");
 			return fail(res, 500, "Model not available");
 		}
 		//First check if "all" is able to do this. If so, let's get on with it.
 		if (perms.all) {
 			if (perms.all.indexOf(method) !== -1) {
-				req.log.info("Matched permission 'all':" + method);
+				console.log("Matched permission 'all':" + method);
 				req.authorized = true;
 				next();
 				return;
@@ -175,14 +165,14 @@ var Security = {
 			//Let's check perms in this order - admin, user, group, owner
 			//Admin check
 			if ((req.user.admin) && (perms.admin) && (perms.admin.indexOf(method) !== -1)) {
-				req.log.info("Matched permission 'admin':" + method);
+				console.log("Matched permission 'admin':" + method);
 				req.authorized = true;
 				next();
 				return;
 			}
 			//User check
 			if ((perms.user) && (perms.user.indexOf(method) !== -1)) {
-				req.log.info("Matched permission 'user':" + method);
+				console.log("Matched permission 'user':" + method);
 				req.authorized = true;
 				next();
 				return;
@@ -190,7 +180,7 @@ var Security = {
 			//Group check
 			req.groups.forEach(function(group) {
 				if ((perms[group]) && (perms[group].indexOf(method) !== -1)) {
-					req.log.info("Matched permission '" + group + "':" + method);
+					console.log("Matched permission '" + group + "':" + method);
 					req.authorized = true;
 					next();
 					return;
@@ -200,16 +190,16 @@ var Security = {
 			var owner_id = false;
 			req.Model.findById(req.params.item_id, function(err, item) {
 				if (err) {
-					req.log.error(err);
+					req.console.error(err);
 					return fail(res, 500, err);
 				}
 				if ((item) && (item._owner_id) && (item._owner_id.toString() == req.user._id.toString()) && ((perms.owner) && (perms.owner.indexOf(method) !== -1))) {
-						req.log.info("Matched permission 'owner':" + method);
+						console.log("Matched permission 'owner':" + method);
 						req.authorized = true;
 						next();
 						return;
 				} else {
-					req.log.error("All authorizations failed");
+					req.console.error("All authorizations failed");
 					if(!req.authorized) {
 						return fail(res, 403, "Authorization failed");
 					}

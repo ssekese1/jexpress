@@ -1,9 +1,9 @@
-var security = require("../libs/security");
-var User = require('../models/user_model');
-var APIKey = require('../models/apikey_model');
 var rest = require("restler-q");
 var jwt = require("jsonwebtoken");
 var bcrypt = require('bcrypt');
+var security = require("../libs/security");
+var User = require('../models/user_model');
+var APIKey = require('../models/apikey_model');
 
 function recover(req, res, next) {
 	var email = req.params.email;

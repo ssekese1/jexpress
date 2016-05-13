@@ -11,7 +11,7 @@ It was initially built on Express and Mongoose (hence the name), but now it uses
 
 ## Models
 
-Models are expected to be found in ./models. They should be named `{modelname}_model.js`.
+Models are expected to be found in `./models`. They should be named `{modelname}_model.js`.
 
 There are example models that come packaged with JExpress. You should really use the `group_model.js`, `user_model.js`, `apikey_model.js` and `token_model.js` since they are required for full functionality. In addition, `test_model.js` is used for the tests.
 
