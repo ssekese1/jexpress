@@ -1,3 +1,0 @@
-Notes
-
-Separate Transactions and Credits so that we can limit all transactions to < 0 values, thus stopping anyone from "buying" credits with an API call hack.
