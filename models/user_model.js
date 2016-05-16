@@ -3,7 +3,7 @@ var Schema       = mongoose.Schema;
 
 var friendly = require("mongoose-friendly");
 
-var Objectid = mongoose.Schema.Types.ObjectId;
+var ObjectId = mongoose.Schema.Types.ObjectId;
 var Mixed = mongoose.Schema.Types.Mixed;
 var Organisation = require("./organisation_model");
 var Location = require("./location_model");
@@ -13,9 +13,9 @@ var Tag = require("./tag_model");
 var UserSchema   = new Schema({
 	name: { type: String },
 	urlid: { type: String, unique: true, index: true },
-	organisation_id: { type: Objectid, ref: "Organisation" },
-	location_id: { type: Objectid, ref: "Location" },
-	membership_id: { type: Objectid, ref: "Membership" },
+	organisation_id: { type: ObjectId, ref: "Organisation" },
+	location_id: { type: ObjectId, ref: "Location" },
+	membership_id: { type: ObjectId, ref: "Membership" },
 	email: { type: String, unique: true, index: true, set: toLower },
 	emails: [String],
 	password: String,
@@ -43,8 +43,8 @@ var UserSchema   = new Schema({
 	papercut_username: String,
 	first_login: { type: Boolean, default: true },
 	date_created: { type: Date, default: Date.now },
-	tags: [ { type: Objectid, ref: "Tag" } ],
-	_owner_id: Objectid,
+	tags: [ { type: ObjectId, ref: "Tag" } ],
+	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
 });
 
