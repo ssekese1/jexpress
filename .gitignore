@@ -2,8 +2,7 @@
 bower_components
 config.js
 config_working.js
-
-app/models/*
+config.bak
 
 # Logs
 logs

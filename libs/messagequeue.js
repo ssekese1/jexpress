@@ -1,4 +1,4 @@
-var config = require("../../config");
+var config = require("../config");
 var ampq = require('amqplib');
 
 var connection = ampq.connect(config.rabbitmq.server);
@@ -18,6 +18,6 @@ var MessageQueue = {
 		})
 		;
 	}
-}
+};
 
 module.exports = MessageQueue;

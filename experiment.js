@@ -147,9 +147,64 @@ test4 = {
 	}
 }
 
+input5 = {
+	due_date: '2016-02-01T00:00:00Z',
+  paid: 'false',
+  locked: 'false',
+  customer_id: '552587',
+  customer_name: 'Propertuity Management',
+  modified: '2016-02-01T21:45:34.317',
+  created: '2016-02-01T21:10:38.927',
+  i_d: '93490479',
+  date: '2016-02-01T00:00:00Z',
+  inclusive: 'false',
+  discount_percentage: '0',
+  tax_reference: '',
+  document_number: 'INV0002028',
+  reference: 'Membership: February 2016',
+  message: 'Name of Account: OPEN Maboneng\r\nBank: FNB\r\nAccount number: 62378457800\r\nBranch Code: 250 542\r\nBranch: Melrose Arch\r\nReference: Invoice or Quote number\r\nConfirmation to: accounts@open.co.za',
+  discount: '0',
+  exclusive: '500',
+  tax: '70',
+  rounding: '0',
+  total: '570',
+  amount_due: '570',
+  postal_address01: '4th Floor',
+  postal_address02: 'The Main change',
+  postal_address03: '20 Kruger Street',
+  postal_address04: 'Maboneng',
+  postal_address05: 'Johannesburg',
+  printed: 'true',
+  editable: 'true',
+  has_attachments: 'false',
+  has_notes: 'false',
+  has_anticipated_date: 'false',
+  'lines[0][SelectionId]': '6825842',
+  'lines[0][TaxTypeId]': '260954',
+  'lines[0][ID]': '74465748',
+  'lines[0][Description]': 'Special - Community Member - R500',
+  'lines[0][LineType]': '0',
+  'lines[0][Quantity]': '1',
+  'lines[0][UnitPriceExclusive]': '500',
+  'lines[0][UnitPriceInclusive]': '570',
+  'lines[0][TaxPercentage]': '0.14',
+  'lines[0][DiscountPercentage]': '0',
+  'lines[0][Exclusive]': '500',
+  'lines[0][Discount]': '0',
+  'lines[0][Tax]': '70',
+  'lines[0][Total]': '570',
+  'lines[0][Comments]': 'Home Location: OPEN Maboneng\nOwner: Situmba Mfunda  (situmba@propertuity.co.za)\nMembers(s): Situmba Mfunda \nMember Type: Special - Community Member - R500\nSpace Credits: 0\nStuff Credits: 0\nBandwidth allocated: 0GB',
+  'lines[0][AnalysisCategoryId1]': '43642',
+  'lines[0][UnitCost]': '0',
+  location: '54572fe2750888091d639735',
+  id: '93490479',
+  postal_address: '4th Floor\nThe Main change\n20 Kruger Street\nMaboneng\nJohannesburg',
+  delivery_address: '\n\n\n\n'
+}
+
 var arrayMatch = /\[\d+\]/;
 var objMatch = /\[[a-zA-Z][a-zA-Z\d]*\]/;
-var allMatch = /^[a-zA-Z\d_\-]+|\[[a-zA-Z\d_\-][a-zA-Z_\-\d]*\]|\[\d+\]/g;
+var allMatch = /^[a-zA-Z\d_\-]+|\[[a-zA-Z][a-zA-Z\d]*\]|\[\d+\]/g;
 
 /*  Copyright (C) 2012-2014  Kurt Milam - http://xioup.com | Source: https://gist.github.com/1868955
  *   
@@ -275,24 +330,14 @@ var assignPropVal = function(parts, result, val) {
 }
 
 var deserialize = function(input) {
-	// console.log("INPUT", input);
 	var result = {};
 	var newobj = {};
 	for (prop in input) {
 		var parts = prop.match(allMatch);
-		// console.log(prop, parts);
 		var val = input[prop];
-		if (parts) {
-			var tmp = assignPropVal(parts, result, val);
-			newobj = _.deepExtend(newobj, tmp);
-		} else {
-			// console.log("NOT ARRAY", parts);
-			newobj[prop] = input[prop];
-		}
-		
+		var tmp = assignPropVal(parts, result, val);
+		newobj = _.deepExtend(newobj, tmp);
 	}
-	// input = newobj;
-	// console.log("Munge!", newobj);
 	return newobj;
 }
 
@@ -306,13 +351,8 @@ var runTest = function(name, input, test) {
 	}
 }
 
-var test = function() {
-	runTest("Test 1", input1, test1);
-	runTest("Test 2", input2, test2);
-	runTest("Test 3", input3, test3);
-	runTest("Test 4", input4, test4);
-}
-
-module.exports = {
-	deserialize: deserialize
-}
+runTest("Test 1", input1, test1);
+runTest("Test 2", input2, test2);
+runTest("Test 3", input3, test3);
+runTest("Test 4", input4, test4);
+runTest("Test 5", input5, test4);
