@@ -4,14 +4,17 @@ var Schema       = mongoose.Schema;
 var ObjectId = mongoose.Schema.Types.ObjectId;
 var Mixed = mongoose.Schema.Types.Mixed;
 
+var Location = require("./location_model");
+
 var SpecialofferSchema   = new Schema({
-	name: { type: String, unique: true, index: true, set: toLower },
+	name: { type: String, unique: true, index: true },
 	img: String,
 	description: String, // Short description
 	body: String, // Page body
+	link: String,
 	partner: String,
-	partner_product_id: String,
-	urlid: { type: String, unique: true, index: true },
+	partner_code: String,
+	locations: [ { type: ObjectId, ref: "Location" } ],
 	date: { type: Date, default: Date.now, required: true, index: true },
 	start_date: { type: Date, default: Date.now, index: true },
 	end_date: { type: Date, default: Date.now, index: true },
