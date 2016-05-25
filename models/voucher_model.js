@@ -21,6 +21,8 @@ var VoucherSchema   = new Schema({
 
 VoucherSchema.pre("save", function(next) {
 	var self = this;
+	if (self.code)
+		next();
 	var checkVoucher = function(voucher) {
 		return voucher.code === self.code;
 	};
