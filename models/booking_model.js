@@ -63,7 +63,7 @@ function collision_detection(appointment, appointments) {
 BookingSchema.pre("save", function(next) {
 	var transaction = this;
 	var Booking = mongoose.model("Booking", BookingSchema);
-	Booking.find({ end_time: { $gt: transaction.start_time }, start_time: { $lt: transaction.end_time }, room: transaction.room }, function(err, result) {
+	Booking.find({ end_time: { $gt: transaction.start_time }, start_time: { $lt: transaction.end_time }, room: transaction.room, _deleted: false }, function(err, result) {
 		console.log("Checking that this slot is available", result);
 		if (result.length && ("" + transaction._id !== "" + result[0]._id) && (!transaction._deleted)) {
 			console.error("Booking clash", result[0]._id, transaction._id);
