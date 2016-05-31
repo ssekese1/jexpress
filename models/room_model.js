@@ -16,6 +16,7 @@ var RoomSchema   = new Schema({
 	layout: [{ type: Objectid, ref: "Layout" }],
 	private: { type: Boolean, default: false },
 	unavailable_reason: String,
+	display_device_id: String,
 	_deleted: { type: Boolean, default: false, index: true },
 });
 
