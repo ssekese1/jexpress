@@ -11,12 +11,6 @@ var moment = require("moment");
 
 var Q = require("q");
 
-var bunyan = require("bunyan");
-var log = bunyan.createLogger({ 
-	name: "jexpress-ledger",
-	serializers: {req: bunyan.stdSerializers.req}
-});
-
 var LedgerSchema   = new Schema({
 	user_id: { type: Objectid, index: true, ref: "User", required: true },
 	organisation_id: { type: Objectid, index: true, ref: "Organisation" },
@@ -110,10 +104,44 @@ var _calcOrg = function(organisation) {
 	return deferred.promise;
 };
 
+var _calcUser = function(user) {
+	console.time("_calcUser");
+	deferred = Q.defer();
+	console.log(user.email);
+	mongoose.model('Ledger', LedgerSchema).where({ user_id: user._id, _deleted: false }).exec(function(err, transactions) {
+		if (err) {
+			console.error(user.email, err);
+			deferred.reject(err);
+			return;
+		}
+		if (!transactions) {
+			return deferred.reject("No transactions found", organisation._id, organisation.name);
+		}
+		var totals = {
+			stuff: 0,
+			space: 0
+		};
+		transactions.forEach(function(transaction) {
+			totals[transaction.cred_type] += transaction.amount;
+		});
+		user.stuff_total = Math.round(totals.stuff * 100) / 100;
+		user.space_total = Math.round(totals.space * 100) / 100;
+		user.save((err, result) => {
+			if (err) {
+				console.error(user.email, err);
+			}
+			console.log("Totals", user.email, totals);
+			console.timeEnd("_calcUser");
+			deferred.resolve(totals);
+		});
+	});
+	return deferred.promise;
+};
+
 LedgerSchema.statics.sync = function() {
 	console.log("Syncing all orgs");
 	var deferred = Q.defer();
-	Organisation.find(function(err, organisations) {
+	Organisation.find({ _deleted: false }, function(err, organisations) {
 		var tasks = organisations.map(function(organisation) {
 			console.log(organisation.name);
 			return function() {
@@ -128,6 +156,92 @@ LedgerSchema.statics.sync = function() {
 			return soFar.then(f);
 		}, Q());
 	});
+	return deferred.promise;
+};
+
+LedgerSchema.statics.sync_users = function() {
+	console.log("Syncing all users");
+	var deferred = Q.defer();
+	User.find({ _deleted: false }, function(err, users) {
+		var tasks = users.map(function(user) {
+			return function() {
+				return _calcUser(user);
+			};
+		});
+		tasks.push(function() {
+			deferred.resolve("User synced");
+		});
+		tasks.reduce(function(soFar, f) {
+			return soFar.then(f);
+		}, Q());
+	});
+	return deferred.promise;
+};
+
+var getUser = function(id) {
+	var deferred = Q.defer();
+	User.findOne({ _id: id }, function(err, user) {
+		if (err) {
+			console.error(err);
+			deferred.reject(err);
+		} else {
+			deferred.resolve(user);
+		}
+	});
+	return deferred.promise;
+};
+
+LedgerSchema.statics.transfer = function(data) {
+	var deferred = Q.defer();
+	console.log("transfer", data);
+	if ((data.sender !== data.__user._id) && (!data.__user.admin)) {
+		deferred.reject("This is not your account and you are not an admin");
+	} else {
+		var Ledger = mongoose.model('Ledger', LedgerSchema);
+		// sender = data.__user;
+		var credit = new Ledger();
+		var debit = new Ledger();
+		var sender = null;
+		var recipient = null;
+		getUser(data.sender)
+		.then(function(user) {
+			console.log(user);
+			sender = user;
+			return getUser(data.recipient);
+		})
+		.then(function(user) {
+			recipient = user;
+			credit.user_id = data.recipient;
+			credit.amount = Math.abs(data.amount);
+			credit.cred_type = data.cred_type;
+			credit.description = "Transfer from " + sender.name + " <" + sender.email + "> to " + recipient.name + " <" + recipient.email + ">";
+			credit.__user = data.__user;
+			debit.user_id = data.sender;
+			debit.amount = Math.abs(data.amount) * -1;
+			debit.cred_type = data.cred_type;
+			debit.description = "Transfer from " + sender.name + " <" + sender.email + "> to " + recipient.name + " <" + recipient.email + ">";
+			debit.__user = data.__user;
+			debit.save(function(err, result) {
+				if (err) {
+					console.error(err);
+					deferred.reject(err);
+				} else {
+					credit.save(function(err, result) {
+						if (err) {
+							console.error(err);
+							deferred.reject(err);
+						} else {
+							deferred.resolve({ credit: credit, debit: debit });
+						}
+					});
+				}
+			});
+		})
+		.then(null, function(err) {
+			console.error(err);
+			deferred.reject(err);
+		});
+	}
 	return deferred.promise;
 };
 
@@ -209,10 +323,8 @@ LedgerSchema.statics.syncOrg = function(data) {
 	return _syncOrg(data.organisation_id);
 };
 
-var sender = null;
-
-LedgerSchema.virtual("__user").set(function(usr) {
-	sender = usr;
+LedgerSchema.virtual("__user").set(function(user) {
+	this.sender = user;
 });
 
 LedgerSchema.pre("save", function(next) {
@@ -227,18 +339,23 @@ LedgerSchema.pre("save", function(next) {
 	}
 	User.findOne(search_criteria, function(err, user) {
 		if (err) {
-			log.error(err);
+			console.error(err);
 			return next(new Error('Unknown Error'));
 		}
 		if (!user) {
-			log.error("Could not find user", transaction.user_id || transaction.email );
+			console.error("Could not find user", transaction.user_id || transaction.email );
 			transaction.invalidate("user_id", "could not find user");
 			return next(new Error('Could not find user'));
 		} else {
 			transaction.user_id = user._id;
+			if (user.status === "inactive" || user._deleted === true) {
+				console.error("User is not active", user );
+				transaction.invalidate("user_id", "User is not active");
+				return next(new Error('User is not active'));
+			}
 			Organisation.findOne({ _id: user.organisation_id }, function(err, organisation) {
 				if (err) {
-					log.error(err);
+					console.error(err);
 					return next(new Error('Could not find organisation'));
 				}
 				if (!organisation) {
@@ -250,7 +367,7 @@ LedgerSchema.pre("save", function(next) {
 					// Reserves must be negative
 					if ((transaction.amount > 0) && (transaction.reserve)) {
 						transaction.invalidate("amount", "Reserves must be a negative value");
-						log.error("Reserves must be a negative value");
+						console.error("Reserves must be a negative value");
 						return next(new Error("Reserves must be a negative value"));
 					}
 					// Set Transaction Type
@@ -264,23 +381,23 @@ LedgerSchema.pre("save", function(next) {
 						}
 					}
 					// Only admins can assign Credit
-					if ((transaction.amount > 0) && (!sender.admin)) {
+					if ((transaction.amount > 0) && (!transaction.sender.admin)) {
 						transaction.invalidate("amount", "Only admins can give credit. Amount must be less than zero.");
-						log.error("Only admins can give credit. Amount must be less than zero.");
+						console.error("Only admins can give credit. Amount must be less than zero.");
 						return next(new Error("Only admins can give credit. Amount must be less than zero."));
 					}
 					// Only admins can delete non-reserve
-					if ((transaction._deleted) && (transaction.transaction_type !== "reserve") && (!sender.admin)) {
+					if ((transaction._deleted) && (transaction.transaction_type !== "reserve") && (!transaction.sender.admin)) {
 						transaction.invalidate("_deleted", "Only admins can delete non-reserved.");
-						log.error("Only admins can delete non-reserved.");
+						console.error("Only admins can delete non-reserved.");
 						return next(new Error("You are not allowed to reverse this transaction"));
 					}
 					// Make sure we have credit
-					_calcOrg(organisation).then(function(totals) {
+					_calcUser(user).then(function(totals) {
 						var test = transaction.amount + totals[transaction.cred_type];
 						if ((transaction.amount < 0) && (test < 0)) {
 							transaction.invalidate("amount", "insufficient credit");
-							log.error("Insufficient credit");
+							console.error("Insufficient credit");
 							return next(new Error( "Insufficient Credit"));
 						} else {
 							next();
@@ -297,24 +414,25 @@ LedgerSchema.pre("save", function(next) {
 LedgerSchema.post("save", function(transaction) { //Keep our running total up to date
 	User.findOne({ _id: transaction.user_id }, function(err, user) {
 		if (err) {
-			log.error(err);
+			console.error(err);
 			return;
 		}
 		if (!user) {
-			log.error("Could not find user", transaction.user_id);
+			console.error("Could not find user", transaction.user_id);
 			return;
 		}
-		Organisation.findOne({ _id: user.organisation_id }, function(err, organisation) {
-			if (err) {
-				log.error(err);
-				return;
-			}
-			if (!user) {
-				log.error("Could not find organisation", user.organisation_id);
-				return;
-			}
-			_calcOrg(organisation);
-		});
+		// Organisation.findOne({ _id: user.organisation_id }, function(err, organisation) {
+		// 	if (err) {
+		// 		console.error(err);
+		// 		return;
+		// 	}
+		// 	if (!user) {
+		// 		console.error("Could not find organisation", user.organisation_id);
+		// 		return;
+		// 	}
+		// 	_calcOrg(organisation);
+		// });
+		_calcUser(user);
 	});
 });
 
