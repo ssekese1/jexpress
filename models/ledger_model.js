@@ -8,6 +8,7 @@ var User = require("./user_model");
 var Organisation = require("./organisation_model");
 var Source = require("./source_model");
 var moment = require("moment");
+var async = require("async");
 
 var Q = require("q");
 
@@ -108,7 +109,7 @@ var _calcUser = function(user) {
 	console.time("_calcUser");
 	deferred = Q.defer();
 	console.log(user.email);
-	mongoose.model('Ledger', LedgerSchema).where({ user_id: user._id, _deleted: false }).exec(function(err, transactions) {
+	mongoose.model('Ledger', LedgerSchema).find({ user_id: user._id }).exec(function(err, transactions) {
 		if (err) {
 			console.error(user.email, err);
 			deferred.reject(err);
@@ -117,15 +118,19 @@ var _calcUser = function(user) {
 		if (!transactions) {
 			return deferred.reject("No transactions found", organisation._id, organisation.name);
 		}
+		console.log("Total transactions", transactions.length);
 		var totals = {
 			stuff: 0,
 			space: 0
 		};
 		transactions.forEach(function(transaction) {
-			totals[transaction.cred_type] += transaction.amount;
+			if (!transaction._deleted)
+				totals[transaction.cred_type] += transaction.amount;
 		});
-		user.stuff_total = Math.round(totals.stuff * 100) / 100;
-		user.space_total = Math.round(totals.space * 100) / 100;
+		totals.stuff = Math.round(totals.stuff * 100) / 100;
+		totals.space = Math.round(totals.space * 100) / 100;
+		user.stuff_total = totals.stuff;
+		user.space_total = totals.space;
 		user.save((err, result) => {
 			if (err) {
 				console.error(user.email, err);
@@ -162,21 +167,84 @@ LedgerSchema.statics.sync = function() {
 LedgerSchema.statics.sync_users = function() {
 	console.log("Syncing all users");
 	var deferred = Q.defer();
-	User.find({ _deleted: false }, function(err, users) {
+	return getUsers()
+	.then(function(users) {
+		console.log(users.length);
 		var tasks = users.map(function(user) {
 			return function() {
+				console.log(user.email);
 				return _calcUser(user);
 			};
 		});
 		tasks.push(function() {
-			deferred.resolve("User synced");
+			return(users.length + " Users synced");
 		});
-		tasks.reduce(function(soFar, f) {
+		return tasks.reduce(function(soFar, f) {
 			return soFar.then(f);
 		}, Q());
 	});
 	return deferred.promise;
 };
+
+LedgerSchema.statics.sync_user = function(data) {
+	console.log("Syncing user", data._id);
+	return getUser(data._id)
+	.then(function(user) {
+		return _calcUser(user);
+	});
+};
+
+LedgerSchema.statics.fix_balances = function(data) {
+	var broke_stuff = [];
+	var organisations = [];
+	var queue = [];
+	return getOrganisations()
+	.then(function(result) {
+		organisations = result;
+		// console.log(organisations);
+		return getUsers();
+	})
+	.then(function(result) {
+		var users = result.map((user) => {
+			return {
+				_id: user._id,
+				email: user.email,
+				name: user.name,
+				stuff_total: user.stuff_total,
+				space_total: user.space_total,
+				organisation_id: user.organisation_id,
+				organisation: organisations.find((organisation) => {
+					return "" + user.organisation_id === "" + organisation._id;
+				})
+			};
+		});
+		users.forEach(function(user) {
+			if (user.organisation && user.organisation.user_id) {
+				if (user.stuff_total < 0) {
+					broke_stuff.push(user);
+					var params = {
+						sender: user.organisation.user_id,
+						recipient: user._id,
+						amount: user.stuff_total,
+						cred_type: "stuff",
+						__user: data.__user
+					};
+					queue.push(function(callback) {
+						mongoose.model('Ledger', LedgerSchema).transfer(params)
+						.then(function(result) {
+							callback(null, result);
+						}, function(err) {
+							console.error(params, err);
+							callback(err);
+						});
+					});
+				}
+			}
+		});
+		async.series(queue);
+		return broke_stuff;
+	})
+}
 
 var getUser = function(id) {
 	var deferred = Q.defer();
@@ -190,6 +258,36 @@ var getUser = function(id) {
 	});
 	return deferred.promise;
 };
+
+var notDeleted = function(item) {
+	return item._deleted !== true;
+}
+
+var getUsers = function() {
+	var deferred = Q.defer();
+	User.find(function(err, users) {
+		if (err) {
+			console.error(err);
+			deferred.reject(err);
+		} else {
+			deferred.resolve(users.filter(notDeleted));
+		}
+	});
+	return deferred.promise;
+};
+
+var getOrganisations = function() {
+	var deferred = Q.defer();
+	Organisation.find(function(err, organisations) {
+		if (err) {
+			console.error(err);
+			deferred.reject(err);
+		} else {
+			deferred.resolve(organisations.filter(notDeleted));
+		}
+	});
+	return deferred.promise;
+}
 
 LedgerSchema.statics.transfer = function(data) {
 	var deferred = Q.defer();
