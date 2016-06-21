@@ -8,10 +8,10 @@ var User = require("./user_model");
 var Location = require("./location_model");
 
 var LicenseSchema   = new Schema({
-	organisation_id: { type: Objectid, ref: 'Organisation' },
-	membership_id: { type: Objectid, ref: 'Membership' },
-	location_id: { type: Objectid, ref: 'Location' },
-	user_id: { type: Objectid, ref: 'User' },
+	organisation_id: { type: Objectid, ref: 'Organisation', index: true, required: true },
+	membership_id: { type: Objectid, ref: 'Membership', required: true },
+	location_id: { type: Objectid, ref: 'Location', required: true },
+	user_id: { type: Objectid, ref: 'User', index: true },
 	date_created: { type: Date, default: Date.now },
 	_owner_id: Objectid,
 	_deleted: { type: Boolean, default: false, index: true },
