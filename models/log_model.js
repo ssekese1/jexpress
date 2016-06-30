@@ -8,6 +8,7 @@ var User = require("./user_model.js");
 var LogSchema   = new Schema({
 	date_created: { type: Date, default: Date.now },
 	id: ObjectId,
+	code: String,
 	model: String,
 	level: Number,
 	user_id: { type: ObjectId, ref: "User" },
