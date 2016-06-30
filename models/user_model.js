@@ -9,12 +9,15 @@ var Organisation = require("./organisation_model");
 var Location = require("./location_model");
 var Membership = require("./membership_model");
 var Tag = require("./tag_model");
+var diff = require('deep-diff').diff;
+var Log = require("./log_model");
+var messagequeue = require("../libs/messagequeue");
 
 var UserSchema   = new Schema({
-	name: { type: String },
+	name: { type: String, required: true },
 	urlid: { type: String, unique: true, index: true },
-	organisation_id: { type: ObjectId, ref: "Organisation" },
-	location_id: { type: ObjectId, ref: "Location" },
+	organisation_id: { type: ObjectId, ref: "Organisation", required: true, index: true },
+	location_id: { type: ObjectId, ref: "Location", index: true },
 	membership_id: { type: ObjectId, ref: "Membership" },
 	email: { type: String, unique: true, index: true, set: toLower },
 	emails: [String],
@@ -68,7 +71,10 @@ var UserModel = mongoose.model('User', UserSchema);
 // 	next();
 // });
 
-UserSchema.pre("save", function(next) {
+/*
+ * Ensure emails are unique
+ */
+UserSchema.pre("validate", function(next) {
 	var self = this;
 	this._owner_id = this._id; // Ensure the owner is always the user for this model
 	//Tags
@@ -126,26 +132,81 @@ UserSchema.pre("save", function(next) {
 	} else {
 		return next();
 	}
-	
 });
 
-UserSchema.post("save", function(user) {
-	var Useradmin 	= require('./useradmin_model');
-	Useradmin.findOne({ user_id: user._id }, function(err, useradmin) {
-		if (err) {
-			console.log("Err", err);
-			return;
-		}
-		if (useradmin) {
-			console.log("Useradmin already exists, bailing");
-			return;
+/*
+ * Log changes
+ */
+UserSchema.post('validate', function(doc) {
+	var self = this;
+	UserModel.findOne({ _id: doc._id }, function(err, original) {
+		if (!original) {
+			var log = new Log({
+				id: doc._id,
+				model: "user",
+				level: 3,
+				user_id: self.__user,
+				title: "User created",
+				message: "User created " + doc.email,
+				code: "user-create",
+				data: doc,
+			}).save();
 		} else {
-			useradmin = Useradmin();
-			useradmin.user_id = user._id;
-			useradmin.extra_credits = 0;
-			useradmin._owner_id = user._id;
-			useradmin.save();
-			console.log("Created useradmin entry");
+			var d = diff(original.toObject(), doc.toObject());
+			if (d) {
+				var log = new Log({
+					id: doc._id,
+					model: "user",
+					level: 3,
+					user_id: self.__user,
+					title: "User changed",
+					message: "User changed " + doc.email,
+					code: "user-change",
+					data: d,
+				}).save();
+			}
+		}
+	});
+});
+
+/*
+ * Onboard, offboard, suspend or unsuspend a user
+ */
+UserSchema.post('validate', function(doc) {
+	var self = this;
+	var onboard = function(id) {
+		messagequeue.action("user", "onboard", self.__user, id);
+	}
+
+	var offboard = function(id) {
+		messagequeue.action("user", "offboard", self.__user, id);
+	}
+	UserModel.findOne({ _id: doc._id }, function(err, original) {
+		if (!original) {
+			if (doc.status !== "inactive") {
+				//New, active
+				onboard(doc._id);
+			}
+		} else {
+			doc.active = !(doc.status == "inactive");
+			original.active = !(original.status == "inactive");
+			if (doc.active !== original.active) {
+				//Status has changed
+				if (doc.active) {
+					//Status changed to active
+					onboard(doc._id);
+				} else {
+					//Status changed to inactive
+					offboard(doc._id);
+				}
+			}
+			if (doc._deleted && !original._deleted) {
+				//Doc has been deleted
+				onboard(doc._id);
+			} else if (!doc._deleted && original._deleted) {
+				//Doc has been undeleted
+				offboard(doc._id);
+			}
 		}
 	});
 });
