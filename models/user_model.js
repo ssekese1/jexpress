@@ -47,6 +47,7 @@ var UserSchema   = new Schema({
 	first_login: { type: Boolean, default: true },
 	date_created: { type: Date, default: Date.now },
 	tags: [ { type: ObjectId, ref: "Tag" } ],
+	public: Boolean,
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
 });
@@ -182,13 +183,13 @@ UserSchema.post('validate', function(doc) {
 		messagequeue.action("user", "offboard", self.__user, id);
 	}
 	UserModel.findOne({ _id: doc._id }, function(err, original) {
+		doc.active = !(doc.status == "inactive");
 		if (!original) {
-			if (doc.status !== "inactive") {
+			if (doc.active) {
 				//New, active
 				onboard(doc._id);
 			}
 		} else {
-			doc.active = !(doc.status == "inactive");
 			original.active = !(original.status == "inactive");
 			if (doc.active !== original.active) {
 				//Status has changed
