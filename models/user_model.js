@@ -170,24 +170,26 @@ UserSchema.post('validate', function(doc) {
 	});
 });
 
+var onboard = function(id, owner) {
+	messagequeue.action("user", "onboard", owner, id);
+}
+
+var offboard = function(id, owner) {
+	messagequeue.action("user", "offboard", owner, id);
+}
 /*
  * Onboard, offboard, suspend or unsuspend a user
  */
 UserSchema.post('validate', function(doc) {
 	var self = this;
-	var onboard = function(id) {
-		messagequeue.action("user", "onboard", self.__user, id);
-	}
 
-	var offboard = function(id) {
-		messagequeue.action("user", "offboard", self.__user, id);
-	}
+	doc._isNew = false;
 	UserModel.findOne({ _id: doc._id }, function(err, original) {
 		doc.active = !(doc.status == "inactive");
 		if (!original) {
 			if (doc.active) {
 				//New, active
-				onboard(doc._id);
+				doc._isNew = true;
 			}
 		} else {
 			original.active = !(original.status == "inactive");
@@ -195,21 +197,27 @@ UserSchema.post('validate', function(doc) {
 				//Status has changed
 				if (doc.active) {
 					//Status changed to active
-					onboard(doc._id);
+					onboard(doc._id, self.__user);
 				} else {
 					//Status changed to inactive
-					offboard(doc._id);
+					offboard(doc._id, self.__user);
 				}
 			}
 			if (doc._deleted && !original._deleted) {
 				//Doc has been deleted
-				onboard(doc._id);
+				onboard(doc._id, self.__user);
 			} else if (!doc._deleted && original._deleted) {
 				//Doc has been undeleted
-				offboard(doc._id);
+				offboard(doc._id, self.__user);
 			}
 		}
 	});
+});
+
+UserSchema.post('save', function(doc) {
+	var self = this;
+	if (doc._isNew)
+		onboard(doc._id, self.__user);
 });
 
 UserSchema.path('name').validate(function (v) {
