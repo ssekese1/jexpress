@@ -14,7 +14,7 @@ var MessageQueue = {
 			return ok;
 		})
 		.then(null, function(err) {
-			console.log("Error", err);
+			console.error(err);
 		})
 		;
 	}

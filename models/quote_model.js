@@ -21,6 +21,7 @@ var QuoteSchema   = new Schema({
 	organisation_website: String,
 	organisation_facebook: String,
 	organisation_twitter: String,
+	organisation_about: String,
 	user_name: String,
 	user_email: String,
 	user_about: String,

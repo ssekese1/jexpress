@@ -11,6 +11,7 @@ var MembershipSchema   = new Schema({
 	print_credits_per_month: Number,
 	// bandwidth_per_month: Number,
 	description: String,
+	marketing_description: String,
 	cost: Number,
 	cost_period: String,
 	max_members: Number,
