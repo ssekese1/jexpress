@@ -62,27 +62,12 @@ UserSchema.set("_perms", {
 
 var UserModel = mongoose.model('User', UserSchema);
 
-// UserSchema.pre("save", function(next) {
-// 	var self = this;
-// 	// Tags
-// 	console.log("Tags", self.tags);
-// 	if ((self.tags) && !Array.isArray(self.tags)) {
-// 		self.tags = self.tags.split(",");
-// 	}
-// 	next();
-// });
-
 /*
  * Ensure emails are unique
  */
 UserSchema.pre("validate", function(next) {
 	var self = this;
 	this._owner_id = this._id; // Ensure the owner is always the user for this model
-	//Tags
-	// console.log("Tags", self.tags);
-	// if ((self.tags) && !Array.isArray(self.tags)) {
-	// 	self.tags = self.tags.split(",");
-	// }
 	this.emails = this.emails.filter(function(email) {
 		if (!email.trim)
 			return false;
@@ -140,9 +125,10 @@ UserSchema.pre("validate", function(next) {
  */
 UserSchema.post('validate', function(doc) {
 	var self = this;
+	var log = null;
 	UserModel.findOne({ _id: doc._id }, function(err, original) {
 		if (!original) {
-			var log = new Log({
+			log = new Log({
 				id: doc._id,
 				model: "user",
 				level: 3,
@@ -155,7 +141,7 @@ UserSchema.post('validate', function(doc) {
 		} else {
 			var d = diff(original.toObject(), doc.toObject());
 			if (d) {
-				var log = new Log({
+				log = new Log({
 					id: doc._id,
 					model: "user",
 					level: 3,
@@ -172,11 +158,11 @@ UserSchema.post('validate', function(doc) {
 
 var onboard = function(id, owner) {
 	messagequeue.action("user", "onboard", owner, id);
-}
+};
 
 var offboard = function(id, owner) {
 	messagequeue.action("user", "offboard", owner, id);
-}
+};
 /*
  * Onboard, offboard, suspend or unsuspend a user
  */
@@ -185,14 +171,14 @@ UserSchema.post('validate', function(doc) {
 
 	doc._isNew = false;
 	UserModel.findOne({ _id: doc._id }, function(err, original) {
-		doc.active = !(doc.status == "inactive");
+		doc.active = (doc.status !== "inactive");
 		if (!original) {
 			if (doc.active) {
 				//New, active
 				doc._isNew = true;
 			}
 		} else {
-			original.active = !(original.status == "inactive");
+			original.active = (original.status !== "inactive");
 			if (doc.active !== original.active) {
 				//Status has changed
 				if (doc.active) {
