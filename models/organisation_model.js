@@ -9,6 +9,9 @@ var Membership = require('./membership_model');
 var Location = require('./location_model');
 var Sageitems = require('./sageitem_model');
 var User = require('./user_model');
+var diff = require('deep-diff').diff;
+var Log = require("./log_model");
+var messagequeue = require("../libs/messagequeue");
 
 var OrganisationSchema   = new Schema({
 	name: { type: String, unique: true, index: true },
@@ -78,6 +81,96 @@ function shortname(s) {
 OrganisationSchema.plugin(friendly, {
 	source: 'name',
 	friendly: 'urlid'
+});
+var OrganisationModel = mongoose.model('Organisation', OrganisationSchema);
+
+/*
+ * Log changes
+ */
+OrganisationSchema.post('validate', function(doc) {
+	var self = this;
+	var log = null;
+	OrganisationModel.findOne({ _id: doc._id }, function(err, original) {
+		if (!original) {
+			log = new Log({
+				id: doc._id,
+				model: "organisation",
+				level: 3,
+				user_id: self.__user,
+				title: "Organisation created",
+				message: "Organisation created " + doc.email,
+				code: "organisation-create",
+				data: doc,
+			}).save();
+		} else {
+			var d = diff(original.toObject(), doc.toObject());
+			if (d) {
+				log = new Log({
+					id: doc._id,
+					model: "organisation",
+					level: 3,
+					user_id: self.__user,
+					title: "Organisation changed",
+					message: "Organisation changed " + doc.email,
+					code: "organisation-change",
+					data: d,
+				}).save();
+			}
+		}
+	});
+});
+
+var onboard = function(id, owner) {
+	messagequeue.action("organisation", "onboard", owner, id);
+};
+
+var offboard = function(id, owner) {
+	messagequeue.action("organisation", "offboard", owner, id);
+};
+
+/*
+ * Onboard, offboard, suspend or unsuspend a user
+ */
+OrganisationSchema.post('validate', function(doc) {
+	var inactiveStates = ["inactive", "prospect", "pending"];
+	var activeStates = ["active", "hidden"];
+	var self = this;
+	doc._isNew = false;
+	OrganisationModel.findOne({ _id: doc._id }, function(err, original) {
+		doc.active = (activeStates.indexOf(doc.status) !== -1);
+		console.log("Active:", doc.active, doc.status);
+		if (!original) {
+			if (doc.active) {
+				//New, active
+				doc._isNew = true;
+			}
+		} else {
+			original.active = (original.status !== "inactive");
+			if (doc.active !== original.active) {
+				//Status has changed
+				if (doc.active) {
+					//Status changed to active
+					onboard(doc._id, self.__user);
+				} else {
+					//Status changed to inactive
+					offboard(doc._id, self.__user);
+				}
+			}
+			if (doc._deleted && !original._deleted) {
+				//Doc has been deleted
+				onboard(doc._id, self.__user);
+			} else if (!doc._deleted && original._deleted) {
+				//Doc has been undeleted
+				offboard(doc._id, self.__user);
+			}
+		}
+	});
+});
+
+OrganisationSchema.post('save', function(doc) {
+	var self = this;
+	if (doc._isNew)
+		onboard(doc._id, self.__user);
 });
 
 module.exports = mongoose.model('Organisation', OrganisationSchema);
