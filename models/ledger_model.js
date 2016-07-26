@@ -40,7 +40,7 @@ var LedgerSchema   = new Schema({
 
 LedgerSchema.set("_perms", {
 	admin: "crud",
-	owner: "cr",
+	owner: "cru",
 	user: "cr",
 	all: ""
 });
