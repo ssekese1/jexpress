@@ -209,6 +209,25 @@ LedgerSchema.statics.syncOrg = function(data) {
 	return _syncOrg(data.organisation_id);
 };
 
+LedgerSchema.statics.confirm_reserve = function(_id) {
+	console.log("Confirming reserve transaction to Debit", _id);
+	var Ledger = require("./ledger_model");
+	Ledger.findOne({ _id: _id }, (err, ledger) => {
+		console.log(ledger);
+		if (err)
+			throw(err);
+		if (!ledger)
+			throw("Could not find ledger entry");
+		ledger.transaction_type = "debit";
+		ledger.reserve = false;
+		ledger.save((err, result) => {
+			if (err)
+				throw(err);
+			return result;
+		});
+	});
+};
+
 var sender = null;
 
 LedgerSchema.virtual("__user").set(function(usr) {
@@ -216,82 +235,108 @@ LedgerSchema.virtual("__user").set(function(usr) {
 });
 
 LedgerSchema.pre("save", function(next) {
-	var transaction = this;
-	var search_criteria = { _id: transaction.user_id };
-	if (!transaction.user_id) {
-		search_criteria = { email: transaction.email };
-	}
-	if (!search_criteria) {
-		transaction.invalidate("user_id", "could not find user");
-		return next(new Error("user_id or email required"));
-	}
-	User.findOne(search_criteria, function(err, user) {
-		if (err) {
-			log.error(err);
-			return next(new Error('Unknown Error'));
+	if (this.isNew) { // Only perform checks on new items
+		var transaction = this;
+		var search_criteria = { _id: transaction.user_id };
+		if (!transaction.user_id) {
+			search_criteria = { email: transaction.email };
 		}
-		if (!user) {
-			log.error("Could not find user", transaction.user_id || transaction.email );
+		if (!search_criteria) {
 			transaction.invalidate("user_id", "could not find user");
-			return next(new Error('Could not find user'));
-		} else {
-			transaction.user_id = user._id;
-			Organisation.findOne({ _id: user.organisation_id }, function(err, organisation) {
-				if (err) {
-					log.error(err);
-					return next(new Error('Could not find organisation'));
-				}
-				if (!organisation) {
-					transaction.invalidate("user_id", "could not find organisation associated with user");
-					console.log("Error 1.220: Could not find organisation associated with user", user._id);
-					return next(new Error('Could not find organisation associated with user'));
-				} else {
-					transaction.organisation_id = organisation._id;
-					// Reserves must be negative
-					if ((transaction.amount > 0) && (transaction.reserve)) {
-						transaction.invalidate("amount", "Reserves must be a negative value");
-						log.error("Reserves must be a negative value");
-						return next(new Error("Reserves must be a negative value"));
-					}
-					// Set Transaction Type
-					if (transaction.amount >= 0) {
-						transaction.transaction_type = "credit";
-					} else {
-						if (transaction.reserve) {
-							transaction.transaction_type = "reserve";
-						} else {
-							transaction.transaction_type = "debit";
-						}
-					}
-					// Only admins can assign Credit
-					if ((transaction.amount > 0) && (!sender.admin)) {
-						transaction.invalidate("amount", "Only admins can give credit. Amount must be less than zero.");
-						log.error("Only admins can give credit. Amount must be less than zero.");
-						return next(new Error("Only admins can give credit. Amount must be less than zero."));
-					}
-					// Only admins can delete non-reserve
-					if ((transaction._deleted) && (transaction.transaction_type !== "reserve") && (!sender.admin)) {
-						transaction.invalidate("_deleted", "Only admins can delete non-reserved.");
-						log.error("Only admins can delete non-reserved.");
-						return next(new Error("You are not allowed to reverse this transaction"));
-					}
-					// Make sure we have credit
-					_calcOrg(organisation).then(function(totals) {
-						var test = transaction.amount + totals[transaction.cred_type];
-						if ((transaction.amount < 0) && (test < 0)) {
-							transaction.invalidate("amount", "insufficient credit");
-							log.error("Insufficient credit");
-							return next(new Error( "Insufficient Credit"));
-						} else {
-							next();
-						}
-					});
-				}
-				
-				
-			});
+			return next(new Error("user_id or email required"));
 		}
-	});
+		User.findOne(search_criteria, function(err, user) {
+			if (err) {
+				log.error(err);
+				return next(new Error('Unknown Error'));
+			}
+			if (!user) {
+				log.error("Could not find user", transaction.user_id || transaction.email );
+				transaction.invalidate("user_id", "could not find user");
+				return next(new Error('Could not find user'));
+			} else {
+				transaction.user_id = user._id;
+				Organisation.findOne({ _id: user.organisation_id }, function(err, organisation) {
+					if (err) {
+						log.error(err);
+						return next(new Error('Could not find organisation'));
+					}
+					if (!organisation) {
+						transaction.invalidate("user_id", "could not find organisation associated with user");
+						console.log("Error 1.220: Could not find organisation associated with user", user._id);
+						return next(new Error('Could not find organisation associated with user'));
+					} else {
+						transaction.organisation_id = organisation._id;
+						// Reserves must be negative
+						if ((transaction.amount > 0) && (transaction.reserve)) {
+							transaction.invalidate("amount", "Reserves must be a negative value");
+							log.error("Reserves must be a negative value");
+							return next(new Error("Reserves must be a negative value"));
+						}
+						// Set Transaction Type
+						if (transaction.amount >= 0) {
+							transaction.transaction_type = "credit";
+						} else {
+							if (transaction.reserve) {
+								transaction.transaction_type = "reserve";
+							} else {
+								transaction.transaction_type = "debit";
+							}
+						}
+						// Only admins can assign Credit
+						if ((transaction.amount > 0) && (!sender.admin)) {
+							transaction.invalidate("amount", "Only admins can give credit. Amount must be less than zero.");
+							log.error("Only admins can give credit. Amount must be less than zero.");
+							return next(new Error("Only admins can give credit. Amount must be less than zero."));
+						}
+						// Only admins can delete non-reserve
+						if ((transaction._deleted) && (transaction.transaction_type !== "reserve") && (!sender.admin)) {
+							transaction.invalidate("_deleted", "Only admins can delete non-reserved.");
+							log.error("Only admins can delete non-reserved.");
+							return next(new Error("You are not allowed to reverse this transaction"));
+						}
+						// Make sure we have credit
+						_calcOrg(organisation).then(function(totals) {
+							var test = transaction.amount + totals[transaction.cred_type];
+							if ((transaction.amount < 0) && (test < 0)) {
+								transaction.invalidate("amount", "insufficient credit");
+								log.error("Insufficient credit");
+								return next(new Error( "Insufficient Credit"));
+							} else {
+								next();
+							}
+						});
+					}
+					
+					
+				});
+			}
+		});
+	} else {
+		// If not new, the only stuff we can change is reserved to not reserved
+		console.log("Not new");
+		var Ledger = require("./ledger_model");
+		Ledger.findOne({_id: this._id}, (err, ledger) => {
+			var newLedger = this.toObject();
+			var oldLedger = ledger.toObject();
+			if (oldLedger.transaction_type !== "reserve") {
+				return next(new Error("Only reserves can be altered"));
+			}
+			for(var i in oldLedger) {
+				if (newLedger[i]) {
+					if (newLedger[i].toString() !== oldLedger[i].toString()) {
+						if (i !== "transaction_type")
+							return next(new Error("Can only change transaction type from reserve to debit"));
+					}
+				}
+			}
+			if ((newLedger.transaction_type !== "debit") || (oldLedger.transaction_type !== "reserve"))
+				return next(new Error("Can only change transaction type from reserve to debit"));
+			this.reserve = false;
+			next();
+		});
+		console.log(this);
+	}
 });
 
 LedgerSchema.post("save", function(transaction) { //Keep our running total up to date
