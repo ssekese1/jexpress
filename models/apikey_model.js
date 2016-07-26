@@ -1,6 +1,10 @@
 var mongoose     = require('mongoose');
 var Schema       = mongoose.Schema;
+<<<<<<< HEAD:models/apikey_model.js
 var config		= require("../config");
+=======
+var config		 = require("../config");
+>>>>>>> 23cfebdc7a63ec8746e3ca00f144d1c85949b262:models/apikey_model.js
 
 var Objectid = mongoose.Schema.Types.ObjectId;
 

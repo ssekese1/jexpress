@@ -1,8 +1,9 @@
 {
-  "name": "nutoobs.dev",
-  "version": "0.0.0",
+  "name": "jexpress",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
+<<<<<<< HEAD
     "start": "node ./bin/server.js"
   },
   "dependencies": {
@@ -36,8 +37,25 @@
     "socket.io": "^1.4.6",
     "underscore": "^1.8.3",
     "ws": "^0.8.0"
+=======
+    "start": "node bin/server.js"
+  },
+  "dependencies": {
+    "bcrypt": "*",
+    "jsonwebtoken": "*",
+    "mongoose": "*",
+    "mongoose-friendly": "*",
+    "nodemailer": "*",
+    "nodemailer-smtp-transport": "*",
+    "q": "*",
+    "querystring": "*",
+    "rand-token": "*",
+    "restify": "*",
+    "restler-q": "*",
+    "underscore": "*"
+>>>>>>> 23cfebdc7a63ec8746e3ca00f144d1c85949b262
   },
   "devDependencies": {
-    "should": "^4.1.0"
+    "should": "*"
   }
 }

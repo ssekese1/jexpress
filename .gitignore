@@ -1,8 +1,15 @@
 .DS_Store
 bower_components
 config.js
-config_working.js
 config.bak
+config_working.js
+<<<<<<< HEAD
+config.bak
+=======
+experiment.js
+
+app/models/*
+>>>>>>> 23cfebdc7a63ec8746e3ca00f144d1c85949b262
 
 # Logs
 logs
