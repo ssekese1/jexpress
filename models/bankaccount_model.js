@@ -19,9 +19,9 @@ var BankaccountSchema   = new Schema({
 	organisation_id: { type: ObjectId, ref: "Organisation", required: true, index: true },
 	name: String, // What the user wants to call it, eg. "Business Account"
 	account_name: { type: String, required: true }, // Name the account is under
-	account_number: { type: Number, required: true },
+	account_number: { type: String, required: true },
 	account_type: { type: Number, required: true }, // 1. Cheque, 2. Savings, 3. Transmission, 4. Bond
-	branch_code: { type: Number, requred: true },
+	branch_code: { type: String, requred: true },
 	start_date: { type: Date, default: Date.now, index: true },
 	end_date: Date,
 	filename: String,
