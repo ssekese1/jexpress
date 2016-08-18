@@ -11,6 +11,7 @@ var LicenseSchema   = new Schema({
 	organisation_id: { type: Objectid, ref: 'Organisation', index: true, required: true },
 	membership_id: { type: Objectid, ref: 'Membership', required: true },
 	location_id: { type: Objectid, ref: 'Location', required: true },
+	xero_account: String,
 	user_id: { type: Objectid, ref: 'User', index: true },
 	date_created: { type: Date, default: Date.now },
 	_owner_id: Objectid,
