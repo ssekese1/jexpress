@@ -19,6 +19,7 @@ var LogSchema   = new Schema({
 
 LogSchema.set("_perms", {
 	admin: "cru",
+	user: "c",
 });
 
 module.exports = mongoose.model('Log', LogSchema);
