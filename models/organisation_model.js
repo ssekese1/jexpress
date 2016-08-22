@@ -32,6 +32,7 @@ var OrganisationSchema   = new Schema({
 	about: String,
 	user_id: { type: Objectid, ref: 'User' },
 	sage_uid: Number,
+	xero_id: String,
 	vat: String,
 	location_id: { type: Objectid, ref: 'Location' },
 	space_total: { type: Number, default: 0 }, //Debit + Credit

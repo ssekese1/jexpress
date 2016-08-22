@@ -32,6 +32,8 @@ var MembershipSchema   = new Schema({
 	sage: mongoose.Schema.Types.Mixed,
 	datatill_product: Number,
 	papercut_group: String,
+	xero_account: String,
+	xero_itemid: String,
 	_owner_id: Objectid,
 	_deleted: { type: Boolean, default: false, index: true },
 });
