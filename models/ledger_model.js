@@ -31,7 +31,7 @@ var LedgerSchema   = new Schema({
 	balance: Number,
 	reserve: { type: Boolean, default: false },
 	reserve_expires: { type: Date, default: Date.now },
-	cred_type: { type: String, validate: /space|stuff/, index: true, required: true },
+	cred_type: { type: String, validate: /space|stuff|creditcard|account/, index: true, required: true },
 	email: String,
 	transaction_type: { type: String, validate: /credit|debit|reserve/ },
 	_owner_id: Objectid,
