@@ -99,7 +99,7 @@ OrganisationSchema.post('validate', function(doc) {
 				level: 3,
 				user_id: self.__user,
 				title: "Organisation created",
-				message: "Organisation created " + doc.email,
+				message: "Organisation created " + doc.name,
 				code: "organisation-create",
 				data: doc,
 			}).save();
@@ -112,7 +112,7 @@ OrganisationSchema.post('validate', function(doc) {
 					level: 3,
 					user_id: self.__user,
 					title: "Organisation changed",
-					message: "Organisation changed " + doc.email,
+					message: "Organisation changed " + doc.name,
 					code: "organisation-change",
 					data: d,
 				}).save();
