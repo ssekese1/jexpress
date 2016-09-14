@@ -4,7 +4,7 @@ var Schema       = mongoose.Schema;
 // var monguurl = require("monguurl");
 var friendly = require("mongoose-friendly");
 
-var Objectid = mongoose.Schema.Types.ObjectId;
+var ObjectId = mongoose.Schema.Types.ObjectId;
 var Membership = require('./membership_model');
 var Location = require('./location_model');
 var Sageitems = require('./sageitem_model');
@@ -30,14 +30,14 @@ var OrganisationSchema   = new Schema({
 	linkedin: String,
 	img: String,
 	about: String,
-	user_id: { type: Objectid, ref: 'User' },
+	user_id: { type: ObjectId, ref: 'User' },
 	sage_uid: Number,
 	xero_id: String,
 	vat: String,
-	location_id: { type: Objectid, ref: 'Location' },
+	location_id: { type: ObjectId, ref: 'Location' },
 	space_total: { type: Number, default: 0 }, //Debit + Credit
 	stuff_total: { type: Number, default: 0 }, //Debit + Credit
-	membership: { type: Objectid, ref: 'Membership' },
+	membership: { type: ObjectId, ref: 'Membership' },
 	space_credits_per_month_override: Number,
 	stuff_credits_per_month_override: Number,
 	bandwidth_per_month_override: Number,
@@ -56,7 +56,8 @@ var OrganisationSchema   = new Schema({
 	papercut_username: String,
 	start_date: { type: Date, default: Date.now },
 	date_created: { type: Date, default: Date.now },
-	_owner_id: Objectid,
+	allowed_payments: [ String ],
+	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
 });
 
