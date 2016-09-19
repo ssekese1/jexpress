@@ -15,6 +15,10 @@ var LocationSchema   = new Schema({
 	datatill_group_id: Number,
 	bank_account: Number,
 	bank_code: String,
+	community_manager_name: String,
+	community_manager_email: String,
+	community_manager_tel: String,
+	mail_header: String,
 	_deleted: { type: Boolean, default: false, index: true },
 });
 
