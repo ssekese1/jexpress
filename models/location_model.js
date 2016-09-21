@@ -18,7 +18,7 @@ var LocationSchema   = new Schema({
 	community_manager_name: String,
 	community_manager_email: String,
 	community_manager_tel: String,
-	mail_header: String,
+	mail_template: String,
 	_deleted: { type: Boolean, default: false, index: true },
 });
 
