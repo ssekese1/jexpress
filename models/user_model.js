@@ -9,15 +9,12 @@ var Organisation = require("./organisation_model");
 var Location = require("./location_model");
 var Membership = require("./membership_model");
 var Tag = require("./tag_model");
-var diff = require('deep-diff').diff;
-var Log = require("./log_model");
-var messagequeue = require("../libs/messagequeue");
 
 var UserSchema   = new Schema({
-	name: { type: String, required: true },
+	name: { type: String },
 	urlid: { type: String, unique: true, index: true },
-	organisation_id: { type: ObjectId, ref: "Organisation", required: true, index: true },
-	location_id: { type: ObjectId, ref: "Location", index: true },
+	organisation_id: { type: ObjectId, ref: "Organisation" },
+	location_id: { type: ObjectId, ref: "Location" },
 	membership_id: { type: ObjectId, ref: "Membership" },
 	email: { type: String, unique: true, index: true, set: toLower },
 	emails: [String],
@@ -47,7 +44,8 @@ var UserSchema   = new Schema({
 	first_login: { type: Boolean, default: true },
 	date_created: { type: Date, default: Date.now },
 	tags: [ { type: ObjectId, ref: "Tag" } ],
-	public: Boolean,
+	space_total: { type: Number, default: 0 },
+	stuff_total: { type: Number, default: 0 },
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
 });
@@ -118,6 +116,7 @@ UserSchema.pre("validate", function(next) {
 	} else {
 		return next();
 	}
+	
 });
 
 /*
@@ -198,12 +197,6 @@ UserSchema.post('validate', function(doc) {
 			}
 		}
 	});
-});
-
-UserSchema.post('save', function(doc) {
-	var self = this;
-	if (doc._isNew)
-		onboard(doc._id, self.__user);
 });
 
 UserSchema.path('name').validate(function (v) {
