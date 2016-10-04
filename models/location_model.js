@@ -19,6 +19,9 @@ var LocationSchema   = new Schema({
 	community_manager_email: String,
 	community_manager_tel: String,
 	mail_template: String,
+	xero_paypal_id: String,
+	xero_creditcard_id: String,
+	xero_eft_id: String,
 	_deleted: { type: Boolean, default: false, index: true },
 });
 
