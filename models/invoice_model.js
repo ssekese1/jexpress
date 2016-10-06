@@ -20,6 +20,9 @@ var InvoiceSchema   = new Schema({
 	tax: Number,
 	date_created: { type: Date, default: Date.now },
 	line_items: [ mongoose.Schema.Types.Mixed ],
+	amount_due: Number,
+	amount_paid: Number,
+	date_paid: Date,
 	paypal_id: { type: String, index: true },
 	_owner_id: ObjectId
 });
