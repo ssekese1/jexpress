@@ -24,6 +24,9 @@ var InvoiceSchema   = new Schema({
 	amount_paid: Number,
 	date_paid: Date,
 	paypal_id: { type: String, index: true },
+	method_paid: String,
+	rejection_date: Date,
+	rejection_reason: String,
 	_owner_id: ObjectId
 });
 
