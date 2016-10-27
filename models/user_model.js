@@ -9,6 +9,7 @@ var Organisation = require("./organisation_model");
 var Location = require("./location_model");
 var Membership = require("./membership_model");
 var Tag = require("./tag_model");
+var diff = require('deep-diff').diff;
 
 var UserSchema   = new Schema({
 	name: { type: String },
