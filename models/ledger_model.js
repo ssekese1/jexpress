@@ -395,7 +395,7 @@ LedgerSchema.pre("save", function(next) {
 						// Reserves must be negative
 						if ((transaction.amount > 0) && (transaction.reserve)) {
 							transaction.invalidate("amount", "Reserves must be a negative value");
-							log.error("Reserves must be a negative value");
+							console.error("Reserves must be a negative value");
 							return next(new Error("Reserves must be a negative value"));
 						}
 						// Set Transaction Type
@@ -409,23 +409,23 @@ LedgerSchema.pre("save", function(next) {
 							}
 						}
 						// Only admins can assign Credit
-						if ((transaction.amount > 0) && (!sender.admin)) {
+						if ((transaction.amount > 0) && (!transaction.sender.admin)) {
 							transaction.invalidate("amount", "Only admins can give credit. Amount must be less than zero.");
-							log.error("Only admins can give credit. Amount must be less than zero.");
+							console.error("Only admins can give credit. Amount must be less than zero.");
 							return next(new Error("Only admins can give credit. Amount must be less than zero."));
 						}
 						// Only admins can delete non-reserve
-						if ((transaction._deleted) && (transaction.transaction_type !== "reserve") && (!sender.admin)) {
+						if ((transaction._deleted) && (transaction.transaction_type !== "reserve") && (!transaction.sender.admin)) {
 							transaction.invalidate("_deleted", "Only admins can delete non-reserved.");
-							log.error("Only admins can delete non-reserved.");
+							console.error("Only admins can delete non-reserved.");
 							return next(new Error("You are not allowed to reverse this transaction"));
 						}
 						// Make sure we have credit
-						_calcOrg(organisation).then(function(totals) {
+						_calcUser(user).then(function(totals) {
 							var test = transaction.amount + totals[transaction.cred_type];
 							if ((transaction.amount < 0) && (test < 0)) {
 								transaction.invalidate("amount", "insufficient credit");
-								log.error("Insufficient credit");
+								console.error("Insufficient credit");
 								return next(new Error( "Insufficient Credit"));
 							} else {
 								next();
