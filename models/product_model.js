@@ -13,7 +13,7 @@ var ProductSchema   = new Schema({
 	topup_size: Number,
 	volume: Number,
 	xero_account: String,
-	xero_code: String,
+	xero_code: { type: String, index: true },
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
 });
