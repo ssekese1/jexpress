@@ -13,6 +13,8 @@ var LocationSchema   = new Schema({
 	sage_taxtype_id: String,
 	sage_message: String,
 	datatill_group_id: Number,
+	bank_account: Number,
+	bank_code: String,
 	_deleted: { type: Boolean, default: false, index: true },
 });
 
