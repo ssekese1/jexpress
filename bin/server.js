@@ -4,18 +4,28 @@ var mongoose = require("mongoose");
 var websocket = require('../libs/websockets.js').connect();
 var messagequeue = require("../libs/messagequeue");
 
+var trimuser = function(user) {
+	return {
+		_id: user._id,
+		email: user.email,
+		name: user.name,
+		organisation_id: user.organisation_id,
+		location_id: user.location_id
+	};
+};
+
 config.callbacks = {
 	post: function(modelname, item, user) {
 		websocket.emit(modelname, { method: "post", _id: item._id });
-		messagequeue.action(modelname, "post", user, item);
+		messagequeue.action(modelname, "post", trimuser(user), item);
 	},
 	put: function(modelname, item, user) {
 		websocket.emit(modelname, { method: "put", _id: item._id });
-		messagequeue.action(modelname, "put", user, item);
+		messagequeue.action(modelname, "put", trimuser(user), item);
 	},
 	delete: function(modelname, item, user, opts) {
 		websocket.emit(modelname, { method: "delete", _id: item._id });
-		messagequeue.action(modelname, "delete", user, item);
+		messagequeue.action(modelname, "delete", trimuser(user), item);
 	}
 };
 

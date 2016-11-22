@@ -12,6 +12,7 @@ var User = require('./user_model');
 var diff = require('deep-diff').diff;
 var Log = require("./log_model");
 var messagequeue = require("../libs/messagequeue");
+var Organisation = require('./organisation_model');
 
 var OrganisationSchema   = new Schema({
 	name: { type: String, unique: true, index: true },
@@ -57,6 +58,7 @@ var OrganisationSchema   = new Schema({
 	start_date: { type: Date, default: Date.now },
 	date_created: { type: Date, default: Date.now },
 	allowed_payments: [ String ],
+	parent_organisation_id: { type: ObjectId, ref: 'Organisation' },
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
 });
