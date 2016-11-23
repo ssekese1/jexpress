@@ -9,6 +9,7 @@ var messagequeue = require("../libs/messagequeue");
 var InvoiceSchema   = new Schema({
 	invoice_id: { type: String, index: true },
 	invoice_number: String,
+	reference: String,
 	organisation_id: { type: ObjectId, index: true, ref: "Organisation" },
 	location: { type: ObjectId, index: true, ref: "Location" },
 	date: Date,
