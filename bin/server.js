@@ -5,6 +5,9 @@ var websocket = require('../libs/websockets.js').connect();
 var messagequeue = require("../libs/messagequeue");
 
 var trimuser = function(user) {
+	if (!user) {
+		return null;
+	}
 	return {
 		_id: user._id,
 		email: user.email,
