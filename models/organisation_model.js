@@ -92,6 +92,18 @@ var OrganisationModel = mongoose.model('Organisation', OrganisationSchema);
 OrganisationSchema.post('validate', function(doc) {
 	var self = this;
 	var log = null;
+	if (!doc._id) {
+		log = new Log({
+			model: "organisation",
+			level: 3,
+			user_id: self.__user,
+			title: "Organisation created",
+			message: "Organisation created " + doc.name,
+			code: "organisation-create",
+			data: doc,
+		}).save();
+		return true;
+	}
 	OrganisationModel.findOne({ _id: doc._id }, function(err, original) {
 		if (!original) {
 			log = new Log({
