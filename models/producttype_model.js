@@ -6,9 +6,6 @@ var Objectid = mongoose.Schema.Types.ObjectId;
 var ProductTypeSchema   = new Schema({
 	name: { type: String, required: true, index: true },
 	fire_action: String,
-	payment_options: [ { type: String, validate: /stuff|space|creditcard|account/, required: true }],
-	self_service: { type: Boolean, default: false, index: true },
-	price: Number,
 	_owner_id: Objectid,
 	_deleted: { type: Boolean, default: false, index: true },
 });

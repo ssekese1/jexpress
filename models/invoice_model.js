@@ -34,7 +34,7 @@ var InvoiceSchema   = new Schema({
 
 InvoiceSchema.set("_perms", {
 	admin: "crud",
-	owner: "r",
+	owner: "cr",
 	user: ""
 });
 
