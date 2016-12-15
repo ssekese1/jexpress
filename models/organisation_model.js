@@ -36,8 +36,6 @@ var OrganisationSchema   = new Schema({
 	xero_id: String,
 	vat: String,
 	location_id: { type: ObjectId, ref: 'Location' },
-	space_total: { type: Number, default: 0 }, //Debit + Credit
-	stuff_total: { type: Number, default: 0 }, //Debit + Credit
 	membership: { type: ObjectId, ref: 'Membership' },
 	space_credits_per_month_override: Number,
 	stuff_credits_per_month_override: Number,

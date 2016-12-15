@@ -46,8 +46,6 @@ var UserSchema   = new Schema({
 	first_login: { type: Boolean, default: true },
 	date_created: { type: Date, default: Date.now },
 	tags: [ { type: ObjectId, ref: "Tag" } ],
-	space_total: { type: Number, default: 0 },
-	stuff_total: { type: Number, default: 0 },
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
 });

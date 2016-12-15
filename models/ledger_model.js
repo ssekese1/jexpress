@@ -7,10 +7,10 @@ var Objectid = mongoose.Schema.Types.ObjectId;
 var User = require("./user_model");
 var Organisation = require("./organisation_model");
 var Source = require("./source_model");
+var Balance = require("./balance_model");
+var Log = require("./log_model");
 var moment = require("moment");
 var async = require("async");
-
-var Q = require("q");
 
 var credTypes = ["space", "stuff", "daily"];
 
@@ -42,11 +42,27 @@ LedgerSchema.set("_perms", {
 	all: ""
 });
 
+var log = (id, level, title, message, data, code) => {
+	log = new Log({
+		id: id,
+		model: "ledger",
+		level,
+		user_id: self.__user || null,
+		title,
+		message,
+		code,
+		data,
+	}).save();
+};
+
+var logError = (id, title, message, data) => {
+	log(id, 1, title, message, data, "ledger-error");
+};
 
 var _calcUser = function(user) {
-	var Balance = require("./balance_model");
 	var saveBalance = function(user_id, cred_type, balance) {
 		return function(cb) {
+			var Balance = require("./balance_model");
 			Balance.findOne({ user_id: user_id, cred_type: cred_type }).exec((err, row) => {
 				if (err) {
 					return cb(err);
@@ -67,60 +83,45 @@ var _calcUser = function(user) {
 		};
 	};
 
-	deferred = Q.defer();
-	mongoose.model('Ledger', LedgerSchema).find({ user_id: user._id }).exec(function(err, transactions) {
-		if (err) {
-			console.error(user.email, err);
-			deferred.reject(err);
-			return;
-		}
-		if (!transactions) {
-			return deferred.reject("No transactions found", user._id, user.email);
-		}
-		console.log("Total transactions", transactions.length);
-		balances = {};
-		credTypes.forEach(function(credType) {
-			var balance = 0;
-			transactions.filter((transaction) => {
-				return credType == transaction.cred_type;
-			}).forEach((transaction) => {
-				if (!transaction._deleted)
-					balance += transaction.amount;
+	return new Promise((resolve, reject) => {
+		mongoose.model('Ledger', LedgerSchema).find({ user_id: user._id }).exec(function(err, transactions) {
+			var balances = {};
+			credTypes.forEach(function(credType) {
+				balances[credType] = 0;
 			});
-			balance = Math.round(balance * 100) / 100;
-			balances[credType] = balance;
-		});
-		var queue = [];
-		for (var cred_type in balances) {
-			queue.push(saveBalance(user._id, cred_type, balances[cred_type]));
-		}
-		async.series(queue, (err, result) => {
-			if (err) 
-				console.error(err);
-			console.log(result);
-		});
-		
-		var totals = {
-			stuff: 0,
-			space: 0
-		};
-		transactions.forEach(function(transaction) {
-			if (!transaction._deleted)
-				totals[transaction.cred_type] += transaction.amount;
-		});
-		totals.stuff = Math.round(totals.stuff * 100) / 100;
-		totals.space = Math.round(totals.space * 100) / 100;
-		user.stuff_total = totals.stuff;
-		user.space_total = totals.space;
-		user.save((err, result) => {
 			if (err) {
 				console.error(user.email, err);
+				return reject(err);
 			}
-			console.log("Totals", user.email, totals);
-			deferred.resolve(totals);
+			if (!transactions) {
+				return resolve(balances);
+			}
+			credTypes.forEach(function(credType) {
+				var balance = 0;
+				transactions
+				.filter(transaction => {
+					return credType == transaction.cred_type;
+				})
+				.filter(notDeleted)
+				.forEach(transaction => {
+					balance += transaction.amount;
+				});
+				balance = Math.round(balance * 100) / 100;
+				balances[credType] = balance;
+			});
+			var queue = [];
+			for (var cred_type in balances) {
+				queue.push(saveBalance(user._id, cred_type, balances[cred_type]));
+			}
+			async.series(queue, (err, result) => {
+				if (err) {
+					console.error(err);
+					return reject(err);
+				}
+				return resolve(balances);
+			});
 		});
 	});
-	return deferred.promise;
 };
 
 LedgerSchema.statics.sync_users = function() {
@@ -204,16 +205,17 @@ LedgerSchema.statics.fix_balances = function(data) {
 };
 
 var getUser = function(id) {
-	var deferred = Q.defer();
-	User.findOne({ _id: id }, function(err, user) {
-		if (err) {
-			console.error(err);
-			deferred.reject(err);
-		} else {
-			deferred.resolve(user);
-		}
+	return new Promise((resolve, reject) => {
+		User.findOne({ _id: id }, function(err, user) {
+			if (err) {
+				console.error(err);
+				return reject(err);
+			}
+			if (!user)
+				return reject("User not found");
+			return resolve(user);
+		});
 	});
-	return deferred.promise;
 };
 
 var notDeleted = function(item) {
@@ -221,88 +223,82 @@ var notDeleted = function(item) {
 };
 
 var getUsers = function() {
-	var deferred = Q.defer();
-	User.find(function(err, users) {
-		if (err) {
-			console.error(err);
-			deferred.reject(err);
-		} else {
-			deferred.resolve(users.filter(notDeleted));
-		}
+	return new Promise((resolve, reject) => {
+		User.find(function(err, users) {
+			if (err) {
+				console.error(err);
+				reject(err);
+			} else {
+				resolve(users.filter(notDeleted));
+			}
+		});
 	});
-	return deferred.promise;
 };
 
 var getOrganisations = function() {
-	var deferred = Q.defer();
-	Organisation.find(function(err, organisations) {
-		if (err) {
-			console.error(err);
-			deferred.reject(err);
-		} else {
-			deferred.resolve(organisations.filter(notDeleted));
-		}
+	return new Promise((resolve, reject) => {
+		Organisation.find(function(err, organisations) {
+			if (err) {
+				console.error(err);
+				return reject(err);
+			}
+			return resolve(organisations.filter(notDeleted));
+		});
 	});
-	return deferred.promise;
 };
 
 LedgerSchema.statics.transfer = function(data) {
-	var deferred = Q.defer();
-	console.log("transfer", data);
-	if ((data.sender !== data.__user._id) && (!data.__user.admin)) {
-		deferred.reject("This is not your account and you are not an admin");
-	} else {
-		var Ledger = mongoose.model('Ledger', LedgerSchema);
-		// sender = data.__user;
-		var credit = new Ledger();
-		var debit = new Ledger();
-		var sender = null;
-		var recipient = null;
-		getUser(data.sender)
-		.then(function(user) {
-			console.log(user);
-			sender = user;
-			return getUser(data.recipient);
-		})
-		.then(function(user) {
-			recipient = user;
-			credit.user_id = data.recipient;
-			credit.amount = Math.abs(data.amount);
-			credit.cred_type = data.cred_type;
-			credit.description = "Transfer from " + sender.name + " <" + sender.email + "> to " + recipient.name + " <" + recipient.email + ">";
-			credit.__user = data.__user;
-			debit.user_id = data.sender;
-			debit.amount = Math.abs(data.amount) * -1;
-			debit.cred_type = data.cred_type;
-			debit.description = "Transfer from " + sender.name + " <" + sender.email + "> to " + recipient.name + " <" + recipient.email + ">";
-			debit.__user = data.__user;
-			debit.save(function(err, result) {
-				if (err) {
-					console.error(err);
-					deferred.reject(err);
-				} else {
-					credit.save(function(err, result) {
-						if (err) {
-							console.error(err);
-							deferred.reject(err);
-						} else {
-							deferred.resolve({ credit: credit, debit: debit });
-						}
-					});
-				}
+	return new Promise((resolve, reject) => {
+		console.log("transfer", data);
+		if ((data.sender !== data.__user._id) && (!data.__user.admin)) {
+			reject("This is not your account and you are not an admin");
+		} else {
+			var Ledger = mongoose.model('Ledger', LedgerSchema);
+			// sender = data.__user;
+			var credit = new Ledger();
+			var debit = new Ledger();
+			var sender = null;
+			var recipient = null;
+			getUser(data.sender)
+			.then(function(user) {
+				console.log(user);
+				sender = user;
+				return getUser(data.recipient);
+			})
+			.then(function(user) {
+				recipient = user;
+				credit.user_id = data.recipient;
+				credit.amount = Math.abs(data.amount);
+				credit.cred_type = data.cred_type;
+				credit.description = "Transfer from " + sender.name + " <" + sender.email + "> to " + recipient.name + " <" + recipient.email + ">";
+				credit.__user = data.__user;
+				debit.user_id = data.sender;
+				debit.amount = Math.abs(data.amount) * -1;
+				debit.cred_type = data.cred_type;
+				debit.description = "Transfer from " + sender.name + " <" + sender.email + "> to " + recipient.name + " <" + recipient.email + ">";
+				debit.__user = data.__user;
+				debit.save(function(err, result) {
+					if (err) {
+						console.error(err);
+						reject(err);
+					} else {
+						credit.save(function(err, result) {
+							if (err) {
+								console.error(err);
+								reject(err);
+							} else {
+								resolve({ credit: credit, debit: debit });
+							}
+						});
+					}
+				});
+			})
+			.then(null, function(err) {
+				console.error(err);
+				reject(err);
 			});
-		})
-		.then(null, function(err) {
-			console.error(err);
-			deferred.reject(err);
-		});
-	}
-	return deferred.promise;
-};
-
-LedgerSchema.statics.syncOrg = function(data) {
-	console.log("Data", data);
-	return _syncOrg(data.organisation_id);
+		}
+	});
 };
 
 LedgerSchema.statics.confirm_reserve = function(_id) {
@@ -331,16 +327,15 @@ LedgerSchema.virtual("__user").set(function(user) {
 });
 
 var getBalance = function(user_id, cred_type) {
-	var Balance = require("./balance_model");
-	var deferred = Q.defer();
-	Balance.findOne({ user_id: user_id, cred_type: cred_type }, (err, row) => {
-		if (err)
-			return deferred.reject(err);
-		if (!row)
-			return deferred.resolve(0);
-		return deferred.resolve(row.balance);
+	return new Promise((resolve, reject) => {
+		Balance.findOne({ user_id: user_id, cred_type: cred_type }, (err, row) => {
+			if (err)
+				return reject(err);
+			if (!row)
+				return resolve(0);
+			return resolve(row.balance);
+		});
 	});
-	return deferred.promise;
 };
 
 LedgerSchema.pre("save", function(next) {
@@ -476,44 +471,44 @@ LedgerSchema.post("save", function(transaction) { //Keep our running total up to
 });
 
 LedgerSchema.statics.report = function(params) {
-	var deferred = Q.defer();
-	var Ledger = require("./ledger_model");
-	params = params || {};
-	find = {};
-	params.start_date = params.start_date || moment().subtract(1, "month").toISOString();
-	params.end_date = params.end_date || moment().toISOString();
-	find.date = { "$gte": params.start_date, "$lte": params.end_date };
-	if (params.cred_type && (params.cred_type != "*")) {
-		find.cred_type = params.cred_type;
-	} else {
-		params.cred_type = "*";
-	}
-	if (params.partner_id && (params.partner_id != "*")) {
-		find.partner_id = params.partner_id;
-	} else {
-		params.partner_id = "*";
-	}
-	Ledger.find(find).sort({ date: 1 }).exec(function(err, entries) {
-		if (!entries) {
-			deferred.reject("No entries found");
-			return;
+	return new Promise((resolve, reject) => {
+		var Ledger = require("./ledger_model");
+		params = params || {};
+		find = {};
+		params.start_date = params.start_date || moment().subtract(1, "month").toISOString();
+		params.end_date = params.end_date || moment().toISOString();
+		find.date = { "$gte": params.start_date, "$lte": params.end_date };
+		if (params.cred_type && (params.cred_type != "*")) {
+			find.cred_type = params.cred_type;
+		} else {
+			params.cred_type = "*";
 		}
-		console.log("Entries found", entries);
-		var tot = 0;
-		var debs = 0;
-		var creds = 0;
-		entries.forEach(function(entry) {
-			tot += entry.amount;
-			if (entry.amount >= 0) {
-				creds += entry.amount;
-			} else {
-				debs += entry.amount;
+		if (params.partner_id && (params.partner_id != "*")) {
+			find.partner_id = params.partner_id;
+		} else {
+			params.partner_id = "*";
+		}
+		Ledger.find(find).sort({ date: 1 }).exec(function(err, entries) {
+			if (!entries) {
+				reject("No entries found");
+				return;
 			}
+			console.log("Entries found", entries);
+			var tot = 0;
+			var debs = 0;
+			var creds = 0;
+			entries.forEach(function(entry) {
+				tot += entry.amount;
+				if (entry.amount >= 0) {
+					creds += entry.amount;
+				} else {
+					debs += entry.amount;
+				}
+			});
+			var avg = tot / entries.length;
+			resolve({ params: params, total: tot, average: avg, count: entries.length, debits: debs, credits: creds });
 		});
-		var avg = tot / entries.length;
-		deferred.resolve({ params: params, total: tot, average: avg, count: entries.length, debits: debs, credits: creds });
 	});
-	return deferred.promise;
 };
 
 module.exports = mongoose.model('Ledger', LedgerSchema);
