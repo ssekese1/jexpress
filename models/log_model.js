@@ -10,7 +10,7 @@ var LogSchema   = new Schema({
 	id: ObjectId,
 	code: String,
 	model: String,
-	level: Number,
+	level: Number, // 1=Error, 2=Warning, 3=Info, 4=Debug
 	user_id: { type: ObjectId, ref: "User" },
 	title: String,
 	message: String,
