@@ -126,21 +126,26 @@ var _calcUser = function(user) {
 
 LedgerSchema.statics.sync_users = function() {
 	console.log("Syncing all users");
+	var queue = [];
 	return getUsers()
 	.then(function(users) {
-		console.log(users.length);
-		var tasks = users.map(function(user) {
-			return function() {
-				console.log(user.email);
-				return _calcUser(user);
-			};
+		users.forEach(user => {
+			queue.push(cb => {
+				_calcUser(user)
+				.then(result => {
+					result.user_id = user._id;
+					cb(null, result);
+				});
+			});
 		});
-		tasks.push(function() {
-			return(users.length + " Users synced");
+		return new Promise((resolve, reject) => {
+			async.series(queue, function(err, result) {
+				console.log("Done");
+				if (err)
+					return reject(err);
+				return resolve(result);
+			});	
 		});
-		return tasks.reduce(function(soFar, f) {
-			return soFar.then(f);
-		}, Q());
 	});
 };
 
