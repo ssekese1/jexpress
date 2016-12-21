@@ -57,6 +57,8 @@ var OrganisationSchema   = new Schema({
 	date_created: { type: Date, default: Date.now },
 	allowed_payments: [ String ],
 	parent_organisation_id: { type: ObjectId, ref: 'Organisation' },
+	stuff_total: Number,
+	space_total: Number,
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
 });
