@@ -29,6 +29,7 @@ var InvoiceSchema   = new Schema({
 	method_paid: String,
 	rejection_date: Date,
 	rejection_reason: String,
+	xero_updated_date_utc: String,
 	_owner_id: ObjectId
 });
 
