@@ -30,6 +30,8 @@ var InvoiceSchema   = new Schema({
 	rejection_date: Date,
 	rejection_reason: String,
 	xero_updated_date_utc: String,
+	mail_date: Date,
+	mail_result: mongoose.Schema.Types.Mixed,
 	_owner_id: ObjectId
 });
 
