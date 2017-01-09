@@ -31,6 +31,7 @@ var LedgerSchema   = new Schema({
 	cred_type: { type: String, validate: /space|stuff|creditcard|account|daily/, index: true, required: true },
 	email: String,
 	transaction_type: { type: String, validate: /credit|debit|reserve/ },
+	is_transfer: { type: Boolean, default: false },
 	_owner_id: Objectid,
 	_deleted: { type: Boolean, default: false, index: true },
 });
@@ -255,7 +256,8 @@ var getOrganisations = function() {
 LedgerSchema.statics.transfer = function(data) {
 	return new Promise((resolve, reject) => {
 		console.log("transfer", data);
-		if ((data.sender !== data.__user._id) && (!data.__user.admin)) {
+		if ((data.sender + "" !== data.__user._id + "") && (!data.__user.admin)) {
+			console.log("Reject", data.sender, data.__user._id);
 			reject("This is not your account and you are not an admin");
 		} else {
 			var Ledger = mongoose.model('Ledger', LedgerSchema);
@@ -277,11 +279,13 @@ LedgerSchema.statics.transfer = function(data) {
 				credit.cred_type = data.cred_type;
 				credit.description = "Transfer from " + sender.name + " <" + sender.email + "> to " + recipient.name + " <" + recipient.email + ">";
 				credit.__user = data.__user;
+				credit.is_transfer = true;
 				debit.user_id = data.sender;
 				debit.amount = Math.abs(data.amount) * -1;
 				debit.cred_type = data.cred_type;
 				debit.description = "Transfer from " + sender.name + " <" + sender.email + "> to " + recipient.name + " <" + recipient.email + ">";
 				debit.__user = data.__user;
+				debit.is_transfer = true;
 				debit.save(function(err, result) {
 					if (err) {
 						console.error(err);
@@ -409,7 +413,7 @@ LedgerSchema.pre("save", function(next) {
 							}
 						}
 						// Only admins can assign Credit
-						if ((transaction.amount > 0) && (!transaction.sender.admin)) {
+						if ((transaction.amount > 0) && (!transaction.sender.admin) && (!transaction.is_transfer)) {
 							transaction.invalidate("amount", "Only admins can give credit. Amount must be less than zero.");
 							console.error("Only admins can give credit. Amount must be less than zero.");
 							return next(new Error("Only admins can give credit. Amount must be less than zero."));
@@ -433,7 +437,7 @@ LedgerSchema.pre("save", function(next) {
 						});
 					}
 					// Only admins can assign Credit
-					if ((transaction.amount > 0) && (!transaction.sender.admin)) {
+					if ((transaction.amount > 0) && (!transaction.sender.admin) && (!transaction.is_transfer)) {
 						transaction.invalidate("amount", "Only admins can give credit. Amount must be less than zero.");
 						console.error("Only admins can give credit. Amount must be less than zero.");
 						return next(new Error("Only admins can give credit. Amount must be less than zero."));
