@@ -4,6 +4,7 @@ var Schema       = mongoose.Schema;
 var ObjectId = mongoose.Schema.Types.ObjectId;
 var Location = require('./location_model');
 var Organisation = require("./organisation_model");
+var User = require("./user_model");
 var messagequeue = require("../libs/messagequeue");
 
 var InvoiceSchema   = new Schema({
@@ -11,6 +12,7 @@ var InvoiceSchema   = new Schema({
 	invoice_number: String,
 	reference: String,
 	organisation_id: { type: ObjectId, index: true, ref: "Organisation" },
+	user_id: { type: ObjectId, index: true, ref: "User" },
 	location: { type: ObjectId, index: true, ref: "Location" },
 	date: Date,
 	due_date: Date,
