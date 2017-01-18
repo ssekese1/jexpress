@@ -3,7 +3,7 @@ var Websockets = (function() {
 	var self = this;
 	this.io = false;
 	var connect = function() {
-		var config = require('../config');
+		var config = require('config');
 		var port = (config.websocket_port ? config.websocket_port : parseInt(config.port) + 1);
 		console.log("Connecting to Socket.io on port", port);
 		this.io = require("socket.io").listen(port);

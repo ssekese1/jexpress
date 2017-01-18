@@ -1,5 +1,5 @@
 var JExpress = require("jexpress");
-var config = require('../config');
+var config = require('config');
 var mongoose = require("mongoose");
 var websocket = require('../libs/websockets.js').connect();
 var messagequeue = require("../libs/messagequeue");
@@ -44,3 +44,5 @@ var server = new JExpress(config);
 server.listen(config.port || 3001, function() {
 	console.log('%s listening at %s', server.name, server.url);
 });
+
+module.exports = server; //For Testing

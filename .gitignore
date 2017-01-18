@@ -3,6 +3,7 @@ bower_components
 config.js
 config_working.js
 config.bak
+config/*
 
 # Logs
 logs

@@ -1,9 +1,10 @@
 {
-  "name": "nutoobs.dev",
-  "version": "0.0.0",
+  "name": "JExpressOpen",
+  "version": "0.2.2",
   "private": true,
   "scripts": {
-    "start": "node ./bin/server.js"
+    "start": "node ./bin/server.js",
+    "test": "mocha --timeout 10000"
   },
   "dependencies": {
     "amqplib": "^0.4.1",
@@ -12,6 +13,7 @@
     "body-parser": "~1.8.1",
     "bunyan": "^1.5.1",
     "compression": "^1.5.2",
+    "config": "^1.24.0",
     "cookie-parser": "~1.3.3",
     "cors": "^2.5.0",
     "debug": "~2.0.0",
@@ -39,6 +41,9 @@
     "ws": "^0.8.0"
   },
   "devDependencies": {
+    "chai": "^3.5.0",
+    "chai-http": "^3.0.0",
+    "mocha": "^3.2.0",
     "should": "^4.1.0"
   }
 }
