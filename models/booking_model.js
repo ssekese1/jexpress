@@ -1,7 +1,7 @@
 var mongoose     = require('mongoose');
 var Schema       = mongoose.Schema;
 
-var Objectid = mongoose.Schema.Types.ObjectId;
+var ObjectId = mongoose.Schema.Types.ObjectId;
 var Room = require("./room_model");
 var User = require("./user_model");
 var Guest = require("./guest_model");
@@ -13,25 +13,25 @@ var moment = require('moment-timezone');
 moment.tz.setDefault("SAST");
 
 var BookingSchema   = new Schema({
-	room: { type: Objectid, ref: "Room" },
+	room: { type: ObjectId, ref: "Room" },
 	start_time: Date,
 	end_time: Date,
 	title: String,
 	description: String,
 	message: String,
-	attendees: [{ type: Objectid, ref: "User" }],
-	guests: [{ type: Objectid, ref: "Guest" }],
+	attendees: [{ type: ObjectId, ref: "User" }],
+	guests: [{ type: ObjectId, ref: "Guest" }],
 	external_attendees: [String],
-	user: { type: Objectid, ref: "User" },
+	user: { type: ObjectId, ref: "User" },
 	cost: Number,
 	created: { type: Date, default: Date.now },
 	public_event: { type: Boolean, default: false },
 	event_client: { type: Boolean, default: false },
 	img: String,
-	layout: { type: Objectid, ref: "Layout" },
+	layout: { type: ObjectId, ref: "Layout" },
 	booking_url: String,
 	website: String,
-	_owner_id: Objectid,
+	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
 	_version: { type: Number, default: 0 },
 });
