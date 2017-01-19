@@ -47,12 +47,16 @@ describe('Booking', () => {
 			.send(booking)
 			.auth(init.email, init.password)
 			.end((err, res) => {
-				// console.log(res.body);
 				res.should.have.status(200);
-				res.body.data.should.be.a('object');
-				// res.body.data.length.should.be.eql(0);
+				res.body.data.should.be.an('object');
+				res.body.data.should.have.property("_id");
+				res.body.data.should.have.property("title");
+				res.body.data.should.have.property("start_time");
+				res.body.data.should.have.property("end_time");
 				done();
 			});
 		});
 	});
+
+
 });
