@@ -53,6 +53,7 @@ var OrganisationSchema   = new Schema({
 	discount_expires: Date,
 	pin: String,
 	papercut_username: String,
+	printing: { type: Boolean, default: true },
 	start_date: { type: Date, default: Date.now },
 	date_created: { type: Date, default: Date.now },
 	allowed_payments: [ String ],
