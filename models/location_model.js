@@ -22,6 +22,7 @@ var LocationSchema   = new Schema({
 	xero_paypal_id: String,
 	xero_creditcard_id: String,
 	xero_eft_id: String,
+	clay_id: String,
 	_deleted: { type: Boolean, default: false, index: true },
 });
 
