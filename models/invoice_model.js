@@ -29,6 +29,7 @@ var InvoiceSchema   = new Schema({
 	date_paid: Date,
 	paypal_id: { type: String, index: true },
 	method_paid: String,
+	payment_result: mongoose.Schema.Types.Mixed,
 	rejection_date: Date,
 	rejection_reason: String,
 	xero_updated_date_utc: String,
