@@ -4,11 +4,13 @@ var Schema       = mongoose.Schema;
 var ObjectId = mongoose.Schema.Types.ObjectId;
 var Location = require('./location_model');
 var User = require("./user_model");
+var Event = require("./event_model");
 
 var CateringSchema   = new Schema({
 	location_id: { type: ObjectId, index: true, ref: "Location" },
 	booking_id: { type: ObjectId, index: true, ref: "Booking" },
-	room: [{ type: ObjectId, index: true, ref: "Room" }],
+	room_id: [{ type: ObjectId, index: true, ref: "Room" }],
+	event_id: { type: ObjectId, index: true, ref: "Event" },
 	status: String,
 	name: String,
 	description: String,
