@@ -43,8 +43,18 @@ var encPassword = (password) => {
 	return hash;
 };
 
-var email = "test@freespeechpub.co.za";
-var password = "test";
+var user_account = {
+	name: "Test User",
+	email: "user@freespeechpub.co.za",
+	password: "test",
+};
+
+var admin_account = {
+	name: "Test Admin",
+	email: "admin@freespeechpub.co.za",
+	password: "test",
+	admin: true
+};
 
 var init = () => {
 	var location = null;
@@ -68,7 +78,24 @@ var init = () => {
 	})
 	.then((result) => {
 		organisation = result;
-		return post(User, { name: "Test User", email, password: encPassword(password), location_id: location._id, organisation_id: organisation._id });
+		var data = {};
+		for(var i in user_account) {
+			data[i] = user_account[i];
+		}
+		data.location_id = location._id;
+		data.organisation_id = organisation._id;
+		data.password = encPassword(data.password);
+		return post(User, data);
+	})
+	.then((result) => {
+		var data = {};
+		for(var i in admin_account) {
+			data[i] = admin_account[i];
+		}
+		data.location_id = location._id;
+		data.organisation_id = organisation._id;
+		data.password = encPassword(data.password);
+		return post(User, data);
 	})
 	.then((result) => {
 		return post(Room, { name: "Test Room", location_id: location._id, cost: 1, off_peak_cost: 0.5 });
@@ -83,14 +110,15 @@ describe('Init', () => {
 
 	describe("/GET user", () => {
 		it("it should GET all the users", (done) => {
+			console.log(user_account);
 			chai.request(server)
 			.get("/api/user")
-			.auth(email, password)
+			.auth(user_account.email, user_account.password)
 			.end((err, res) => {
 				console.log(res.error);
 				res.should.have.status(200);
 				res.body.data.should.be.a('array');
-				res.body.data.length.should.be.eql(1);
+				res.body.data.length.should.be.eql(2);
 				done();
 			});
 		});
@@ -99,6 +127,6 @@ describe('Init', () => {
 
 module.exports = {
 	init,
-	email,
-	password
+	user_account,
+	admin_account
 };

@@ -1,6 +1,6 @@
 process.env.NODE_ENV = 'test';
 
-var Booking = require("../models/booking_model");
+var Event = require("../models/event_model");
 
 var chai = require('chai');
 var chaiHttp = require('chai-http');
@@ -12,19 +12,19 @@ var init = require("./init");
 
 chai.use(chaiHttp);
 
-describe('Booking', () => {
+describe('Event', () => {
 	before(init.init);
 
 	beforeEach(done => {
-		Booking.remove({}, err => {
+		Event.remove({}, err => {
 			done();
 		});
 	});
 
-	describe("/GET booking", () => {
-		it("it should GET all the bookings", (done) => {
+	describe("/GET event", () => {
+		it("it should GET all the events", (done) => {
 			chai.request(server)
-			.get("/api/booking")
+			.get("/api/event")
 			.auth(init.user_account.email, init.user_account.password)
 			.end((err, res) => {
 				res.should.have.status(200);
@@ -35,28 +35,29 @@ describe('Booking', () => {
 		});
 	});
 
-	describe("/POST booking", () => {
-		it("it should POST a new booking", (done) => {
-			var booking = {
-				title: "Test Booking",
-				start_time: new Date(),
-				end_time: new Date(),
+	describe("/POST event", () => {
+		it("it should POST a new event", (done) => {
+			var event = {
+				name: "Test event",
+				start_date: new Date(),
+				end_date: new Date(),
 			};
 			chai.request(server)
-			.post("/api/booking")
-			.send(booking)
-			.auth(init.user_account.email, init.user_account.password)
+			.post("/api/event")
+			.send(event)
+			.auth(init.admin_account.email, init.admin_account.password)
 			.end((err, res) => {
+				// console.log(res.body);
 				res.should.have.status(200);
+				res.body.should.have.property("status").eql("ok");
 				res.body.data.should.be.an('object');
 				res.body.data.should.have.property("_id");
-				res.body.data.should.have.property("title");
-				res.body.data.should.have.property("start_time");
-				res.body.data.should.have.property("end_time");
+				res.body.data.should.have.property("name");
+				res.body.data.should.have.property("start_date");
+				res.body.data.should.have.property("end_date");
 				done();
 			});
 		});
 	});
-
 
 });
