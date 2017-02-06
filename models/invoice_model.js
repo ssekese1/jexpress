@@ -8,8 +8,10 @@ var User = require("./user_model");
 var messagequeue = require("../libs/messagequeue");
 
 var InvoiceSchema   = new Schema({
-	invoice_id: { type: String, index: true },
-	invoice_number: String,
+	xero_invoice_id: { type: String, index: true },
+	invoice_id: String, // Deprecated
+	xero_invoice_number: String,
+	invoice_number: String, // Deprecated
 	reference: String,
 	organisation_id: { type: ObjectId, index: true, ref: "Organisation" },
 	user_id: { type: ObjectId, index: true, ref: "User" },
