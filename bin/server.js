@@ -17,6 +17,25 @@ var trimuser = function(user) {
 	};
 };
 
+config.pre_hooks = {
+	get: (req, res, next) => {
+		console.log("Called Get Hook");
+		if (!req.Model.schema.paths.location_id)
+			return next();
+		if (req.query.location_override)
+			return next();
+		if (req.query.filter && req.query.filter.location_id)
+			return next();
+		if (!req.user)
+			return next();
+		if (!req.query.filter)
+			req.query.filter = {};
+		req.query.filter.location_id = req.user.location_id + "";
+		// console.log(req.query);
+		next();
+	}
+};
+
 config.callbacks = {
 	post: function(modelname, item, user) {
 		websocket.emit(modelname, { method: "post", _id: item._id });
