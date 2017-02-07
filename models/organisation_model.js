@@ -143,7 +143,6 @@ OrganisationSchema.post('validate', function(doc) {
 	doc._isNew = false;
 	OrganisationModel.findOne({ _id: doc._id }, function(err, original) {
 		doc.active = (activeStates.indexOf(doc.status) !== -1);
-		console.log("Active:", doc.active, doc.status);
 		if (!original) {
 			if (doc.active) {
 				//New, active

@@ -12,7 +12,7 @@ var MessageQueue = {
 		.then(ch => {
 			ch.assertQueue(config.rabbitmq.queue, {durable: true});
 			var data = { type: type, op: op, params: [ user, item ], timestamp: +new Date() };
-			console.log("RabbitMQ data", JSON.stringify(data));
+			// console.log("RabbitMQ data", JSON.stringify(data));
 			return ch.sendToQueue(config.rabbitmq.queue, new Buffer(JSON.stringify(data)));
 		})
 		.then(null, function(err) {
