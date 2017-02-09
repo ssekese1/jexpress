@@ -151,6 +151,20 @@ function randomEl(list) {
 	return list[i];
 }
 
+function ToSeoUrl(url) {
+	// make the url lowercase         
+	var encodedUrl = url.toString().toLowerCase();
+	// replace & with and           
+	encodedUrl = encodedUrl.split(/\&+/).join("-and-");
+	// remove invalid characters 
+	encodedUrl = encodedUrl.split(/[^a-z0-9]/).join("-");
+	// remove duplicates 
+	encodedUrl = encodedUrl.split(/-+/).join("-");
+	// trim leading & trailing characters 
+	encodedUrl = encodedUrl.trim('-');
+	return encodedUrl; 
+}
+
 var chance = new Chance();
 
 var membershipId = 1;
@@ -173,19 +187,7 @@ var createMembership = () => {
 			});
 		};
 	};
-	function ToSeoUrl(url) {
-		// make the url lowercase         
-		var encodedUrl = url.toString().toLowerCase();
-		// replace & with and           
-		encodedUrl = encodedUrl.split(/\&+/).join("-and-");
-		// remove invalid characters 
-		encodedUrl = encodedUrl.split(/[^a-z0-9]/).join("-");
-		// remove duplicates 
-		encodedUrl = encodedUrl.split(/-+/).join("-");
-		// trim leading & trailing characters 
-		encodedUrl = encodedUrl.trim('-');
-		return encodedUrl; 
-	}
+	
 	var createXeroItem = (membership) => {
 		var item = {
 			Code: ToSeoUrl(membership.name),
@@ -260,13 +262,14 @@ var createOrganisation = (name) => {
 			email: chance.email(), 
 			tel: chance.phone(), 
 			address: chance.address(), 
-			postal_address: chance.address(), 
+			postal_address: chance.address(),
 			location_id: location._id,
 			status: "active",
 			accounts_email: chance.email(),
 			website: chance.url(),
 			legal_name: name + " Pty (Ltd)",
 			allowed_payments: [ "paypal", "credit-card", "monthly-eft" ],
+			urlid: ToSeoUrl(name)
 		});
 	})
 	.then(result => {
@@ -322,13 +325,15 @@ var createUser = () => {
 	return getAll(Organisation)
 	.then(result => {
 		organisation = randomEl(result);
+		var name = chance.name();
 		return post(User, {
-			name: chance.name(),
+			name,
 			email: chance.email(),
 			password: encPassword("password"),
 			location_id: organisation.location_id,
 			organisation_id: organisation._id,
 			status: "active",
+			urlid: ToSeoUrl(name)
 		});
 	})
 	.then(result => {
@@ -493,6 +498,7 @@ createAdminUser = () => {
 			organisation_id: result._id,
 			status: "active",
 			admin: true,
+			urlid: "admin"
 		})
 		.then(result => {
 			return post(Apikey, {
@@ -522,50 +528,6 @@ createMailtemplates = () => {
 		});
 	});
 };
-
-// 	.then(() => {
-// 		return post(Location, { name: "Test Location 1" });
-// 	})
-// 	.then((result) => {
-// 		location = result;
-// 		return post(Membership, { name: "Test Membership Location 1", location_id: location._id });
-// 	})
-// 	.then(() => {
-// 		return post(Location, { name: "Test Location 2" });
-// 	})
-// 	.then((result) => {
-// 		location = result;
-// 		return post(Membership, { name: "Test Membership Location 2", location_id: location._id });
-// 	})
-// 	.then(result => {
-// 		return post(Organisation, { name: "Test Organisation", location_id: location._id });
-// 	})
-// 	.then((result) => {
-// 		organisation = result;
-// 		var data = {};
-// 		for(var i in user_account) {
-// 			data[i] = user_account[i];
-// 		}
-// 		data.location_id = location._id;
-// 		data.organisation_id = organisation._id;
-// 		data.password = encPassword(data.password);
-// 		return post(User, data);
-// 	})
-// 	.then((result) => {
-// 		var data = {};
-// 		for(var i in admin_account) {
-// 			data[i] = admin_account[i];
-// 		}
-// 		data.location_id = location._id;
-// 		data.organisation_id = organisation._id;
-// 		data.password = encPassword(data.password);
-// 		return post(User, data);
-// 	})
-// 	.then((result) => {
-// 		return post(Room, { name: "Test Room", location_id: location._id, cost: 1, off_peak_cost: 0.5 });
-// 	})
-// 	;
-// };
 
 init()
 .then(result => {
