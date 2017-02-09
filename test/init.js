@@ -47,13 +47,15 @@ var user_account = {
 	name: "Test User",
 	email: "user@freespeechpub.co.za",
 	password: "test",
+	urlid: "test-user"
 };
 
 var admin_account = {
 	name: "Test Admin",
 	email: "admin@freespeechpub.co.za",
 	password: "test",
-	admin: true
+	admin: true,
+	urlid: "test-admin"
 };
 
 var init = () => {
