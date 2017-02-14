@@ -1,41 +1,28 @@
-// Websockets library
-var Websockets = (function() {
+var config = require('config');
+var WebSocket = require("ws");
+
+module.exports = (function() {
+	if (!config.websocket) {
+		console.error("Websocket not configured");
+		return;
+	}
+	var ws = new WebSocket(config.websocket);
 	var self = this;
-	this.io = false;
-	var connect = function() {
-		var config = require('config');
-		var port = (config.websocket_port ? config.websocket_port : parseInt(config.port) + 1);
-		// console.log("Connecting to Socket.io on port", port);
-		this.io = require("socket.io").listen(port);
-		this.io.sockets.on('connection', function (s) {
-			console.log("Socket.io connection established");
-		});
-		return this;
-		// var io_nsp = io.of("/" + config.websocket_namespace)
+	self.connected = false;
+	ws.on("open", () => {
+		console.log("Connected to WebSocket " + config.websocket);
+		self.connected = true;
+	});
+	self.emit = (model, action, _id) => {
+		var data = {
+			type: "broadcast",
+			action,
+			model,
+			_id,
+			room: model + "s"
+		};
+		ws.send(JSON.stringify(data));
 	};
 
-	var post = function(req, res, next) {
-		cosole.log("Caught POST");
-		console.log(req.result.data);
-		this.emit(modelname, { method: "post", _id: req.result.data._id });
-		next();
-	};
-
-	var emit = function(name, data) {
-		this.io.sockets.emit(name, data);
-	};
-
-	var broadcast = function(data) {
-		this.io.sockets.emit(data);
-	};
-
-	return {
-		connect: connect,
-		io: this.io,
-		broadcast: broadcast,
-		emit: emit,
-		post: post,
-	};
+	return this;
 });
-
-module.exports = Websockets();

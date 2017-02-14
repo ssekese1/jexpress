@@ -1,8 +1,9 @@
 var JExpress = require("jexpress");
 var config = require('config');
 var mongoose = require("mongoose");
-var websocket = require('../libs/websockets.js').connect();
+var Websocket = require('../libs/websockets.js');
 var messagequeue = require("../libs/messagequeue");
+var websocket = new Websocket();
 
 var trimuser = function(user) {
 	if (!user) {
@@ -38,15 +39,15 @@ config.pre_hooks = {
 
 config.callbacks = {
 	post: function(modelname, item, user) {
-		websocket.emit(modelname, { method: "post", _id: item._id });
+		websocket.emit(modelname, "post", item._id);
 		messagequeue.action(modelname, "post", trimuser(user), item);
 	},
 	put: function(modelname, item, user) {
-		websocket.emit(modelname, { method: "put", _id: item._id });
+		websocket.emit(modelname, "put", item._id);
 		messagequeue.action(modelname, "put", trimuser(user), item);
 	},
 	delete: function(modelname, item, user, opts) {
-		websocket.emit(modelname, { method: "delete", _id: item._id });
+		websocket.emit(modelname, "delete", item._id);
 		messagequeue.action(modelname, "delete", trimuser(user), item);
 	}
 };
