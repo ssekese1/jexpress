@@ -29,10 +29,11 @@ config.pre_hooks = {
 			return next();
 		if (!req.user)
 			return next();
+		if (req.groups.indexOf("super_user") !== -1)
+			return next();
 		if (!req.query.filter)
 			req.query.filter = {};
 		req.query.filter.location_id = req.user.location_id + "";
-		// console.log(req.query);
 		next();
 	}
 };
