@@ -1,4 +1,5 @@
 .DS_Store
+._*
 bower_components
 config.js
 config_working.js
