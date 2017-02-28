@@ -35,6 +35,7 @@ var OrganisationSchema   = new Schema({
 	sage_uid: Number,
 	xero_id: String,
 	vat: String,
+	company_registration_number: String,
 	location_id: { type: ObjectId, ref: 'Location' },
 	membership: { type: ObjectId, ref: 'Membership' },
 	space_credits_per_month_override: Number,

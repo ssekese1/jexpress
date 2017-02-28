@@ -20,6 +20,7 @@ var UserSchema   = new Schema({
 	membership_id: { type: ObjectId, ref: "Membership" },
 	email: { type: String, unique: true, index: true, set: toLower },
 	emails: [String],
+	id_number: String,
 	password: String,
 	admin: Boolean,
 	temp_hash: String,
