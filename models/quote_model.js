@@ -7,6 +7,7 @@ var Organisation = require("./organisation_model");
 var User = require("./user_model");
 var Location = require("./location_model");
 var Membership = require("./membership_model");
+var Tag = require("./tag_model");
 
 var QuoteSchema   = new Schema({
 	ambitions_achieve: String,
@@ -44,6 +45,7 @@ var QuoteSchema   = new Schema({
 	user_id: { type: ObjectId, ref: 'User' },
 	organisation_id: { type: ObjectId, ref: "Organisation" },
 	tags: [ String ],
+	rejection_tags: [ { type: ObjectId, ref: "Tag" } ],
 	_version: { type: Number, default: 0 },
 	_deleted: { type: Boolean, default: false, index: true },
 });
