@@ -46,6 +46,7 @@ var QuoteSchema   = new Schema({
 	organisation_id: { type: ObjectId, ref: "Organisation" },
 	tags: [ String ],
 	rejection_tags: [ { type: ObjectId, ref: "Tag" } ],
+	rejection_info: String,
 	_version: { type: Number, default: 0 },
 	_deleted: { type: Boolean, default: false, index: true },
 });
