@@ -20,7 +20,6 @@ var trimuser = function(user) {
 
 config.pre_hooks = {
 	get: (req, res, next) => {
-		console.log("Called Get Hook");
 		if (!req.Model.schema.paths.location_id)
 			return next();
 		if (req.query.location_override)
@@ -54,7 +53,8 @@ config.callbacks = {
 };
 
 //DB connection
-mongoose.connect('mongodb://' + config.mongo.server + '/' + config.mongo.db, function(err) {
+mongoose.Promise = global.Promise;
+mongoose.createConnection('mongodb://' + config.mongo.server + '/' + config.mongo.db, function(err) {
 	if (err) {
 		console.log("Connection error", err);
 	}
@@ -63,7 +63,7 @@ mongoose.connect('mongodb://' + config.mongo.server + '/' + config.mongo.db, fun
 var server = new JExpress(config);
 
 server.listen(config.port || 3001, function() {
-	console.log('%s listening at %s', server.name, server.url);
+	console.log('%s listening at %s', "JExpress", server.url);
 });
 
 module.exports = server; //For Testing
