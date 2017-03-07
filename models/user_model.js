@@ -1,3 +1,5 @@
+"use strict";
+
 var mongoose     = require('mongoose');
 var Schema       = mongoose.Schema;
 
@@ -13,7 +15,7 @@ var diff = require('deep-diff').diff;
 var Log = require("./log_model");
 
 var UserSchema   = new Schema({
-	name: { type: String },
+	name: { type: String, required: true },
 	urlid: { type: String, unique: true, index: true },
 	organisation_id: { type: ObjectId, ref: "Organisation" },
 	location_id: { type: ObjectId, ref: "Location" },
@@ -60,8 +62,6 @@ UserSchema.set("_perms", {
 	api: "r"
 });
 
-var UserModel = mongoose.model('User', UserSchema);
-
 /*
  * Ensure emails are unique
  */
@@ -83,9 +83,7 @@ UserSchema.pre("validate", function(next) {
 	var emails = this.emails;
 	if (emails.length) {
 		emails.forEach(function(email) {
-			// console.log("Checking email ", email);
 			UserModel.findOne({ email: email }, function(err, doc) {
-				// console.log("Check one");
 				if (err) {
 					return next(err);
 				}
@@ -99,7 +97,6 @@ UserSchema.pre("validate", function(next) {
 				}
 			
 				UserModel.findOne({ emails: email }, function(err, doc) {
-					// console.log("Check two");
 					if (err) {
 						return next(err);
 					}
@@ -118,7 +115,6 @@ UserSchema.pre("validate", function(next) {
 	} else {
 		return next();
 	}
-	
 });
 
 /*
@@ -169,7 +165,6 @@ var offboard = function(id, owner) {
  */
 UserSchema.post('validate', function(doc) {
 	var self = this;
-
 	doc._isNew = false;
 	UserModel.findOne({ _id: doc._id }, function(err, original) {
 		doc.active = (doc.status !== "inactive");
@@ -214,4 +209,5 @@ function toLower (v) {
 	return v.toLowerCase();
 }
 
+var UserModel = mongoose.model('User', UserSchema);
 module.exports = mongoose.model('User', UserSchema);
