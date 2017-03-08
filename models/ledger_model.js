@@ -2,10 +2,11 @@ var mongoose     = require('mongoose');
 // mongoose.set('debug', true);
 var Schema       = mongoose.Schema;
 
-var Objectid = mongoose.Schema.Types.ObjectId;
+var ObjectId = mongoose.Schema.Types.ObjectId;
 
 var User = require("./user_model");
 var Organisation = require("./organisation_model");
+var Partner = require("./partner_model");
 var Source = require("./source_model");
 var Balance = require("./balance_model");
 var Log = require("./log_model");
@@ -15,15 +16,15 @@ var async = require("async");
 var credTypes = ["space", "stuff", "daily"];
 
 var LedgerSchema   = new Schema({
-	user_id: { type: Objectid, index: true, ref: "User", required: true },
-	organisation_id: { type: Objectid, index: true, ref: "Organisation" },
+	user_id: { type: ObjectId, index: true, ref: "User", required: true },
+	organisation_id: { type: ObjectId, index: true, ref: "Organisation" },
 	description: String,
 	details: mongoose.Schema.Types.Mixed,
-	partner_id: Objectid,
+	partner_id: { type: ObjectId, index: true, ref: "Partner" },
 	partner_reference: mongoose.Schema.Types.Mixed,
 	date: { type: Date, default: Date.now, required: true, index: true },
 	source_type: String,
-	source_id: Objectid,
+	source_id: ObjectId,
 	amount: { type: Number, required: true },
 	balance: Number,
 	reserve: { type: Boolean, default: false },
@@ -32,7 +33,7 @@ var LedgerSchema   = new Schema({
 	email: String,
 	transaction_type: { type: String, validate: /credit|debit|reserve/ },
 	is_transfer: { type: Boolean, default: false },
-	_owner_id: Objectid,
+	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
 });
 
