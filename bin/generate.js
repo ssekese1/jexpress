@@ -1,4 +1,4 @@
-process.env.NODE_ENV = 'test';
+process.env.NODE_ENV = 'development';
 var config = require('config');
 var mongoose = require("mongoose");
 var Chance = require("chance");
