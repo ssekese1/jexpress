@@ -42,9 +42,9 @@ var InvoiceSchema   = new Schema({
 
 InvoiceSchema.set("_perms", {
 	admin: "crud",
-	owner: "cr",
+	owner: "cru",
 	primary_member: "r",
-	user: ""
+	user: "c"
 });
 
 var InvoiceModel = mongoose.model('Invoice', InvoiceSchema);

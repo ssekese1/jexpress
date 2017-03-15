@@ -22,7 +22,8 @@ var LicenseSchema   = new Schema({
 
 LicenseSchema.set("_perms", {
 	admin: "crud",
-	primary_member: "ru"
+	primary_member: "ru",
+	user: "r"
 });
 
 /*
