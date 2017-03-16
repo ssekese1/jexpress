@@ -47,8 +47,6 @@ InvoiceSchema.set("_perms", {
 	user: "c"
 });
 
-var InvoiceModel = mongoose.model('Invoice', InvoiceSchema);
-
 InvoiceSchema.post('validate', function(doc) {
 	var self = this;
 	doc._isNew = false;
@@ -65,5 +63,7 @@ InvoiceSchema.post('validate', function(doc) {
 		}
 	});
 });
+
+var InvoiceModel = mongoose.model('Invoice', InvoiceSchema);
 
 module.exports = mongoose.model('Invoice', InvoiceSchema);
