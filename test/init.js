@@ -32,7 +32,6 @@ var post = (model, data) => {
 		item.save((err, result) => {
 			if (err)
 				return reject(err);
-			// console.log(result);
 			return resolve(result);
 		});
 	});
@@ -47,7 +46,8 @@ var user_account = {
 	name: "Test User",
 	email: "user@freespeechpub.co.za",
 	password: "test",
-	urlid: "test-user"
+	urlid: "test-user",
+	status: "active"
 };
 
 var admin_account = {
@@ -55,7 +55,8 @@ var admin_account = {
 	email: "admin@freespeechpub.co.za",
 	password: "test",
 	admin: true,
-	urlid: "test-admin"
+	urlid: "test-admin",
+	status: "active"
 };
 
 var init = () => {
@@ -90,6 +91,7 @@ var init = () => {
 		return post(User, data);
 	})
 	.then((result) => {
+		user_account._id = result._id;
 		var data = {};
 		for(var i in admin_account) {
 			data[i] = admin_account[i];
@@ -100,6 +102,7 @@ var init = () => {
 		return post(User, data);
 	})
 	.then((result) => {
+		admin_account._id = result._id;
 		return post(Room, { name: "Test Room", location_id: location._id, cost: 1, off_peak_cost: 0.5 });
 	})
 	;
@@ -112,12 +115,10 @@ describe('Init', () => {
 
 	describe("/GET user", () => {
 		it("it should GET all the users", (done) => {
-			console.log(user_account);
 			chai.request(server)
 			.get("/api/user")
 			.auth(user_account.email, user_account.password)
 			.end((err, res) => {
-				console.log(res.error);
 				res.should.have.status(200);
 				res.body.data.should.be.a('array');
 				res.body.data.length.should.be.eql(2);
