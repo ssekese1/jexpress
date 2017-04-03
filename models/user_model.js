@@ -13,6 +13,7 @@ var Membership = require("./membership_model");
 var Tag = require("./tag_model");
 var diff = require('deep-diff').diff;
 var Log = require("./log_model");
+var messagequeue = require("../libs/messagequeue");
 
 var UserSchema   = new Schema({
 	name: { type: String, required: true },
