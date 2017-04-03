@@ -17,6 +17,7 @@ var ScheduleSchema   = new Schema({
 });
 
 ScheduleSchema.set("_perms", {
+	// Very NB to keep these permissions tight, because we execute code from here
 	super_user: "cru",
 	admin: "r",
 });
