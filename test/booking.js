@@ -62,7 +62,6 @@ describe('Booking', () => {
 			.send(booking)
 			.auth(init.user_account.email, init.user_account.password)
 			.end((err, res) => {
-				console.log(res.body);
 				res.should.have.status(200);
 				res.body.data.should.be.an('object');
 				res.body.data.should.have.property("_id");
@@ -200,7 +199,7 @@ describe('Booking', () => {
 		});
 	});
 
-	describe("/POST booking - Checks", () => {
+	describe("/POST booking - Collision Detection", () => {
 		it("it should post an appointment", (done) => {
 			var booking = {
 				title: "Test Booking",
@@ -235,4 +234,42 @@ describe('Booking', () => {
 		});
 	});
 
+	describe("/PUT booking", () => {
+		var appointment = null;
+		it("it should post an appointment", (done) => {
+			var booking = {
+				title: "Test Booking",
+				room: room._id,
+				start_time: new Date(time + (hour * 4)),
+				end_time: new Date(time + (hour * 5)),
+			};
+			chai.request(server)
+			.post("/api/booking")
+			.send(booking)
+			.auth(init.admin_account.email, init.admin_account.password)
+			.end((err, res) => {
+				res.should.have.status(200);
+				res.body.data.should.have.property("title");
+				res.body.data.title.should.equal("Test Booking");
+				appointment = res.body.data;
+				done();
+			});
+		});
+
+		it("it should update an appointment", (done) => {
+			var booking = {
+				title: "Test Booking Updated",
+			};
+			chai.request(server)
+			.put("/api/booking/" + appointment._id)
+			.send(booking)
+			.auth(init.admin_account.email, init.admin_account.password)
+			.end((err, res) => {
+				res.should.have.status(200);
+				res.body.data.should.have.property("title");
+				res.body.data.title.should.equal("Test Booking Updated");
+				done();
+			});
+		});
+	});
 });
