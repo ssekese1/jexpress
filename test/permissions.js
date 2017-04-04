@@ -4,6 +4,9 @@ var chai = require('chai');
 var chaiHttp = require('chai-http');
 var should = chai.should();
 
+var Booking = require("../models/booking_model");
+var Room = require('../models/room_model');
+
 var server = require("../bin/server");
 
 var init = require("./init");
@@ -12,6 +15,22 @@ chai.use(chaiHttp);
 
 describe('Permissions', () => {
 	before(init.init);
+
+	before(done => {
+		Booking.remove({}, err => {
+			done();
+		});
+	});
+
+	var room = null;
+	before(done => {
+		Room.findOne({}, (err, result) => {
+			if (err)
+				throw(err);
+			room = result;
+			done();
+		});
+	});
 
 	describe("GET Locations without logging in", () => {
 		it("Should GET all Locations", done => {
@@ -51,8 +70,8 @@ describe('Permissions', () => {
 		it("it should NOT POST", (done) => {
 			var event = {
 				name: "Test event",
-				start_date: new Date(),
-				end_date: new Date(),
+				start_time: new Date(),
+				end_time: new Date(),
 			};
 			chai.request(server)
 			.post("/api/event")
@@ -69,9 +88,10 @@ describe('Permissions', () => {
 		var booking_id = null;
 		it("it should CREATE booking", (done) => {
 			var booking = {
-				name: "Test booking 1",
-				start_date: new Date(),
-				end_date: new Date(),
+				title: "Test booking 1",
+				start_time: new Date(),
+				end_time: new Date(),
+				room: room._id
 			};
 			chai.request(server)
 			.post("/api/booking")
@@ -156,9 +176,10 @@ describe('Permissions', () => {
 		});
 		it("it should CREATE booking", (done) => {
 			var booking = {
-				name: "Test booking 2",
-				start_date: new Date(),
-				end_date: new Date(),
+				title: "Test booking 2",
+				start_time: new Date(),
+				end_time: new Date(),
+				room: room._id
 			};
 			chai.request(server)
 			.post("/api/booking?apikey=" + apikey)

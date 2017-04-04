@@ -108,7 +108,7 @@ BookingSchema.pre("save", function(next) {
 		return next(new Error("start_time greater than than end_time"));
 	}
 	transaction.user = transaction.user || transaction.__user._id;
-	if ((!transaction.__user.admin) && (transaction.__user._id !== transaction.user)) {
+	if ((!transaction.__user.admin) && (String(transaction.__user._id) !== String(transaction.user))) {
 		transaction.invalidate("user", "user not allowed to assign appointment to another user");
 		return next(new Error("user not allowed to assign appointment to another user"));
 	}
