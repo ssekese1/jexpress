@@ -13,10 +13,10 @@ var moment = require('moment-timezone');
 moment.tz.setDefault("SAST");
 
 var BookingSchema   = new Schema({
-	room: { type: ObjectId, ref: "Room" },
-	start_time: Date,
-	end_time: Date,
-	title: String,
+	room: { type: ObjectId, ref: "Room", required: true, index: true },
+	start_time: { type: Date, required: true, index: true },
+	end_time: { type: Date, required: true, index: true },
+	title: { type: String, required: true },
 	description: String,
 	message: String,
 	attendees: [{ type: ObjectId, ref: "User" }],
@@ -43,7 +43,6 @@ BookingSchema.set("_perms", {
 });
 
 function collision_detection(appointment, appointments) {
-	console.log("Checking for collision");
 	if (!appointments) {
 		return false;
 	}
@@ -51,7 +50,7 @@ function collision_detection(appointment, appointments) {
 	for(var x = 0; x < appointments.length; x++) {
 		if (x != appointment_index) {
 			if (appointment.start_time < appointments[x].end_time && appointments[x].start_time < appointment.end_time) {
-				console.log("Collision", appointments[x].start_time, appointments[x].end_time);
+				console.error("Collision", appointments[x].start_time, appointments[x].end_time);
 				console.log("Appointment", appointment.start_time, appointment.end_time);
 				return true;
 			}
@@ -60,71 +59,108 @@ function collision_detection(appointment, appointments) {
 	return false;
 }
 
+var getBookings = params => {
+	var Booking = mongoose.model("Booking", BookingSchema);
+	return new Promise((resolve, reject) => {
+		Booking.find(params, (err, result) => {
+			if (err)
+				return reject(err);
+			return resolve(result);
+		});
+	});
+};
+
+var getLedger = params => {
+	return new Promise((resolve, reject) => {
+		Ledger.findOne(params, (err, result) => {
+			if (err)
+				return reject(err);
+			return resolve(result);
+		});
+	});
+};
+
+var getRoom = params => {
+	return new Promise((resolve, reject) => {
+		Room.findOne(params, (err, result) => {
+			if (err)
+				return reject(err);
+			return resolve(result);
+		});
+	});
+};
+
+var postLedger = params => {
+	var ledger = Ledger(params);
+	return new Promise((resolve, reject) => {
+		reserve.save(function(err, result) {
+			if (err) 
+				return reject(err);
+			return resolve(result);
+		});
+	});
+};
+
 BookingSchema.pre("save", function(next) {
 	var transaction = this;
+	if (new Date(transaction.start_time).getTime() > new Date(transaction.end_time).getTime()) {
+		transaction.invalidate("start_time", "start_time cannot be greater than than end_time");
+		return next(new Error("start_time greater than than end_time"));
+	}
+	transaction.user = transaction.user || transaction.__user._id;
+	if ((!transaction.__user.admin) && (transaction.__user._id !== transaction.user)) {
+		transaction.invalidate("user", "user not allowed to assign appointment to another user");
+		return next(new Error("user not allowed to assign appointment to another user"));
+	}
 	var Booking = mongoose.model("Booking", BookingSchema);
-	Booking.find({ end_time: { $gt: transaction.start_time }, start_time: { $lt: transaction.end_time }, room: transaction.room, _deleted: false }, function(err, result) {
-		console.log("Checking that this slot is available", result);
+	getBookings({ end_time: { $gt: transaction.start_time }, start_time: { $lt: transaction.end_time }, room: transaction.room, _deleted: false })
+	.then(result => {
 		if (result.length && ("" + transaction._id !== "" + result[0]._id) && (!transaction._deleted)) {
 			console.error("Booking clash", result[0]._id, transaction._id);
-			throw({ message: "This booking clashes with an existing booking" });
+			throw("This booking clashes with an existing booking");
 		}
-		try {
-			//Remove the reserve if it already exists
-			Ledger.findOne({
-				source_type: "booking",
-				source_id: transaction._id
-			}, function(err, item) {
-				if (item) {
-					console.log("Found existing transaction");
-					item.remove();
-				}
-			});
-		} catch(err) {
-			console.log("Error", err);
-			// throw(err);
+		return getLedger({
+			source_type: "booking",
+			source_id: transaction._id
+		});
+	})
+	.then(ledger => {
+		if (ledger) {
+			ledger.remove();
 		}
 		
+		return getRoom({ _id: transaction.room });
+	})
+	.then(room => {
 		//Is this free? If so, cool, don't do any more
 		if (!transaction.cost) {
-			return next();
+			return true;
 		}
 
 		//Reserve the moneyz
 		//We do this here, because if it fails we don't want to process the payment.
-		try {
-			Room.findById(transaction.room).populate('location').exec(function(err, room) {
-				console.log(transaction);
-				var description = "Booking: " + transaction.title + " :: " + room.location.name + ", " + room.name +  ", " + moment(transaction.start_time).tz("Africa/Johannesburg").format("dddd MMMM Do, H:mm") + " to " + moment(transaction.end_time).tz("Africa/Johannesburg").format("H:mm");
-				if (parseInt(transaction._owner_id) !== parseInt(transaction.user)) {
-					description += " (Booked by Reception)";
-				}
-				reserve_expires = moment(transaction.start_time).subtract(24, "hours");
-				var reserve = Ledger({
-					user_id: transaction.user,
-					description: description,
-					amount: transaction.cost * -1,
-					cred_type: "space",
-					source_type: "booking",
-					source_id: transaction._id,
-					reserve: true,
-					reserve_expires: reserve_expires.format("x"),
-					__user: transaction.__user
-				});
-				console.log("RESERVE::", reserve);
-				reserve.save(function(err) {
-					if (err) {
-						console.error(err);
-						return next(err);
-					}
-					return next();
-				});
-			});
-		} catch(err) {
-			console.log("Error", err); 
-			//Roll back booking
-
+		var description = "Booking: " + transaction.title + " :: " + room.location.name + ", " + room.name +  ", " + moment(transaction.start_time).tz("Africa/Johannesburg").format("dddd MMMM Do, H:mm") + " to " + moment(transaction.end_time).tz("Africa/Johannesburg").format("H:mm");
+		if (parseInt(transaction._owner_id) !== parseInt(transaction.user)) {
+			description += " (Booked by Reception)";
 		}
+		reserve_expires = moment(transaction.start_time).subtract(24, "hours");
+		return postLedger({
+			user_id: transaction.user,
+			description: description,
+			amount: Math.abs(transaction.cost) * -1, // Ensure negative value
+			cred_type: "space",
+			source_type: "booking",
+			source_id: transaction._id,
+			reserve: true,
+			reserve_expires: reserve_expires.format("x"),
+			__user: transaction.__user
+		});
+	})
+	.then(result => {
+		next();
+	})
+	.catch(err => {
+		return next(new Error(err));
 	});
 });
 
