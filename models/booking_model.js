@@ -93,7 +93,7 @@ var getRoom = params => {
 var postLedger = params => {
 	var ledger = Ledger(params);
 	return new Promise((resolve, reject) => {
-		reserve.save(function(err, result) {
+		ledger.save(function(err, result) {
 			if (err) 
 				return reject(err);
 			return resolve(result);
