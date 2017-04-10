@@ -85,11 +85,28 @@ function shortname(s) {
 	return (s) ? s.toLowerCase().replace(/[^a-z0-9\-]+/g, "") : null;
 }
 
+var onboard = function(id, owner) {
+	messagequeue.action("organisation", "onboard", owner, id);
+};
+
+var offboard = function(id, owner) {
+	messagequeue.action("organisation", "offboard", owner, id);
+};
+
+var getOrganisation = params => {
+	return new Promise((resolve, reject) => {
+		mongoose.model('Organisation', OrganisationSchema).findOne(params, (err, result) => {
+			if (err)
+				return reject(err);
+			resolve(result);
+		});
+	});
+};
+
 OrganisationSchema.plugin(friendly, {
 	source: 'name',
 	friendly: 'urlid'
 });
-var OrganisationModel = mongoose.model('Organisation', OrganisationSchema);
 
 /*
  * Log changes
@@ -97,7 +114,8 @@ var OrganisationModel = mongoose.model('Organisation', OrganisationSchema);
 OrganisationSchema.post('validate', function(doc) {
 	var self = this;
 	var log = null;
-	OrganisationModel.findOne({ _id: doc._id }, function(err, original) {
+	getOrganisation({ _id: doc._id })
+	.then(original => {
 		if (!original) {
 			log = new Log({
 				id: doc._id,
@@ -127,14 +145,6 @@ OrganisationSchema.post('validate', function(doc) {
 	});
 });
 
-var onboard = function(id, owner) {
-	messagequeue.action("organisation", "onboard", owner, id);
-};
-
-var offboard = function(id, owner) {
-	messagequeue.action("organisation", "offboard", owner, id);
-};
-
 /*
  * Onboard, offboard, suspend or unsuspend a user
  */
@@ -143,18 +153,18 @@ OrganisationSchema.post('validate', function(doc) {
 	var activeStates = ["active", "hidden"];
 	var self = this;
 	doc._isNew = false;
-	OrganisationModel.findOne({ _id: doc._id }, function(err, original) {
+	getOrganisation({ _id: doc._id })
+	.then(original => {
 		doc.active = (activeStates.indexOf(doc.status) !== -1);
 		if (!original) {
-			if (doc.active) {
+			if (doc.status === "active") {
 				//New, active
 				doc._isNew = true;
 			}
 		} else {
-			original.active = (original.status !== "inactive");
-			if (doc.active !== original.active) {
+			if (doc.status !== original.status) {
 				//Status has changed
-				if (doc.active) {
+				if (doc.status === "active") {
 					//Status changed to active
 					onboard(doc._id, self.__user);
 				} else {
@@ -164,10 +174,10 @@ OrganisationSchema.post('validate', function(doc) {
 			}
 			if (doc._deleted && !original._deleted) {
 				//Doc has been deleted
-				onboard(doc._id, self.__user);
+				offboard(doc._id, self.__user);
 			} else if (!doc._deleted && original._deleted) {
 				//Doc has been undeleted
-				offboard(doc._id, self.__user);
+				onboard(doc._id, self.__user);
 			}
 		}
 	});
