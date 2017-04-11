@@ -6,6 +6,7 @@ var ObjectId = mongoose.Schema.Types.ObjectId;
 
 var ScheduleSchema   = new Schema({
 	name: String,
+	id: { type: ObjectId, index: true },
 	description: String,
 	action: String,
 	due: { type: Date, index: true },
