@@ -2,7 +2,6 @@ var mongoose     = require('mongoose');
 var Schema       = mongoose.Schema;
 
 var ObjectId = mongoose.Schema.Types.ObjectId;
-var Sageanalysiscategory = require("./sageanalysiscategory_model");
 var Location = require("./location_model");
 
 var MembershipSchema   = new Schema({

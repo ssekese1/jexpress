@@ -7,7 +7,6 @@ var friendly = require("mongoose-friendly");
 var ObjectId = mongoose.Schema.Types.ObjectId;
 var Membership = require('./membership_model');
 var Location = require('./location_model');
-var Sageitems = require('./sageitem_model');
 var User = require('./user_model');
 var diff = require('deep-diff').diff;
 var Log = require("./log_model");
@@ -32,7 +31,6 @@ var OrganisationSchema   = new Schema({
 	img: String,
 	about: String,
 	user_id: { type: ObjectId, ref: 'User' },
-	sage_uid: Number,
 	xero_id: String,
 	vat: String,
 	company_registration_number: String,
