@@ -1,19 +1,22 @@
 var mongoose     = require('mongoose');
 var Schema       = mongoose.Schema;
 
-var Objectid = mongoose.Schema.Types.ObjectId;
+var ObjectId = mongoose.Schema.Types.ObjectId;
 var Location = require('./location_model');
 var Layout = require('./layout_model');
+var Space = require('./space_model');
 
 var RoomSchema   = new Schema({
-	location: { type: Objectid, ref: "Location" },
+	location: { type: ObjectId, ref: "Location" },
 	name: String,
 	img: String,
 	cost: Number,
 	off_peak_cost: Number,
 	description: String,
 	capacity: Number,
-	layout: [{ type: Objectid, ref: "Layout" }],
+	meters_squared: Number,
+	layout: [{ type: ObjectId, ref: "Layout" }],
+	space_id: { type: ObjectId, ref: "Space" },
 	private: { type: Boolean, default: false },
 	unavailable_reason: String,
 	display_device_id: String,
