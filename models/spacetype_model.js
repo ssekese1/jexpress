@@ -1,0 +1,21 @@
+var mongoose     = require('mongoose');
+var Schema       = mongoose.Schema;
+
+var ObjectId = mongoose.Schema.Types.ObjectId;
+
+var SpaceTypeSchema   = new Schema({
+	name: String,
+	xero_account: String,
+	date_created: { type: Date, default: Date.now },
+	_owner_id: ObjectId,
+	_deleted: { type: Boolean, default: false, index: true },
+});
+
+SpaceTypeSchema.set("_perms", {
+	admin: "crud",
+	owner: "r",
+	user: "r",
+	all: "r"
+});
+
+module.exports = mongoose.model('SpaceType', SpaceTypeSchema);
