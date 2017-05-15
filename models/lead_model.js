@@ -12,6 +12,8 @@ var LeadSchema   = new Schema({
 	mobile: String,
 	date_created: { type: Date, default: Date.now },
 	source: String,
+	url: String,
+	type: String,
 });
 
 LeadSchema.set("_perms", {
