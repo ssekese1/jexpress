@@ -14,6 +14,7 @@ var LeadSchema   = new Schema({
 	source: String,
 	url: String,
 	type: String,
+	intercom_id: String,
 });
 
 LeadSchema.set("_perms", {
