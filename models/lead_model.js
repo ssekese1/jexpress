@@ -15,6 +15,8 @@ var LeadSchema   = new Schema({
 	url: String,
 	type: String,
 	intercom_id: String,
+	mailtemplate_id: ObjectId,
+	data: mongoose.Schema.Types.Mixed,
 });
 
 LeadSchema.set("_perms", {
