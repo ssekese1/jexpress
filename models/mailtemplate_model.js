@@ -12,7 +12,7 @@ var MailtemplateSchema   = new Schema({
 });
 
 MailtemplateSchema.set("_perms", {
-	superuser: "crud",
+	admin: "crud",
 	all: "r"
 });
 
