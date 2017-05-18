@@ -3,6 +3,7 @@ var Schema       = mongoose.Schema;
 
 var ObjectId = mongoose.Schema.Types.ObjectId;
 var Location = require('./location_model');
+var Membership = require('./membership_model');
 
 var LeadSchema   = new Schema({
 	name: { type: String, index: true },
@@ -16,6 +17,16 @@ var LeadSchema   = new Schema({
 	type: String,
 	intercom_id: String,
 	mailtemplate_id: ObjectId,
+	membership_id: { type: ObjectId, ref: "Membership" },
+	short_name: String,
+	legal_name: String,
+	accounts_email: String,
+	website: String,
+	address: String,
+	postal_address: String,
+	vat: String,
+	company_registration_number: String,
+	seats: Number,
 	data: mongoose.Schema.Types.Mixed,
 });
 
