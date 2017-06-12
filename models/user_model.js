@@ -14,6 +14,7 @@ var Tag = require("./tag_model");
 var diff = require('deep-diff').diff;
 var Log = require("./log_model");
 var messagequeue = require("../libs/messagequeue");
+var Clayaccessgroup = require("./clayaccessgroup_model");
 
 var UserSchema   = new Schema({
 	name: { type: String, required: true },
@@ -52,6 +53,7 @@ var UserSchema   = new Schema({
 	date_created: { type: Date, default: Date.now },
 	tags: [ { type: ObjectId, ref: "Tag" } ],
 	clay_id: String,
+	clay_access_group_ids: [ { type: ObjectId, ref: "Clayaccessgroup" } ],
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
 });

@@ -3,6 +3,7 @@ var Schema       = mongoose.Schema;
 
 var ObjectId = mongoose.Schema.Types.ObjectId;
 var Location = require("./location_model");
+var Clayaccessgroup = require("./clayaccessgroup_model");
 
 var MembershipSchema   = new Schema({
 	name: String,
@@ -31,6 +32,7 @@ var MembershipSchema   = new Schema({
 	papercut_group: String,
 	xero_account: String,
 	xero_itemid: String,
+	clay_access_group: { type: ObjectId, ref: "Clayaccessgroup" },
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
 });
