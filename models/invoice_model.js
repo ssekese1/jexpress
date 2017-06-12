@@ -37,6 +37,7 @@ var InvoiceSchema   = new Schema({
 	xero_updated_date_utc: String,
 	mail_date: Date,
 	mail_result: mongoose.Schema.Types.Mixed,
+	personal_account: { type: Boolean, default: false },
 	_owner_id: ObjectId
 });
 
