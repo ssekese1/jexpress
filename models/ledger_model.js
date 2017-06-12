@@ -21,7 +21,7 @@ var LedgerSchema   = new Schema({
 	description: String,
 	details: mongoose.Schema.Types.Mixed,
 	partner_id: { type: ObjectId, index: true, ref: "Partner" },
-	partner_reference: mongoose.Schema.Types.Mixed,
+	partner_reference: { type: mongoose.Schema.Types.Mixed, unique: true },
 	date: { type: Date, default: Date.now, required: true, index: true },
 	source_type: String,
 	source_id: ObjectId,
