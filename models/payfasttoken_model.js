@@ -9,6 +9,8 @@ var PayfasttokenSchema   = new Schema({
 	token: { type: String, index: true, unique: true },
 	user_id: { type: ObjectId, ref: 'User', index: true },
 	organisation_id: { type: ObjectId, ref: 'Organisation', index: true },
+	card_number: String,
+	expiration_date: { type: Date, index: true },
 	date_created: { type: Date, default: Date.now },
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
