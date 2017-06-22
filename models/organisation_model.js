@@ -60,6 +60,7 @@ var OrganisationSchema   = new Schema({
 	parent_organisation_id: { type: ObjectId, ref: 'Organisation' },
 	stuff_total: Number,
 	space_total: Number,
+	primary_token: ObjectId,
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
 });
