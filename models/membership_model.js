@@ -29,6 +29,7 @@ var MembershipSchema   = new Schema({
 	discount_multiplier: { type: Number, default: 1 },
 	special: Boolean,
 	datatill_product: Number,
+	radius_service: String,
 	papercut_group: String,
 	xero_account: String,
 	xero_itemid: String,
