@@ -158,10 +158,12 @@ UserSchema.post('validate', function(doc) {
 });
 
 var onboard = function(id, owner) {
+	console.log(`Onboarding ${id}`);
 	messagequeue.action("user", "onboard", owner, id);
 };
 
 var offboard = function(id, owner) {
+	console.log(`Offboarding ${id}`);
 	messagequeue.action("user", "offboard", owner, id);
 };
 /*
@@ -171,17 +173,16 @@ UserSchema.post('validate', function(doc) {
 	var self = this;
 	doc._isNew = false;
 	UserModel.findOne({ _id: doc._id }, function(err, original) {
-		doc.active = (doc.status !== "inactive");
 		if (!original) {
-			if (doc.active) {
+			if (doc.status === "active") {
 				//New, active
 				doc._isNew = true;
+				onboard(doc._id, self.__user);
 			}
 		} else {
-			original.active = (original.status !== "inactive");
-			if (doc.active !== original.active) {
+			if (doc.status !== original.status) {
 				//Status has changed
-				if (doc.active) {
+				if (doc.status === "active") {
 					//Status changed to active
 					onboard(doc._id, self.__user);
 				} else {
@@ -191,10 +192,10 @@ UserSchema.post('validate', function(doc) {
 			}
 			if (doc._deleted && !original._deleted) {
 				//Doc has been deleted
-				onboard(doc._id, self.__user);
+				offboard(doc._id, self.__user);
 			} else if (!doc._deleted && original._deleted) {
 				//Doc has been undeleted
-				offboard(doc._id, self.__user);
+				onboard(doc._id, self.__user);
 			}
 		}
 	});
