@@ -32,7 +32,6 @@ LicenseSchema.set("_perms", {
  * Log changes
  */
 LicenseSchema.post('validate', function(doc) {
-	console.log("Validating");
 	var self = this;
 	var log = null;
 	var LicenseModel = mongoose.model('License', LicenseSchema);
