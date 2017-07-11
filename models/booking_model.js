@@ -31,6 +31,8 @@ var BookingSchema   = new Schema({
 	layout: { type: ObjectId, ref: "Layout" },
 	booking_url: String,
 	website: String,
+	radius_username: String,
+	radius_password: String,
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
 	_version: { type: Number, default: 0 },
