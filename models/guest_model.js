@@ -13,6 +13,7 @@ var GuestSchema   = new Schema({
 	created_date: { type: Date, default: Date.now },
 	visiting_date: Date,
 	source: String,
+	last_login_method: String,
 	mac: [ mongoose.Schema.Types.Mixed ],
 	ip: [ mongoose.Schema.Types.Mixed ]
 });
