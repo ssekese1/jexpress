@@ -7,13 +7,13 @@ var User = require("./user_model");
 var Organisation = require("./organisation_model");
 
 var WalletSchema   = new Schema({
-	name: String,
-	currency_id: { type: ObjectId, index: true, ref: "Currency" },
-	priority: Number,
+	name: { type: String, required: true, validate: /\S+/ },
+	currency_id: { type: ObjectId, index: true, ref: "Currency", required: true },
+	priority: { type: Number, required: true },
 	quota_frequency: { type: String, validate: /daily|weekly|monthly|annually|never/, index: true, default: "never" },
-	quota_amount: Number,
+	quota_amount: { type: Number, default: 0 },
 	last_quota_date: { type: Date, index: true },
-	user_id: [{ type: ObjectId, index: true, ref: "User" }],
+	user_id: [{ type: ObjectId, index: true, ref: "User", required: true }],
 	organisation_id: { type: ObjectId, index: true, ref: "Organisation" },
 	balance: { type: Number, default: 0 },
 	date_created: { type: Date, default: Date.now },
