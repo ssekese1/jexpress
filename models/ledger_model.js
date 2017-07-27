@@ -3,6 +3,7 @@ var mongoose     = require('mongoose');
 var Schema       = mongoose.Schema;
 
 var ObjectId = mongoose.Schema.Types.ObjectId;
+var Mixed =  mongoose.Schema.Types.Mixed;
 
 var User = require("./user_model");
 var Organisation = require("./organisation_model");
@@ -10,6 +11,8 @@ var Partner = require("./partner_model");
 var Source = require("./source_model");
 var Balance = require("./balance_model");
 var Log = require("./log_model");
+var Currency = require("./currency_model");
+var Wallet = require("./wallet_model");
 var moment = require("moment");
 var async = require("async");
 
@@ -19,9 +22,9 @@ var LedgerSchema   = new Schema({
 	user_id: { type: ObjectId, index: true, ref: "User", required: true },
 	organisation_id: { type: ObjectId, index: true, ref: "Organisation" },
 	description: String,
-	details: mongoose.Schema.Types.Mixed,
+	details: Mixed,
 	partner_id: { type: ObjectId, index: true, ref: "Partner" },
-	partner_reference: { type: mongoose.Schema.Types.Mixed, unique: true },
+	partner_reference: { type: Mixed, unique: true },
 	date: { type: Date, default: Date.now, required: true, index: true },
 	source_type: String,
 	source_id: ObjectId,
@@ -30,6 +33,9 @@ var LedgerSchema   = new Schema({
 	reserve: { type: Boolean, default: false },
 	reserve_expires: { type: Date, default: Date.now },
 	cred_type: { type: String, validate: /space|stuff|creditcard|account|daily/, index: true, required: true },
+	currency_id: { type: ObjectId, index: true, ref: "Currency", required: true },
+	wallet_id: [{ type: ObjectId, index: true, ref: "Wallet" }],
+	wallet_split: [ Mixed ],
 	email: String,
 	transaction_type: { type: String, validate: /credit|debit|reserve/ },
 	is_transfer: { type: Boolean, default: false },
@@ -358,6 +364,20 @@ LedgerSchema.statics.report = function(params) {
 	});
 };
 
+var totalFromWallets = (user_id, currency_id, amount) => {
+	return new Promise((resolve, reject) => {
+		Wallet.find({ user_id, currency_id }).sort({ priority: 1 }).exec()
+		.then(result => {
+			var total = result.reduce((sum, wallet) => sum + wallet.balance, 0);
+			resolve(total);
+		})
+		.catch(err => {
+			console.error(err);
+			reject();
+		});
+	});
+};
+
 LedgerSchema.pre("save", function(next) {
 	console.log("Saving Ledger");
 	var transaction = this;
@@ -434,9 +454,11 @@ LedgerSchema.pre("save", function(next) {
 		if ((String(transaction.user_id) !== String(transaction.sender._id)) && (!transaction.sender.admin) && (!transaction.is_transfer)) {
 			throw("This is not your account");
 		}
-
+		return totalFromWallets(transaction.user_id, transaction.currency_id, transaction.amount);
+	})
+	.then(result => {
 		// Make sure we have credit
-		var test = transaction.amount + totals[transaction.cred_type];
+		var test = transaction.amount + result;
 		if ((transaction.amount < 0) && (test < 0)) {
 			throw("Insufficient Credit");
 		} else {
@@ -451,6 +473,45 @@ LedgerSchema.pre("save", function(next) {
 });
 
 LedgerSchema.post("save", function(transaction) { //Keep our running total up to date
+	if (transaction.amount < 0) {
+		Wallet.find({ user_id: transaction.user_id, currency_id: transaction.currency_id }).sort({ priority: 1 }).exec()
+		.then(result => {
+			var wallets = result;
+			var outstanding = Math.abs(transaction.amount);
+			var wallet_split = [];
+			while ((outstanding > 0) && wallets) {
+				var wallet = wallets.shift();
+				if (outstanding <= wallet.balance) { // Enough money in this wallet;
+					wallet_split.push({ _id: wallet._id, amount: outstanding, balance: wallet.balance - outstanding });
+					outstanding = 0;
+				} else { // Not enough money, clear out this wallet and continue
+					wallet_split.push({ _id: wallet._id, amount: wallet.balance, balance: 0 });
+					outstanding -= wallet.balance;
+				}
+			}
+			var queue = [];
+			wallet_split.forEach(wallet => {
+				console.log(wallet);
+				queue.push(cb => {
+					Wallet.findByIdAndUpdate(wallet._id, { $set: { balance: wallet.balance } })
+					.then(result => {
+						cb(null, result);
+					})
+					.catch(err => {
+						console.error(err);
+						cb(err);
+					});
+				});
+			});
+			async.series(queue, (err, result) => {
+				console.log(err, result);
+			});
+			console.log(wallet_split);
+		})
+		.catch(err => {
+			console.error(err);
+		});
+	}
 	User.findOne({ _id: transaction.user_id }, function(err, user) {
 		if (err) {
 			console.error(err);
