@@ -67,71 +67,6 @@ var logError = (id, title, message, data) => {
 	log(id, 1, title, message, data, "ledger-error");
 };
 
-var _calcUser = function(user) {
-	var saveBalance = function(user_id, cred_type, balance) {
-		return function(cb) {
-			var Balance = require("./balance_model");
-			Balance.findOne({ user_id: user_id, cred_type: cred_type }).exec((err, row) => {
-				if (err) {
-					return cb(err);
-				}
-				if (!row) {
-					row = new Balance();
-				}
-				row.user_id = user_id;
-				row.cred_type = cred_type;
-				row.balance = balance;
-				row.last_update = new Date();
-				row.save((err, row) => {
-					if (err)
-						return cb(err);
-					return cb(null, row);
-				});
-			});
-		};
-	};
-
-	return new Promise((resolve, reject) => {
-		mongoose.model('Ledger', LedgerSchema).find({ user_id: user._id }).exec(function(err, transactions) {
-			var balances = {};
-			credTypes.forEach(function(credType) {
-				balances[credType] = 0;
-			});
-			if (err) {
-				console.error(user.email, err);
-				return reject(err);
-			}
-			if (!transactions) {
-				return resolve(balances);
-			}
-			credTypes.forEach(function(credType) {
-				var balance = 0;
-				transactions
-				.filter(transaction => {
-					return credType == transaction.cred_type;
-				})
-				.filter(notDeleted)
-				.forEach(transaction => {
-					balance += transaction.amount;
-				});
-				balance = Math.round(balance * 100) / 100;
-				balances[credType] = balance;
-			});
-			var queue = [];
-			for (var cred_type in balances) {
-				queue.push(saveBalance(user._id, cred_type, balances[cred_type]));
-			}
-			async.series(queue, (err, result) => {
-				if (err) {
-					console.error(err);
-					return reject(err);
-				}
-				return resolve(balances);
-			});
-		});
-	});
-};
-
 var notDeleted = function(item) {
 	return item._deleted !== true;
 };
@@ -157,18 +92,6 @@ var getOrganisations = function() {
 				return reject(err);
 			}
 			return resolve(organisations.filter(notDeleted));
-		});
-	});
-};
-
-var getBalance = function(user_id, cred_type) {
-	return new Promise((resolve, reject) => {
-		Balance.findOne({ user_id: user_id, cred_type: cred_type }, (err, row) => {
-			if (err)
-				return reject(err);
-			if (!row)
-				return resolve(0);
-			return resolve(row.balance);
 		});
 	});
 };
@@ -210,39 +133,6 @@ var getLedger = _id => {
 			// 	return reject(new Error("Cannot find ledger"));
 			resolve(ledger);
 		});
-	});
-};
-
-LedgerSchema.statics.sync_users = function() {
-	console.log("Syncing all users");
-	var queue = [];
-	return getUsers()
-	.then(function(users) {
-		users.forEach(user => {
-			queue.push(cb => {
-				_calcUser(user)
-				.then(result => {
-					result.user_id = user._id;
-					cb(null, result);
-				});
-			});
-		});
-		return new Promise((resolve, reject) => {
-			async.series(queue, function(err, result) {
-				console.log("Done");
-				if (err)
-					return reject(err);
-				return resolve(result);
-			});	
-		});
-	});
-};
-
-LedgerSchema.statics.sync_user = function(data) {
-	console.log("Syncing user", data._id);
-	return getUser(data._id)
-	.then(function(user) {
-		return _calcUser(user);
 	});
 };
 
@@ -364,7 +254,7 @@ LedgerSchema.statics.report = function(params) {
 	});
 };
 
-var totalFromWallets = (user_id, currency_id, amount) => {
+var totalFromWallets = (user_id, currency_id) => {
 	return new Promise((resolve, reject) => {
 		Wallet.find({ user_id, currency_id }).sort({ priority: 1 }).exec()
 		.then(result => {
@@ -432,7 +322,6 @@ LedgerSchema.pre("save", function(next) {
 		if ((transaction._deleted) && (transaction.transaction_type !== "reserve") && (!transaction.sender.admin)) {
 			throw("You are not allowed to reverse this transaction");
 		}
-		return _calcUser(user);
 	}, err => {
 		transaction.invalidate("organisation_id", err);
 		console.error(err);
@@ -481,17 +370,18 @@ LedgerSchema.post("save", function(transaction) { //Keep our running total up to
 			var wallet_split = [];
 			while ((outstanding > 0) && wallets) {
 				var wallet = wallets.shift();
-				if (outstanding <= wallet.balance) { // Enough money in this wallet;
-					wallet_split.push({ _id: wallet._id, amount: outstanding, balance: wallet.balance - outstanding });
-					outstanding = 0;
-				} else { // Not enough money, clear out this wallet and continue
-					wallet_split.push({ _id: wallet._id, amount: wallet.balance, balance: 0 });
-					outstanding -= wallet.balance;
+				if (wallet.balance) { // Ignore empty wallets
+					if (outstanding <= wallet.balance) { // Enough money in this wallet;
+						wallet_split.push({ _id: wallet._id, amount: outstanding, balance: wallet.balance - outstanding });
+						outstanding = 0;
+					} else { // Not enough money, clear out this wallet and continue
+						wallet_split.push({ _id: wallet._id, amount: wallet.balance, balance: 0 });
+						outstanding -= wallet.balance;
+					}
 				}
 			}
 			var queue = [];
 			wallet_split.forEach(wallet => {
-				console.log(wallet);
 				queue.push(cb => {
 					Wallet.findByIdAndUpdate(wallet._id, { $set: { balance: wallet.balance } })
 					.then(result => {
@@ -503,30 +393,28 @@ LedgerSchema.post("save", function(transaction) { //Keep our running total up to
 					});
 				});
 			});
-			async.series(queue, (err, result) => {
-				console.log(err, result);
+			queue.push(cb => {
+				LedgerModel.findByIdAndUpdate(transaction._id, { $set: { wallet_split } })
+				.then(result => {
+					cb(null);
+				}, err => {
+					cb(err);
+				});
 			});
-			console.log(wallet_split);
+			async.series(queue, (err, result) => {
+				if (err)
+					console.error(err);
+			});
 		})
 		.catch(err => {
 			console.error(err);
 		});
 	}
-	User.findOne({ _id: transaction.user_id }, function(err, user) {
-		if (err) {
-			console.error(err);
-			return;
-		}
-		if (!user) {
-			console.error("Could not find user", transaction.user_id);
-			return;
-		}
-		_calcUser(user);
-	});
 });
 
 LedgerSchema.virtual("__user").set(function(user) {
 	this.sender = user;
 });
 
+var LedgerModel = mongoose.model('Ledger', LedgerSchema);
 module.exports = mongoose.model('Ledger', LedgerSchema);
