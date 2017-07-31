@@ -1,11 +1,11 @@
 var mongoose     = require('mongoose');
 var Schema       = mongoose.Schema;
-
+var moment = require("moment");
+var async = require("async");
 var ObjectId = mongoose.Schema.Types.ObjectId;
 var Currency = require('./currency_model');
 var User = require("./user_model");
 var Organisation = require("./organisation_model");
-var moment = require("moment");
 
 var WalletSchema   = new Schema({
 	name: { type: String, required: true, validate: /\S+/ },
@@ -18,6 +18,7 @@ var WalletSchema   = new Schema({
 	organisation_id: { type: ObjectId, index: true, ref: "Organisation" },
 	balance: { type: Number, default: 0 },
 	date_created: { type: Date, default: Date.now },
+	personal: Boolean,
 	_owner_id: ObjectId
 });
 
@@ -25,6 +26,8 @@ WalletSchema.set("_perms", {
 	admin: "crud",
 	user: "r",
 });
+
+WalletSchema.index({ name: 1, user_id: 1 }, { unique: true });
 
 WalletSchema.statics.topup_daily = function() {
 	var Wallet = require("./wallet_model");
@@ -87,6 +90,52 @@ WalletSchema.statics.topup_annually = function() {
 			result.push(wallet);
 		});
 		return result;
+	});
+};
+
+// Set this wallet as the Personal wallet and unset any other wallets for the same currency and user
+WalletSchema.statics.set_personal = function(_id) {
+	var Wallet = require("./wallet_model");
+	var queue = [];
+	var wallet = null;
+	return Wallet.findOne({ _id })
+	.then(result => {
+		wallet = result;
+		return Wallet.find({ currency: wallet.currency, user_id: wallet.user_id, personal: true });	
+	})
+	.then(wallets => {
+		wallets.forEach(w => {
+			if (w._id.toString() !== wallet._id.toString()) {
+				console.log(w._id, wallet._id);
+				queue.push(cb => {
+					w.personal = false;
+					w.save()
+					.then(result => {
+						cb(null, result);
+					}, err => {
+						console.error(err);
+						cb(err);
+					});
+				});
+			}
+		});
+		queue.push(cb => {
+			wallet.personal = true;
+			wallet.save()
+			.then(result => {
+				cb(null, result);
+			}, err => {
+				console.error(err);
+				cb(err);
+			});
+		});
+		return new Promise((resolve, reject) => {
+			async.series(queue, (err, result) => {
+				if (err)
+					return reject(err);
+				return resolve(result);
+			});
+		});
 	});
 };
 
