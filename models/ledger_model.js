@@ -269,7 +269,6 @@ var totalFromWallets = (user_id, currency_id) => {
 };
 
 LedgerSchema.pre("save", function(next) {
-	console.log("Saving Ledger");
 	var transaction = this;
 	var user = null;
 	var organisation = null;
@@ -375,7 +374,7 @@ LedgerSchema.pre("save", function(next) {
 LedgerSchema.post("save", function(transaction) { //Keep our running total up to date
 	// console.log("Transaction", transaction);
 	if (transaction.amount < 0) {
-		Wallet.find({ user_id: transaction.user_id, currency_id: transaction.currency_id }).sort({ priority: 1 }).exec()
+		return Wallet.find({ user_id: transaction.user_id, currency_id: transaction.currency_id }).sort({ priority: 1 }).exec()
 		.then(result => {
 			// console.log("Wallets", result);
 			var wallets = result;
@@ -419,6 +418,17 @@ LedgerSchema.post("save", function(transaction) { //Keep our running total up to
 				if (err)
 					console.error(err);
 			});
+		})
+		.catch(err => {
+			console.error(err);
+		});
+	} else if (transaction.amount > 0) {
+		return Wallet.findOne({ user_id: transaction.user_id, currency_id: transaction.currency_id, personal: true }).exec()
+		.then(wallet => {
+			if (!wallet)
+				throw("Could not find personal wallet for user " + transaction.user_id);
+			wallet.balance = wallet.balance + transaction.amount;
+			return wallet.save();
 		})
 		.catch(err => {
 			console.error(err);
