@@ -33,7 +33,7 @@ var LedgerSchema   = new Schema({
 	reserve: { type: Boolean, default: false },
 	reserve_expires: { type: Date, default: Date.now },
 	cred_type: { type: String, validate: /space|stuff|creditcard|account|daily/, index: true, required: true },
-	currency_id: { type: ObjectId, index: true, ref: "Currency", required: true },
+	currency_id: { type: ObjectId, index: true, ref: "Currency" },
 	wallet_id: [{ type: ObjectId, index: true, ref: "Wallet" }],
 	wallet_split: [ Mixed ],
 	email: String,
@@ -275,6 +275,7 @@ LedgerSchema.pre("save", function(next) {
 	var organisation = null;
 	var totals = null;
 	var original = null;
+	var currency = null;
 	if (!transaction.user_id) {
 		transaction.invalidate("user_id", "could not find user");
 		return next(new Error("user_id required"));
@@ -290,6 +291,16 @@ LedgerSchema.pre("save", function(next) {
 	})
 	.then(result => {
 		organisation = result;
+		if (!transaction.currency_id) {
+			return Currency.findOne({ name: transaction.cred_type[0].toUpperCase() + transaction.cred_type.slice(1) });
+		} else {
+			return Currency.findOne({ _id: transaction.currency_id });
+		}
+	})
+	.then(result => {
+		currency = result;
+		transaction.currency_id = currency._id;
+
 		transaction.organisation_id = organisation._id;
 
 		// Set Transaction Type
@@ -362,9 +373,11 @@ LedgerSchema.pre("save", function(next) {
 });
 
 LedgerSchema.post("save", function(transaction) { //Keep our running total up to date
+	// console.log("Transaction", transaction);
 	if (transaction.amount < 0) {
 		Wallet.find({ user_id: transaction.user_id, currency_id: transaction.currency_id }).sort({ priority: 1 }).exec()
 		.then(result => {
+			// console.log("Wallets", result);
 			var wallets = result;
 			var outstanding = Math.abs(transaction.amount);
 			var wallet_split = [];
@@ -381,6 +394,7 @@ LedgerSchema.post("save", function(transaction) { //Keep our running total up to
 				}
 			}
 			var queue = [];
+			// console.log(wallet_split);
 			wallet_split.forEach(wallet => {
 				queue.push(cb => {
 					Wallet.findByIdAndUpdate(wallet._id, { $set: { balance: wallet.balance } })
