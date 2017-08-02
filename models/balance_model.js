@@ -7,7 +7,7 @@ var Ledger = require("./ledger_model");
 var Wallet = require("./wallet_model");
 var Currency = require("./currency_model");
 
-var postFind = require('mongoose-post-find');
+var postFind = require('../libs/mongoose-post-find');
 
 var BalanceSchema   = new Schema({
 	user_id: { type: ObjectId, index: true, ref: "User", required: true },
