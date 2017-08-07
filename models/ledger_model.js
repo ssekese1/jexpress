@@ -32,7 +32,7 @@ var LedgerSchema   = new Schema({
 	balance: Number,
 	reserve: { type: Boolean, default: false },
 	reserve_expires: { type: Date, default: Date.now },
-	cred_type: { type: String, validate: /space|stuff|creditcard|account|daily/, index: true, required: true },
+	cred_type: { type: String, index: true },
 	currency_id: { type: ObjectId, index: true, ref: "Currency" },
 	wallet_id: [{ type: ObjectId, index: true, ref: "Wallet" }],
 	wallet_split: [ Mixed ],
@@ -140,54 +140,78 @@ LedgerSchema.statics.transfer = function(data) {
 	return new Promise((resolve, reject) => {
 		if ((data.sender + "" !== data.__user._id + "") && (!data.__user.admin)) {
 			console.log("Reject", data.sender, data.__user._id);
-			reject("This is not your account and you are not an admin");
-		} else {
-			var Ledger = require("./ledger_model");
-			// sender = data.__user;
-			var credit = new Ledger();
-			var debit = new Ledger();
-			var sender = null;
-			var recipient = null;
-			getUser(data.sender)
-			.then(function(user) {
-				sender = user;
-				return getUser(data.recipient);
-			})
-			.then(function(user) {
-				recipient = user;
-				credit.user_id = data.recipient;
-				credit.amount = Math.abs(data.amount);
-				credit.cred_type = data.cred_type;
-				credit.description = "Transfer from " + sender.name + " <" + sender.email + "> to " + recipient.name + " <" + recipient.email + ">";
-				credit.__user = data.__user;
-				credit.is_transfer = true;
-				debit.user_id = data.sender;
-				debit.amount = Math.abs(data.amount) * -1;
-				debit.cred_type = data.cred_type;
-				debit.description = "Transfer from " + sender.name + " <" + sender.email + "> to " + recipient.name + " <" + recipient.email + ">";
-				debit.__user = data.__user;
-				debit.is_transfer = true;
-				debit.save(function(err, result) {
-					if (err) {
-						console.error(err);
-						reject(err);
-					} else {
-						credit.save(function(err, result) {
-							if (err) {
-								console.error(err);
-								reject(err);
-							} else {
-								resolve({ credit: credit, debit: debit });
-							}
-						});
-					}
-				});
-			})
-			.then(null, function(err) {
-				console.error(err);
-				reject(err);
-			});
+			return reject("This is not your account and you are not an admin");
 		}
+		var Ledger = require("./ledger_model");
+		var credit = new Ledger();
+		var debit = new Ledger();
+		var sender = null;
+		var recipient = null;
+		var debit_wallet = null;
+		var credit_wallet = null;
+		var currency = null;
+		getUser(data.sender)
+		.then(function(user) {
+			sender = user;
+			return getUser(data.recipient);
+		})
+		.then(function(user) {
+			recipient = user;
+			return Wallet.findOne({ _id: data.wallet_id, user_id: data.sender });
+		})
+		.then(result => {
+			if (!result)
+				throw("Unable to find sender's wallet: " + data.wallet_id);
+			debit_wallet = result;
+			return Wallet.findOne({ user_id: data.recipient, quota_frequency: debit_wallet.quota_frequency });
+		})
+		.then(result => {
+			if (!result)
+				throw("Unable to find recipient's wallet");
+			credit_wallet = result;
+			return Currency.findOne({ _id: credit_wallet.currency_id });
+		})
+		.then(result => {
+			if (!result)
+				throw("Unable to find currency");
+			currency = result;
+			credit.wallet_id = credit_wallet._id;
+			credit.currency_id = credit_wallet.currency_id;
+			credit.user_id = data.recipient;
+			credit.amount = Math.abs(data.amount);
+			credit.cred_type = currency.name.toLowerCase();
+			credit.description = "Transfer from " + sender.name + " <" + sender.email + "> to " + recipient.name + " <" + recipient.email + ">";
+			credit.__user = data.__user;
+			credit.is_transfer = true;
+			debit.user_id = data.sender;
+			debit.amount = Math.abs(data.amount) * -1;
+			debit.cred_type = currency.name.toLowerCase();
+			debit.description = "Transfer from " + sender.name + " <" + sender.email + "> to " + recipient.name + " <" + recipient.email + ">";
+			debit.__user = data.__user;
+			debit.is_transfer = true;
+			debit.wallet_id = data.wallet_id;
+			debit.currency_id = debit_wallet.currency_id;
+
+			debit.save(function(err, result) {
+				if (err) {
+					console.error(err);
+					reject(err);
+				} else {
+					credit.save(function(err, result) {
+						if (err) {
+							console.error(err);
+							reject(err);
+						} else {
+							resolve({ credit, debit });
+						}
+					});
+				}
+			});
+		})
+		.then(null, function(err) {
+			console.error(err);
+			reject(err);
+		});
 	});
 };
 
