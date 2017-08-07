@@ -163,7 +163,7 @@ LedgerSchema.statics.transfer = function(data) {
 			if (!result)
 				throw("Unable to find sender's wallet: " + data.wallet_id);
 			debit_wallet = result;
-			return Wallet.findOne({ user_id: data.recipient, quota_frequency: debit_wallet.quota_frequency });
+			return Wallet.findOne({ user_id: data.recipient, quota_frequency: debit_wallet.quota_frequency, currency_id: debit_wallet.currency_id });
 		})
 		.then(result => {
 			if (!result)
