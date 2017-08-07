@@ -447,10 +447,16 @@ LedgerSchema.post("save", function(transaction) { //Keep our running total up to
 			console.error(err);
 		});
 	} else if (transaction.amount > 0) {
-		return Wallet.findOne({ user_id: transaction.user_id, currency_id: transaction.currency_id, personal: true }).exec()
+		var query = {};
+		if (transaction.wallet_id.length) {
+			query._id = transaction.wallet_id;
+		} else {
+			query = { user_id: transaction.user_id, currency_id: transaction.currency_id, personal: true };
+		}
+		return Wallet.findOne(query).exec()
 		.then(wallet => {
 			if (!wallet)
-				throw("Could not find personal wallet for user " + transaction.user_id);
+				throw("Could not find wallet for user " + transaction.user_id);
 			wallet.balance = wallet.balance + transaction.amount;
 			return wallet.save();
 		})
