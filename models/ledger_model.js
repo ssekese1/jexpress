@@ -292,6 +292,24 @@ var totalFromWallets = (user_id, currency_id) => {
 	});
 };
 
+// Check if this is a conversion from reserve
+LedgerSchema.pre("save", function(next) {
+	var transaction = this;
+	var Ledger = require("./ledger_model");
+	Ledger.findOne({ _id: transaction._id })
+	.then(result => {
+		if (!result)
+			return next();
+		if (!transaction.reserve && result.reserve)
+			transaction._is_reserve_conversion = true;
+		next();
+	}, err => {
+		console.error(err);
+		next();
+	});
+});
+
+
 LedgerSchema.pre("save", function(next) {
 	var transaction = this;
 	var user = null;
@@ -396,7 +414,8 @@ LedgerSchema.pre("save", function(next) {
 });
 
 LedgerSchema.post("save", function(transaction) { //Keep our running total up to date
-	// console.log("Transaction", transaction);
+	if (transaction._is_reserve_conversion)
+		return;
 	if (transaction.amount < 0) {
 		return Wallet.find({ user_id: transaction.user_id, currency_id: transaction.currency_id }).sort({ priority: 1 }).exec()
 		.then(result => {
