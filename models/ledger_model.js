@@ -119,6 +119,8 @@ var getOrganisation = _id => {
 				return reject(err);
 			if (!organisation)
 				return reject(new Error("Cannot find organisation"));
+			if (organisation.status !== "active")
+				return reject(new Error("Organisation is not active"));
 			resolve(organisation);
 		});
 	});
@@ -218,7 +220,7 @@ LedgerSchema.statics.transfer = function(data) {
 LedgerSchema.statics.confirm_reserve = function(_id) {
 	return new Promise((resolve, reject) => {
 		var Ledger = require("./ledger_model");
-		Ledger.findOne({ _id: _id }, (err, ledger) => {
+		Ledger.findOne({ _id }, (err, ledger) => {
 			if (err)
 				reject(err);
 			if (!ledger)
@@ -294,66 +296,119 @@ var totalFromWallets = (user_id, currency_id) => {
 
 // Check if this is a conversion from reserve
 LedgerSchema.pre("save", function(next) {
+	console.log("Check if this is a conversion from reserve");
 	var transaction = this;
 	var Ledger = require("./ledger_model");
 	Ledger.findOne({ _id: transaction._id })
 	.then(result => {
-		if (!result)
+		if (!result) {
+			transaction._is_new = true;
 			return next();
+		}
 		if (!transaction.reserve && result.reserve)
 			transaction._is_reserve_conversion = true;
 		next();
-	}, err => {
+	})
+	.catch(err => {
 		console.error(err);
 		next();
 	});
 });
 
-
+// Set currency if we only have a wallet
 LedgerSchema.pre("save", function(next) {
+	console.log("Set currency if we only have a wallet");
 	var transaction = this;
-	var user = null;
-	var organisation = null;
-	var totals = null;
-	var original = null;
-	var currency = null;
+	if (!transaction.currency_id && transaction.wallet_id.length) {
+		Wallet.findOne({ _id: transaction.wallet_id[0] })
+		.then(result => {
+			if (result)
+				transaction.currency_id = result.currency_id;
+			next();
+		})
+		.catch(err => {
+			console.error(err);
+			next();
+		});
+	} else {
+		next();
+	}
+});
+
+// Set currency if we only have a cred_type
+LedgerSchema.pre("save", function(next) {
+	console.log("Set currency if we only have a cred_type");
+	var transaction = this;
+	if (!transaction.currency_id && transaction.cred_type) {
+		Currency.findOne({ name: transaction.cred_type[0].toUpperCase() + transaction.cred_type.slice(1) })
+		.then(result => {
+			if (result)
+				transaction.currency_id = result._id;
+			next();
+		})
+		.catch(err => {
+			console.error(err);
+			next();
+		});
+	} else {
+		next();
+	}
+});
+
+// Set organisation_id and make sure user is active
+LedgerSchema.pre("save", function(next) {
+	console.log("Set organisation_id and make sure user is active");
+	var transaction = this;
 	if (!transaction.user_id) {
-		transaction.invalidate("user_id", "could not find user");
+		transaction.invalidate("user_id", "user_id required");
 		return next(new Error("user_id required"));
 	}
 	getUser(transaction.user_id)
 	.then(result => {
-		user = result;
-		return getOrganisation(user.organisation_id);
+		transaction.organisation_id = result.organisation_id;
+		next();
 	}, err => {
 		transaction.invalidate("user_id", err);
 		console.error(err);
 		next(new Error(err));
-	})
-	.then(result => {
-		organisation = result;
-		if (!transaction.currency_id) {
-			return Currency.findOne({ name: transaction.cred_type[0].toUpperCase() + transaction.cred_type.slice(1) });
-		} else {
-			return Currency.findOne({ _id: transaction.currency_id });
-		}
-	})
-	.then(result => {
-		currency = result;
-		transaction.currency_id = currency._id;
+	});
+});
 
-		transaction.organisation_id = organisation._id;
+// Make sure organisation is active
+LedgerSchema.pre("save", function(next) {
+	var transaction = this;
+	console.log("Make sure organisation is active");
+	getOrganisation(transaction.organisation_id)
+	.then(result => {
+		next();
+	}, err => {
+		transaction.invalidate("organisation_id", err);
+		console.error(err);
+		next(new Error(err));
+	});
+});
 
-		// Set Transaction Type
-		if (transaction.amount >= 0) {
-			transaction.transaction_type = "credit";
+// Set Transaction Type
+LedgerSchema.pre("save", function(next) {
+	console.log("Set Transaction Type");
+	var transaction = this;
+	if (transaction.amount >= 0) {
+		transaction.transaction_type = "credit";
+	} else {
+		if (transaction.reserve) {
+			transaction.transaction_type = "reserve";
 		} else {
-			if (transaction.reserve) {
-				transaction.transaction_type = "reserve";
-			} else {
-				transaction.transaction_type = "debit";
-			}
+			transaction.transaction_type = "debit";
 		}
+	}
+	next();
+});
+
+// Do a bunch of checks
+LedgerSchema.pre("save", function(next) {
+	console.log("Do a bunch of checks");
+	var transaction = this;
+	try {
 		// Reserves must be negative
 		if ((transaction.amount > 0) && (transaction.reserve)) {
 			throw("Reserves must be a negative value");
@@ -374,97 +429,112 @@ LedgerSchema.pre("save", function(next) {
 		if ((transaction._deleted) && (transaction.transaction_type !== "reserve") && (!transaction.sender.admin)) {
 			throw("You are not allowed to reverse this transaction");
 		}
-	}, err => {
-		transaction.invalidate("organisation_id", err);
-		console.error(err);
-		return next(new Error(err));
-	})
-	.then(result => {
-		totals = result;
-		if (this._id)
-			return getLedger(this._id);
-	})
-	.then(result => {
-		// If this is a reserve conversion, don't check totals
-		if (result) {
-			if ((result.reserve) && (!transaction.reserve)) {
-				return next();
-			}
-		}
-		// Users can only debit from their own accounts
-		if ((String(transaction.user_id) !== String(transaction.sender._id)) && (!transaction.sender.admin) && (!transaction.is_transfer)) {
+		if (!transaction._is_reserve_conversion && (String(transaction.user_id) !== String(transaction.sender._id)) && (!transaction.sender.admin) && (!transaction.is_transfer)) {
 			throw("This is not your account");
 		}
-		return totalFromWallets(transaction.user_id, transaction.currency_id, transaction.amount);
-	})
+		next();
+	} catch(err) {
+		transaction.invalidate("amount", err);
+		console.error(err);
+		next(new Error(err));
+	}
+});
+
+// Make sure we have enough bucks
+LedgerSchema.pre("save", function(next) {
+	console.log("Make sure we have enough bucks");
+	var transaction = this;
+	if (transaction._is_reserve_conversion)
+		return next();
+	if (transaction.amount >= 0)
+		return next();
+	totalFromWallets(transaction.user_id, transaction.currency_id, transaction.amount)
 	.then(result => {
 		// Make sure we have credit
 		var test = transaction.amount + result;
 		if ((transaction.amount < 0) && (test < 0)) {
-			throw("Insufficient Credit");
-		} else {
-			next();
+			transaction.invalidate("amount", "Insufficient credit");
+			console.error("Insufficient credit");
+			return next(new Error("Insufficient credit"));
 		}
+		next();
 	})
 	.catch(err => {
-		transaction.invalidate("amount", err);
 		console.error(err);
-		return next(new Error(err));
+		next();
+	});
+});
+
+// Split into wallets
+LedgerSchema.pre("save", function(next) {
+	console.log("Split into wallets");
+	var transaction = this;
+	if (transaction._is_reserve_conversion)
+		return next();
+	if (transaction.amount >= 0)
+		return next();
+	if (!transaction._is_new)
+		return next();
+	Wallet.find({ user_id: transaction.user_id, currency_id: transaction.currency_id }).sort({ priority: 1 }).exec()
+	.then(result => {
+		var wallets = result;
+		// If we have a wallet_id, put it first
+		if (transaction.wallet_id) {
+			wallets.sort((a, b) => {
+				if (a._id === transaction.wallet_id)
+					return -1;
+				return 0;
+			});
+		}
+		var outstanding = Math.abs(transaction.amount);
+		var wallet_split = [];
+		while ((outstanding > 0) && wallets) {
+			var wallet = wallets.shift();
+			if (wallet.balance) { // Ignore empty wallets
+				if (outstanding <= wallet.balance) { // Enough money in this wallet;
+					wallet_split.push({ _id: wallet._id, amount: outstanding, balance: wallet.balance - outstanding });
+					outstanding = 0;
+				} else { // Not enough money, clear out this wallet and continue
+					wallet_split.push({ _id: wallet._id, amount: wallet.balance, balance: 0 });
+					outstanding -= wallet.balance;
+				}
+			}
+		}
+		transaction.wallet_split = wallet_split;
+		next();
+	})
+	.catch(err => {
+		console.error(err);
+		next();
 	});
 });
 
 LedgerSchema.post("save", function(transaction) { //Keep our running total up to date
+	console.log("Post Save");
 	if (transaction._is_reserve_conversion)
 		return;
+	if (!transaction._is_new)
+		return;
 	if (transaction.amount < 0) {
-		return Wallet.find({ user_id: transaction.user_id, currency_id: transaction.currency_id }).sort({ priority: 1 }).exec()
-		.then(result => {
-			// console.log("Wallets", result);
-			var wallets = result;
-			var outstanding = Math.abs(transaction.amount);
-			var wallet_split = [];
-			while ((outstanding > 0) && wallets) {
-				var wallet = wallets.shift();
-				if (wallet.balance) { // Ignore empty wallets
-					if (outstanding <= wallet.balance) { // Enough money in this wallet;
-						wallet_split.push({ _id: wallet._id, amount: outstanding, balance: wallet.balance - outstanding });
-						outstanding = 0;
-					} else { // Not enough money, clear out this wallet and continue
-						wallet_split.push({ _id: wallet._id, amount: wallet.balance, balance: 0 });
-						outstanding -= wallet.balance;
-					}
-				}
-			}
-			var queue = [];
-			// console.log(wallet_split);
-			wallet_split.forEach(wallet => {
-				queue.push(cb => {
-					Wallet.findByIdAndUpdate(wallet._id, { $set: { balance: wallet.balance } })
-					.then(result => {
-						cb(null, result);
-					})
-					.catch(err => {
-						console.error(err);
-						cb(err);
-					});
-				});
-			});
+		var queue = [];
+		console.log(transaction.wallet_split);
+		transaction.wallet_split.forEach(wallet => {
 			queue.push(cb => {
-				LedgerModel.findByIdAndUpdate(transaction._id, { $set: { wallet_split } })
+				Wallet.findByIdAndUpdate(wallet._id, { $set: { balance: wallet.balance } })
 				.then(result => {
-					cb(null);
-				}, err => {
+					cb(null, result);
+				})
+				.catch(err => {
+					console.error(err);
 					cb(err);
 				});
 			});
-			async.series(queue, (err, result) => {
-				if (err)
-					console.error(err);
-			});
-		})
-		.catch(err => {
-			console.error(err);
 		});
+		async.series(queue, (err, result) => {
+			if (err)
+				console.error(err);
+		});
+		return transaction;
 	} else if (transaction.amount > 0) {
 		var query = {};
 		if (transaction.wallet_id.length) {
@@ -478,6 +548,9 @@ LedgerSchema.post("save", function(transaction) { //Keep our running total up to
 				throw("Could not find wallet for user " + transaction.user_id);
 			wallet.balance = wallet.balance + transaction.amount;
 			return wallet.save();
+		})
+		.then(result => {
+			return transaction;
 		})
 		.catch(err => {
 			console.error(err);
