@@ -11,7 +11,7 @@ var postFind = require('../libs/mongoose-post-find');
 
 var BalanceSchema   = new Schema({
 	user_id: { type: ObjectId, index: true, ref: "User", required: true },
-	cred_type: { type: String, validate: /space|stuff/, index: true, required: true },
+	cred_type: { type: String, index: true, required: true },
 	balance: Number,
 	last_update: Date,
 	ledger_id: { type: ObjectId, index: true, ref: "Ledger" },
