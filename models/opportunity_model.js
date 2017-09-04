@@ -10,7 +10,8 @@ var User = require('./user_model');
 var OpportunitySchema   = new Schema({
 	name: { type: String, index: true, required: true },
 	lead_id: { type: ObjectId, index: true, ref: "Lead" },
-	track_id: { type: ObjectId, ref: "Track" },
+	track_id: { type: ObjectId, ref: "Track", index: true },
+	user_id: { type: ObjectId, ref: "User", index: true },
 	location_id: { type: ObjectId, index: true, ref: "Location" },
 	date_created: { type: Date, default: Date.now },
 	value: Number,
