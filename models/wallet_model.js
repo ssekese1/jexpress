@@ -63,7 +63,7 @@ WalletSchema.statics.topup_weekly = function() {
 
 WalletSchema.statics.topup_monthly = function() {
 	var Wallet = require("./wallet_model");
-	var day_ago = moment().subtract(1, "month");
+	var day_ago = moment().subtract(1, "month").startOf('month');
 	return Wallet.find({ quota_frequency: "monthly", last_quota_date: { $lte: day_ago } })
 	.then(wallets => {
 		var result = [];
