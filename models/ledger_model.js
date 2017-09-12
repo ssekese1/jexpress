@@ -440,6 +440,34 @@ LedgerSchema.pre("save", function(next) {
 	}
 });
 
+LedgerSchema.pre("remove", function(next) {
+	// Credit the wallet in the case of a delete
+	var transaction = this;
+	console.log(transaction);
+	var queue = [];
+	if (transaction.reserve) {
+		transaction.wallet_split.forEach(wallet => {
+			queue.push(cb => {
+				Wallet.findByIdAndUpdate(wallet._id, { $inc: { balance: wallet.amount } })
+				.then(result => {
+					cb(null, result);
+				})
+				.catch(err => {
+					console.error(err);
+					cb(err);
+				});
+			});
+		});
+		async.series(queue, (err, result) => {
+			if (err)
+				return next(new Error(err));
+			return next();
+		});
+	} else {
+		return next(new Error("Only reserves may be deleted"));
+	}
+});
+
 // Make sure we have enough bucks
 LedgerSchema.pre("save", function(next) {
 	console.log("Make sure we have enough bucks");
@@ -507,34 +535,6 @@ LedgerSchema.pre("save", function(next) {
 		console.error(err);
 		next();
 	});
-});
-
-LedgerSchema.pre("remove", function(next) {
-	// Credit the wallet in the case of a delete
-	var transaction = this;
-	console.log(transaction);
-	var queue = [];
-	if (transaction.reserve) {
-		transaction.wallet_split.forEach(wallet => {
-			queue.push(cb => {
-				Wallet.findByIdAndUpdate(wallet._id, { $inc: { balance: wallet.amount } })
-				.then(result => {
-					cb(null, result);
-				})
-				.catch(err => {
-					console.error(err);
-					cb(err);
-				});
-			});
-		});
-		async.series(queue, (err, result) => {
-			if (err)
-				return next(new Error(err));
-			return next();
-		});
-	} else {
-		return next(new Error("Only reserves may be deleted"));
-	}
 });
 
 LedgerSchema.post("save", function(transaction) { //Keep our running total up to date
