@@ -169,26 +169,23 @@ BookingSchema.pre("save", function(next) {
 var deleteReserve = function(transaction) {
 	console.log("Remove called, Going to remove reserve");
 	console.log(transaction);
-	try {
-		Ledger.findOne({
-			source_type: "booking",
-			source_id: transaction._id
-		}, function(err, item) {
-			if (err) {
-				console.log("Error", err);
-				return;
-			}
-			if (!item) {
-				console.log("Could not find Reserve");
-				return new Error("Could not find Reserve");
-			}
-			console.log("Deleting", item);
-			item.remove();
-		});
-	} catch(err) {
-		console.log("Error", err);
-		// throw(err);
-	}
+	var item = null;
+	Ledger.findOne({
+		source_type: "booking",
+		source_id: transaction._id
+	})
+	.then(result => {
+		item = result;
+		if (!item) {
+			console.log("Could not find Reserve");
+			return new Error("Could not find Reserve");
+		}
+		console.log("Deleting", item);
+		item.remove();
+	})
+	.catch(err => {
+		console.trace("Error", err);
+	});
 };
 
 BookingSchema.post("save", function(transaction) {
