@@ -17,14 +17,17 @@ var OpportunitySchema   = new Schema({
 	value: Number,
 	assigned_to: { type: ObjectId, index: true, ref: "User" },
 	probability: Number,
+	notes: [{ 
+		note: String, 
+		date_created: { type: Date, default: Date.now }, 
+		user_id: { type: ObjectId, ref: "User" } 
+	}],
 	data: mongoose.Schema.Types.Mixed,
 	
 });
 
 OpportunitySchema.set("_perms", {
 	admin: "crud",
-	user: "cr",
-	all: "c",
 });
 
 module.exports = mongoose.model('Opportunity', OpportunitySchema);
