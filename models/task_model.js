@@ -30,8 +30,6 @@ var TaskSchema   = new Schema({
 
 TaskSchema.set("_perms", {
 	admin: "crud",
-	owner: "cr",
-	user: ""
 });
 
 module.exports = mongoose.model('Task', TaskSchema);
