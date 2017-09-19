@@ -13,6 +13,7 @@ var TaskSchema   = new Schema({
 	category: { type: String, validate: /init|call|email|follow_up|meeting|milestone|site_visit/, index: true, default: "email", required: true },
 	due_after_task: { type: ObjectId, ref: "Task" },
 	due_after_days: Number,
+	absolute_due_date: Date,
 	user_id: { type: ObjectId, ref: "User", index: true, required: true },
 	opportunity_id: { type: ObjectId, ref: "Opportunity", index: true, required: true },
 	track_id: { type: ObjectId, ref: "Track", index: true },
