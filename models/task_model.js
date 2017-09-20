@@ -17,6 +17,7 @@ var TaskSchema   = new Schema({
 	user_id: { type: ObjectId, ref: "User", index: true, required: true },
 	opportunity_id: { type: ObjectId, ref: "Opportunity", index: true, required: true },
 	track_id: { type: ObjectId, ref: "Track", index: true },
+	template_task_id: ObjectId,
 	date_completed: Date,
 	completed: { type: Boolean, default: false, index: true },
 	notes: [{ 
