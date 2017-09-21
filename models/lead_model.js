@@ -27,7 +27,9 @@ var LeadSchema   = new Schema({
 	vat: String,
 	company_registration_number: String,
 	seats: Number,
+	spam: { type: Boolean, default: false },
 	data: mongoose.Schema.Types.Mixed,
+	_deleted: { type: Boolean, default: false, index: true },
 });
 
 LeadSchema.set("_perms", {
