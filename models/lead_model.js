@@ -4,6 +4,8 @@ var Schema       = mongoose.Schema;
 var ObjectId = mongoose.Schema.Types.ObjectId;
 var Location = require('./location_model');
 var Membership = require('./membership_model');
+var rest = require("restler-q");
+var config = require("config");
 
 var LeadSchema   = new Schema({
 	name: { type: String, index: true },
@@ -29,6 +31,7 @@ var LeadSchema   = new Schema({
 	seats: Number,
 	spam: { type: Boolean, default: false },
 	data: mongoose.Schema.Types.Mixed,
+	"g-recaptcha-response": String,
 	_deleted: { type: Boolean, default: false, index: true },
 });
 
@@ -36,6 +39,25 @@ LeadSchema.set("_perms", {
 	admin: "crud",
 	user: "cr",
 	all: "c",
+});
+
+LeadSchema.pre("save", function(next) {
+	var transaction = this;
+	if (this["g-recaptcha-response"]) {
+		rest.post(config.recaptcha.url, { data: { secret: config.recaptcha.secret, response: this["g-recaptcha-response"] }})
+		.then(result => {
+			this.spam = !result.success;
+			next();
+		})
+		.catch(err => {
+			console.error(err);
+			this.spam = true;
+			next();
+		})
+	} else {
+		this.spam = true;
+		next();
+	}
 });
 
 module.exports = mongoose.model('Lead', LeadSchema);
