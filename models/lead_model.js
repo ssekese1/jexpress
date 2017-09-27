@@ -33,6 +33,7 @@ var LeadSchema   = new Schema({
 	data: mongoose.Schema.Types.Mixed,
 	"g-recaptcha-response": String,
 	_deleted: { type: Boolean, default: false, index: true },
+	_owner_id: ObjectId
 });
 
 LeadSchema.set("_perms", {
@@ -43,6 +44,10 @@ LeadSchema.set("_perms", {
 
 LeadSchema.pre("save", function(next) {
 	var transaction = this;
+	if (this.__user) {
+		this.spam = false;
+		return next();
+	}
 	if (this["g-recaptcha-response"]) {
 		rest.post(config.recaptcha.url, { data: { secret: config.recaptcha.secret, response: this["g-recaptcha-response"] }})
 		.then(result => {
