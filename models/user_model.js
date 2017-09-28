@@ -211,7 +211,7 @@ UserSchema.plugin(friendly, {
 });
 
 function toLower (v) {
-	return v.toLowerCase();
+	return v.trim().toLowerCase();
 }
 
 var UserModel = mongoose.model('User', UserSchema);
