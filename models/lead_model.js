@@ -43,26 +43,33 @@ LeadSchema.set("_perms", {
 });
 
 LeadSchema.pre("save", function(next) {
+	var Lead = require("./lead_model");
 	var transaction = this;
-	if (this.__user) {
-		this.spam = false;
-		return next();
-	}
-	if (this["g-recaptcha-response"]) {
-		rest.post(config.recaptcha.url, { data: { secret: config.recaptcha.secret, response: this["g-recaptcha-response"] }})
-		.then(result => {
-			this.spam = !result.success;
-			next();
-		})
-		.catch(err => {
-			console.error(err);
+	Lead.findOne({ _id: transaction._id })
+	.then(result => {
+		if (result) // Is an edit
+			return next();
+		if (this.__user) {
+			this.spam = false;
+			return next();
+		}
+		if (this["g-recaptcha-response"]) {
+			rest.post(config.recaptcha.url, { data: { secret: config.recaptcha.secret, response: this["g-recaptcha-response"] }})
+			.then(result => {
+				this.spam = !result.success;
+				next();
+			})
+			.catch(err => {
+				console.error(err);
+				this.spam = true;
+				next();
+			})
+		} else {
 			this.spam = true;
 			next();
-		})
-	} else {
-		this.spam = true;
-		next();
-	}
+		}
+	})
+	
 });
 
 module.exports = mongoose.model('Lead', LeadSchema);
