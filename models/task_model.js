@@ -21,6 +21,7 @@ var TaskSchema   = new Schema({
 	template_task_id: ObjectId,
 	date_completed: Date,
 	completed: { type: Boolean, default: false, index: true },
+	abandoned: { type: Boolean, default: false, index: true },
 	notes: [{ 
 		note: String, 
 		date_created: { type: Date, default: Date.now }, 

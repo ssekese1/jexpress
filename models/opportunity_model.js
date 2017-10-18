@@ -22,6 +22,7 @@ var OpportunitySchema   = new Schema({
 		date_created: { type: Date, default: Date.now }, 
 		user_id: { type: ObjectId, ref: "User" } 
 	}],
+	abandoned: { type: Boolean, default: false, index: true },
 	data: mongoose.Schema.Types.Mixed,
 	
 });
