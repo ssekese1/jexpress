@@ -33,6 +33,7 @@ var UserSchema   = new Schema({
 	facebook: { type: Mixed },
 	google: { type: Mixed },
 	linkedin: { type: Mixed },
+	slack_name: String,
 	skype: String,
 	mobile: String,
 	about: String,
