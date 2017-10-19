@@ -7,6 +7,7 @@ var Opportunity = require("./opportunity_model");
 var User = require("./user_model");
 var Track = require("./track_model");
 var Task = require("./task_model");
+var Location = require('./location_model');
 var moment = require("moment");
 
 var TaskSchema   = new Schema({
@@ -17,6 +18,7 @@ var TaskSchema   = new Schema({
 	absolute_due_date: Date,
 	user_id: { type: ObjectId, ref: "User", index: true, required: true },
 	opportunity_id: { type: ObjectId, ref: "Opportunity", index: true, required: true },
+	location_id: { type: ObjectId, index: true, ref: "Location" },
 	track_id: { type: ObjectId, ref: "Track", index: true },
 	template_task_id: ObjectId,
 	date_completed: Date,
