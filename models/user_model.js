@@ -55,6 +55,7 @@ var UserSchema   = new Schema({
 	tags: [ { type: ObjectId, ref: "Tag" } ],
 	clay_id: String,
 	clay_access_group_ids: [ { type: ObjectId, ref: "Clayaccessgroup" } ],
+	last_login: Date,
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
 });
