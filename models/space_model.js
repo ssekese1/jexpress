@@ -4,12 +4,14 @@ var Schema       = mongoose.Schema;
 var ObjectId = mongoose.Schema.Types.ObjectId;
 var Location = require("./location_model");
 var SpaceType = require("./spacetype_model");
+var Claylock = require("./claylock_model");
 
 var SpaceSchema   = new Schema({
 	name: String,
 	location_id: { type: ObjectId, ref: 'Location' },
 	meters_squared: Number,
 	spacetype_id: { type: ObjectId, ref: 'SpaceType' },
+	claylock_id: [{ type: ObjectId, ref: 'Claylock' }],
 	date_created: { type: Date, default: Date.now },
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
