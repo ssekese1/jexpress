@@ -16,6 +16,7 @@ var TaskSchema   = new Schema({
 	due_after_task: { type: ObjectId, ref: "Task" },
 	due_after_days: Number,
 	absolute_due_date: Date,
+	original_due_date: Date,
 	user_id: { type: ObjectId, ref: "User", index: true, required: true },
 	opportunity_id: { type: ObjectId, ref: "Opportunity", index: true, required: true },
 	location_id: { type: ObjectId, index: true, ref: "Location" },
@@ -69,6 +70,8 @@ TaskSchema.pre("save", function(next) {
 	.then(result => {
 		if (result)
 			result.forEach(item => item.save());
+		if (self.isNew)
+			self.original_due_date = self.due_date;
 		return next();
 	})
 	.catch(err => {
