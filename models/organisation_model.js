@@ -43,6 +43,7 @@ var OrganisationSchema   = new Schema({
 	cost_per_month_override: Number,
 	items: mongoose.Schema.Types.Mixed,
 	status: { type: String, validate: /active|inactive|prospect|pending/, index: true, default: "active" },
+	type: [{ type: String, validate: /member|events/, index: true, default: "member" }],
 	hidden: { type: Boolean, default: false, index: true },
 	datatill_customer_account_id: Number,
 	datatill_radius_account_id: Number,
