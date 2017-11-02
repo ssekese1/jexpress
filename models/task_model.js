@@ -59,6 +59,7 @@ var findDueDate = task => {
 	})
 };
 
+// Due Date calculations
 TaskSchema.pre("save", function(next) {
 	var self = this;
 	let Task = require("./task_model");
@@ -78,6 +79,27 @@ TaskSchema.pre("save", function(next) {
 		console.trace(err);
 		return next(err);
 	});
-})
+});
+
+// Set Completed Date
+TaskSchema.pre("save", function(next) {
+	var self = this;
+	if (self.isNew)
+		return;
+	if (self.completed && !self.date_completed)
+		self.date_completed = new Date();
+	next();
+});
+
+// Touch all tasks that rely on this task's due date
+TaskSchema.post("save", function(doc) {
+	let Task = require("./task_model");
+	Task.find({ due_after_task: doc._id })
+	.then(result => {
+		result.forEach(item => {
+			item.save();
+		})
+	});
+});
 
 module.exports = mongoose.model('Task', TaskSchema);
