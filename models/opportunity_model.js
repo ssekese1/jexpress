@@ -24,12 +24,23 @@ var OpportunitySchema   = new Schema({
 	}],
 	abandoned: { type: Boolean, default: false, index: true },
 	completed: { type: Boolean, default: false, index: true },
+	date_completed: Date,
 	data: mongoose.Schema.Types.Mixed,
 	
 });
 
 OpportunitySchema.set("_perms", {
 	admin: "crud",
+});
+
+// Set Completed Date
+OpportunitySchema.pre("save", function(next) {
+	var self = this;
+	if (self.isNew)
+		return;
+	if (self.completed && !self.date_completed)
+		self.date_completed = new Date();
+	next();
 });
 
 module.exports = mongoose.model('Opportunity', OpportunitySchema);
