@@ -103,7 +103,7 @@ var init = () => {
 	})
 	.then((result) => {
 		admin_account._id = result._id;
-		return post(Room, { name: "Test Room", location_id: location._id, cost: 1, off_peak_cost: 0.5 });
+		return post(Room, { name: "Test Room", location: location._id, cost: 1, off_peak_cost: 0.5 });
 	})
 	;
 };
@@ -131,5 +131,5 @@ describe('Init', () => {
 module.exports = {
 	init,
 	user_account,
-	admin_account
+	admin_account,
 };
