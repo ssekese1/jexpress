@@ -59,6 +59,13 @@ var findDueDate = task => {
 	})
 };
 
+// Set wasNew
+TaskSchema.pre("save", function(next) {
+	var self = this;
+	self.wasNew = !!self.isNew;
+	next();
+});
+
 // Due Date calculations
 TaskSchema.pre("save", function(next) {
 	var self = this;
@@ -66,11 +73,6 @@ TaskSchema.pre("save", function(next) {
 	findDueDate(self)
 	.then(result => {
 		self.due_date = result;
-		return Task.find({ due_after_task: self._id });
-	})
-	.then(result => {
-		if (result)
-			result.forEach(item => item.save());
 		if (self.isNew)
 			self.original_due_date = self.due_date;
 		return next();
@@ -85,7 +87,7 @@ TaskSchema.pre("save", function(next) {
 TaskSchema.pre("save", function(next) {
 	var self = this;
 	if (self.isNew)
-		return;
+		return next();
 	if (self.completed && !self.date_completed)
 		self.date_completed = new Date();
 	next();
@@ -93,11 +95,17 @@ TaskSchema.pre("save", function(next) {
 
 // Touch all tasks that rely on this task's due date
 TaskSchema.post("save", function(doc) {
+	if (doc.wasNew)
+		return;
 	let Task = require("./task_model");
 	Task.find({ due_after_task: doc._id })
 	.then(result => {
 		result.forEach(item => {
-			item.save();
+			findDueDate(item)
+			.then(due_date => {
+				item.due_date = due_date;
+				return item.save();
+			})
 		})
 	});
 });

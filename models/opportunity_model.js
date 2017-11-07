@@ -6,13 +6,14 @@ var Location = require('./location_model');
 var Lead = require('./lead_model');
 var Track = require('./track_model');
 var User = require('./user_model');
+var async = require("async");
 
 var OpportunitySchema   = new Schema({
 	name: { type: String, index: true, required: true },
-	lead_id: { type: ObjectId, index: true, ref: "Lead" },
-	track_id: { type: ObjectId, ref: "Track", index: true },
-	user_id: { type: ObjectId, ref: "User", index: true },
-	location_id: { type: ObjectId, index: true, ref: "Location" },
+	lead_id: { type: ObjectId, index: true, ref: "Lead", required: true },
+	track_id: { type: ObjectId, ref: "Track", index: true, required: true },
+	user_id: { type: ObjectId, ref: "User", index: true, required: true },
+	location_id: { type: ObjectId, index: true, ref: "Location", required: true },
 	date_created: { type: Date, default: Date.now },
 	value: Number,
 	assigned_to: { type: ObjectId, index: true, ref: "User" },
@@ -37,10 +38,87 @@ OpportunitySchema.set("_perms", {
 OpportunitySchema.pre("save", function(next) {
 	var self = this;
 	if (self.isNew)
-		return;
+		return next();
 	if (self.completed && !self.date_completed)
 		self.date_completed = new Date();
 	next();
+});
+
+// Set wasNew
+OpportunitySchema.pre("save", function(next) {
+	var self = this;
+	self.wasNew = !!self.isNew;
+	next();
+});
+
+// Create Tracks
+OpportunitySchema.pre("save", function(next) {
+	let doc = this;
+	var Task = require('./task_model');
+	if (!doc.wasNew)
+		return next();
+	var track = null;
+	var tasks = null;
+	var newTasks = null;
+	var firstTask = null;
+	Track.findOne({ _id: doc.track_id })
+	.then(result => {
+		track = result;
+		tasks = result.tasks;
+		firstTask = new Task({
+			name: "Opportunity created",
+			category: "init",
+			due_after_days: 0,
+			user_id: doc.user_id,
+			track_id: doc.track_id,
+			opportunity_id: doc._id,
+			location_id: doc.location_id,
+			completed: true,
+			date_completed: +new Date()
+		});
+		return firstTask.save();
+	})
+	.then(result => {
+		newTasks = tasks.map(task => {
+			return {
+				name: task.name,
+				category: task.category,
+				due_after_days: task.due_after_days,
+				user_id: doc.user_id,
+				track_id: doc.track_id,
+				opportunity_id: doc._id,
+				location_id: doc.location_id,
+				due_after_event: task.due_after_event,
+				template_task_id: task._id,
+			};
+		});
+		return new Promise((resolve, reject) => {
+			async.reduce(newTasks, firstTask, (prev, curr, cb) => {
+				curr.due_after_task = (curr.due_after_event === "track_start") ? firstTask._id : prev._id;
+				let newTask = new Task(curr);
+				newTask.save()
+				.then(result => {
+					cb(null, result);
+				}, err => {
+					console.error(err);
+					cb(err);
+				});
+			}, (err, result) => {
+				if (err) {
+					console.error(err);
+					return reject(err);
+				}
+				resolve(result);
+			});
+		});
+	})
+	.then(result => {
+		next();
+	})
+	.catch(err => {
+		console.error(err);
+		next(err);
+	})
 });
 
 module.exports = mongoose.model('Opportunity', OpportunitySchema);
