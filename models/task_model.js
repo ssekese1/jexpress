@@ -47,6 +47,17 @@ var checkNoCalc = task => {
 	return ((task.category === "init") || (task.absolute_due_date) || (!task.due_after_task) || (task.completed))
 }
 
+// Leaving this here as an example
+var rawFind = (searchObj => {
+	return new Promise((resolve, reject) => {
+		mongoose.connection.db.collection("tasks").find(searchObj).toArray((err, result) => {
+			if (err)
+				return reject(err);
+			return resolve(result);
+		})
+	})
+})
+
 var findDueDate = (task) => {
 	if (!task)
 		return Promise.resolve();
@@ -59,10 +70,12 @@ var findDueDate = (task) => {
 	if (task.completed)
 			return Promise.resolve(task.date_completed);
 	let Task = require("./task_model");
-	return Task.find({ opportunity_id: task.opportunity_id})
+	let opportunity_id = (task.opportunity_id) ? task.opportunity_id._id : task.opportunity_id;
+	return Task.find({ opportunity_id })
 	.then(tasks => {
 		let queue = [task];
-		var nextTask = tasks.find(t => "" + t._id === "" + task.due_after_task)
+		due_after_task = (task.due_after_task._id) ? task.due_after_task._id : task.due_after_task;
+		var nextTask = tasks.find(t => "" + t._id === "" + due_after_task)
 		while(nextTask) {
 			queue.unshift(nextTask);
 			nextTask = tasks.find(t => "" + t._id === "" + nextTask.due_after_task)
