@@ -9,6 +9,9 @@ var Location = require("../models/location_model");
 var chai = require('chai');
 var chaiHttp = require('chai-http');
 var should = chai.should();
+chai.use(require('chai-moment'));
+
+var moment = require("moment");
 
 var server = require("../bin/server");
 
@@ -20,6 +23,7 @@ describe('CRM', () => {
 	var lead_id = null;
 	var opportunity_id = null;
 	var track_id = null;
+	var tasks = null;
 	before(init.init);
 
 	before(done => {
@@ -51,13 +55,43 @@ describe('CRM', () => {
 					{
 						"name" : "Task 2",
 						"due_after_event" : "last_task",
-						"due_after_days" : 2,
+						"due_after_days" : 1,
 						"category" : "call"
 					},
 					{
 						"name" : "Task 3",
 						"due_after_event" : "last_task",
-						"due_after_days" : 3,
+						"due_after_days" : 1,
+						"category" : "email"
+					},
+					{
+						"name" : "Task 4",
+						"due_after_event" : "last_task",
+						"due_after_days" : 1,
+						"category" : "email"
+					},
+					{
+						"name" : "Task 5",
+						"due_after_event" : "last_task",
+						"due_after_days" : 1,
+						"category" : "email"
+					},
+					{
+						"name" : "Task 6",
+						"due_after_event" : "last_task",
+						"due_after_days" : 1,
+						"category" : "email"
+					},
+					{
+						"name" : "Task 7",
+						"due_after_event" : "last_task",
+						"due_after_days" : 1,
+						"category" : "email"
+					},
+					{
+						"name" : "Task 8",
+						"due_after_event" : "last_task",
+						"due_after_days" : 1,
 						"category" : "email"
 					}
 				]
@@ -161,14 +195,51 @@ describe('CRM', () => {
 			.get("/api/task")
 			.auth(init.admin_account.email, init.admin_account.password)
 			.end((err, res) => {
+				tasks = res.body.data;
+				// console.log({ tasks })
 				res.should.have.status(200);
 				res.body.data.should.be.a('array');
-				res.body.data.length.should.be.eql(4);
+				res.body.data.length.should.be.eql(9);
 				done();
 			});
 		});
 	});
 
+	describe("/PUT task", () => {
+		it("should update the due dates if a task's due date is changed", done => {
+			chai.request(server)
+			.put(`/api/task/${ tasks[1]._id }`)
+			.auth(init.admin_account.email, init.admin_account.password)
+			.send({
+				absolute_due_date: moment(tasks[1].due_date).add(1, "days")
+			})
+			.end((err, res) => {
+				// console.log(res.body)
+				res.should.have.status(200);
+				res.body.data.due_date.should.be.sameMoment(moment().add(2, "days"), "day")
+				res.body.data.absolute_due_date.should.be.sameMoment(moment().add(2, "days"), "day")
+				res.body.data.original_due_date.should.be.sameMoment(moment().add(1, "days"), "day")
+				done();
+			});
+		})
+		it("should update the subsequent due dates if a task's due date is changed", done => {
+			chai.request(server)
+			.get("/api/task")
+			.auth(init.admin_account.email, init.admin_account.password)
+			.end((err, res) => {
+				// console.log(res.body.data)
+				res.body.data[1].due_date.should.be.sameMoment(moment().add(2, "days"), "day")
+				res.body.data[2].due_date.should.be.sameMoment(moment().add(3, "days"), "day")
+				res.body.data[3].due_date.should.be.sameMoment(moment().add(4, "days"), "day")
+				res.body.data[4].due_date.should.be.sameMoment(moment().add(5, "days"), "day")
+				res.body.data[5].due_date.should.be.sameMoment(moment().add(6, "days"), "day")
+				res.body.data[6].due_date.should.be.sameMoment(moment().add(7, "days"), "day")
+				res.body.data[7].due_date.should.be.sameMoment(moment().add(8, "days"), "day")
+				res.should.have.status(200);
+				done();
+			});
+		})
+	})
 	
 
 });
