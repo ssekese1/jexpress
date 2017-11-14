@@ -11,8 +11,6 @@ var Location = require('./location_model');
 var moment = require("moment");
 var async = require("async");
 
-const max_depth = 20;
-
 var postFind = require('../libs/mongoose-post-find');
 
 var TaskSchema   = new Schema({
@@ -63,19 +61,11 @@ var findDueDate = (task) => {
 	let Task = require("./task_model");
 	return Task.find({ opportunity_id: task.opportunity_id})
 	.then(tasks => {
-		console.log("Processing tasks")
 		let queue = [task];
 		var nextTask = tasks.find(t => "" + t._id === "" + task.due_after_task)
-		var depth = 0;
 		while(nextTask) {
 			queue.unshift(nextTask);
 			nextTask = tasks.find(t => "" + t._id === "" + nextTask.due_after_task)
-			depth++;
-			if (depth === max_depth) {
-				console.error(`Maximum recursive depth of ${ max_depth } hit`, queue);
-				throw(`Maximum recursive depth of ${ max_depth } hit`)
-			}
-
 		}
 		for (var x = 0; x < queue.length - 1; x++) {
 			if (queue[x + 1].absolute_due_date) {
@@ -101,8 +91,6 @@ TaskSchema.pre("save", function(next) {
 TaskSchema.pre("save", function(next) {
 	let doc = this;
 	let due_date = null;
-	if (!doc.isNew)
-		return next()
 	findDueDate(doc)
 	.then(result => {
 		doc.due_date = result;
@@ -126,83 +114,34 @@ TaskSchema.pre("save", function(next) {
 	next();
 });
 
-TaskSchema.post("save", (task) => {
-	if (task.wasNew)
-		return;
-	console.log({ task })
-	let Task = require("./task_model");
-	return Task.find()
-	.then(tasks => {
-		let queue = [task];
-		let save_queue = [];
-		var nextTask = tasks.find(t => "" + t._id === "" + task.due_after_task)
-		var depth = 0;
-		while(nextTask) {
-			queue.unshift(nextTask);
-			nextTask = tasks.find(t => "" + t._id === "" + nextTask.due_after_task)
-			depth++;
-			if (depth === max_depth) {
-				console.error(`Maximum recursive depth of ${ max_depth } hit`, queue);
-				throw(`Maximum recursive depth of ${ max_depth } hit`)
+TaskSchema.plugin(postFind, {
+	find: function(rows, done) {
+		var queue = rows.map(row => {
+			return cb => {
+				findDueDate(row)
+				.then(due_date => {
+					row.due_date = new Date(due_date);
+					cb(null, row);
+				})
+				.catch(err => {
+					cb(err);
+				});
 			}
-		}
-		for (var x = 0; x < queue.length - 1; x++) {
-			if (queue[x + 1].absolute_due_date) {
-				queue[x + 1].due_date = queue[x + 1].absolute_due_date;
-			} else if (queue[x + 1].completed) {
-				queue[x + 1].due_date = queue[x + 1].date_completed;
-			} else {
-				if (+ queue[x + 1].due_date !== + moment(queue[x].due_date).add(queue[x + 1].due_after_days || 0, "days").toDate()) {
-					let row = queue[x + 1];
-					console.log("Adding", row, moment(queue[x].due_date).add(queue[x + 1].due_after_days || 0, "days").toDate())
-					row.due_date = moment(queue[x].due_date).add(queue[x + 1].due_after_days || 0, "days").toDate();
-					save_queue.push(cb => {
-						console.log("Saving", row)
-						row.save().then(result => cb(null, result)).catch(err => cb(err));
-					})
-				}
-				queue[x + 1].due_date = moment(queue[x].due_date).add(queue[x + 1].due_after_days || 0, "days").toDate();
-			}
-		}
-
-		async.series(save_queue, (err, result) => {
-			if (err)
-				console.error(err);
-			// next()
-			console.log(result)
 		})
-	})
+		async.series(queue, done);
+	},
+
+	findOne: function(row, done) {
+		findDueDate(row)
+		.then(due_date => {
+			row._doc.due_date = due_date;
+			done(null, row);
+		})
+		.catch(err => {
+			console.error(err);
+			done(err);
+		});
+	}
 });
-
-// TaskSchema.plugin(postFind, {
-// 	find: function(rows, done) {
-// 		console.log("find")
-// 		var queue = rows.map(row => {
-// 			return cb => {
-// 				findDueDate(row)
-// 				.then(due_date => {
-// 					row.due_date = new Date(due_date);
-// 					cb(null, row);
-// 				})
-// 				.catch(err => {
-// 					cb(err);
-// 				});
-// 			}
-// 		})
-// 		async.series(queue, done);
-// 	},
-
-// 	findOne: function(row, done) {
-// 		findDueDate(row)
-// 		.then(due_date => {
-// 			row._doc.due_date = due_date;
-// 			done(null, row);
-// 		})
-// 		.catch(err => {
-// 			console.error(err);
-// 			done(err);
-// 		});
-// 	}
-// });
 
 module.exports = mongoose.model('Task', TaskSchema);
