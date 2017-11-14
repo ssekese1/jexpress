@@ -9,6 +9,9 @@ var Track = require("./track_model");
 var Task = require("./task_model");
 var Location = require('./location_model');
 var moment = require("moment");
+var async = require("async");
+
+var postFind = require('../libs/mongoose-post-find');
 
 var TaskSchema   = new Schema({
 	name: String,
@@ -40,8 +43,11 @@ TaskSchema.set("_perms", {
 	admin: "crud",
 });
 
-var findDueDate = task => {
-	// console.log({ task });
+var checkNoCalc = task => {
+	return ((task.category === "init") || (task.absolute_due_date) || (!task.due_after_task) || (task.completed))
+}
+
+var findDueDate = (task, due_after_task) => {
 	if (!task)
 		return Promise.resolve();
 	if (task.category === "init")
@@ -52,10 +58,27 @@ var findDueDate = task => {
 		return Promise.resolve(task.date_created);
 	if (task.completed)
 			return Promise.resolve(task.date_completed);
+	if (due_after_task)
+		return Promise.resolve(moment(due_after_task.due_date).add(task.due_after_days || 0, "days").toDate());
 	let Task = require("./task_model");
-	return Task.findOne({ _id: task.due_after_task })
-	.then(due_after_task => {
-		return moment(due_after_task.due_date).add(task.due_after_days || 0, "days");
+	return Task.find()
+	.then(tasks => {
+		let queue = [task];
+		var nextTask = tasks.find(t => "" + t._id === "" + task.due_after_task)
+		while(nextTask) {
+			queue.unshift(nextTask);
+			nextTask = tasks.find(t => "" + t._id === "" + nextTask.due_after_task)
+		}
+		for (var x = 0; x < queue.length - 1; x++) {
+			if (queue[x + 1].absolute_due_date) {
+				queue[x + 1].due_date = queue[x + 1].absolute_due_date;
+			} else if (queue[x + 1].completed) {
+				queue[x + 1].due_date = queue[x + 1].date_completed;
+			} else {
+				queue[x + 1].due_date = moment(queue[x].due_date).add(queue[x + 1].due_after_days || 0, "days").toDate();
+			}
+		}
+		return queue.pop().due_date;
 	})
 };
 
@@ -68,13 +91,13 @@ TaskSchema.pre("save", function(next) {
 
 // Due Date calculations
 TaskSchema.pre("save", function(next) {
-	var self = this;
-	let Task = require("./task_model");
-	findDueDate(self)
+	let doc = this;
+	let due_date = null;
+	findDueDate(doc)
 	.then(result => {
-		self.due_date = result;
-		if (self.isNew)
-			self.original_due_date = self.due_date;
+		doc.due_date = result;
+		if (doc.isNew)
+			doc.original_due_date = doc.due_date;
 		return next();
 	})
 	.catch(err => {
@@ -93,21 +116,34 @@ TaskSchema.pre("save", function(next) {
 	next();
 });
 
-// Touch all tasks that rely on this task's due date
-TaskSchema.post("save", function(doc) {
-	if (doc.wasNew)
-		return;
-	let Task = require("./task_model");
-	Task.find({ due_after_task: doc._id })
-	.then(result => {
-		result.forEach(item => {
-			findDueDate(item)
-			.then(due_date => {
-				item.due_date = due_date;
-				return item.save();
-			})
+TaskSchema.plugin(postFind, {
+	find: function(rows, done) {
+		var queue = rows.map(row => {
+			return cb => {
+				findDueDate(row)
+				.then(due_date => {
+					row.due_date = new Date(due_date);
+					cb(null, row);
+				})
+				.catch(err => {
+					cb(err);
+				});
+			}
 		})
-	});
+		async.series(queue, done);
+	},
+
+	findOne: function(row, done) {
+		findDueDate(row)
+		.then(due_date => {
+			row._doc.due_date = due_date;
+			done(null, row);
+		})
+		.catch(err => {
+			console.error(err);
+			done(err);
+		});
+	}
 });
 
 module.exports = mongoose.model('Task', TaskSchema);
