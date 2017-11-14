@@ -49,7 +49,7 @@ var checkNoCalc = task => {
 	return ((task.category === "init") || (task.absolute_due_date) || (!task.due_after_task) || (task.completed))
 }
 
-var findDueDate = (task, due_after_task) => {
+var findDueDate = (task) => {
 	if (!task)
 		return Promise.resolve();
 	if (task.category === "init")
@@ -60,10 +60,8 @@ var findDueDate = (task, due_after_task) => {
 		return Promise.resolve(task.date_created);
 	if (task.completed)
 			return Promise.resolve(task.date_completed);
-	if (due_after_task)
-		return Promise.resolve(moment(due_after_task.due_date).add(task.due_after_days || 0, "days").toDate());
 	let Task = require("./task_model");
-	return Task.find()
+	return Task.find({ opportunity_id: task.opportunity_id})
 	.then(tasks => {
 		console.log("Processing tasks")
 		let queue = [task];
