@@ -8,6 +8,7 @@ var Guest = require("./guest_model");
 var Reserve = require("./reserve_model");
 var Ledger = require("./ledger_model");
 var Layout = require("./layout_model");
+var Invoice = require("./invoice_model");
 var moment = require('moment-timezone');
 
 moment.tz.setDefault("SAST");
@@ -26,6 +27,8 @@ var BookingSchema   = new Schema({
 	cost: Number,
 	created: { type: Date, default: Date.now },
 	public_event: { type: Boolean, default: false },
+	sponsored_event: { type: Boolean, default: false },
+	internal_event: { type: Boolean, default: false },
 	event_client: { type: Boolean, default: false },
 	img: String,
 	layout: { type: ObjectId, ref: "Layout" },
@@ -33,6 +36,7 @@ var BookingSchema   = new Schema({
 	website: String,
 	radius_username: String,
 	radius_password: String,
+	invoice_id: { type: ObjectId, ref: "Invoice" },
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
 	_version: { type: Number, default: 0 },
