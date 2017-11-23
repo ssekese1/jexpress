@@ -46,6 +46,7 @@ var UserSchema   = new Schema({
 	referal_method: String,
 	status: { type: String, validate: /active|inactive/, index: true, default: "inactive" },
 	hidden: { type: Boolean, default: false, index: true },
+	presence: { type: Boolean, default: false, index: true },
 	newsletter: Boolean,
 	radius_id: Number,
 	pin: String,
