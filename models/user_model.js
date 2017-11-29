@@ -61,6 +61,7 @@ var UserSchema   = new Schema({
 	last_login: Date,
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
+	_import_ref: String,
 });
 
 UserSchema.set("_perms", {
