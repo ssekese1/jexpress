@@ -36,10 +36,12 @@ var BookingSchema   = new Schema({
 	website: String,
 	radius_username: String,
 	radius_password: String,
+	invoice: { type: Boolean, default: false},
 	invoice_id: { type: ObjectId, ref: "Invoice" },
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
 	_version: { type: Number, default: 0 },
+	_import_ref: String,
 });
 
 BookingSchema.set("_perms", {
@@ -107,8 +109,12 @@ var postLedger = params => {
 	});
 };
 
+// Check for conflicts
 BookingSchema.pre("save", function(next) {
 	var transaction = this;
+	//If this transaction is deleted, don't even worry
+	if (transaction._deleted)
+		return next();
 	if (new Date(transaction.start_time).getTime() > new Date(transaction.end_time).getTime()) {
 		transaction.invalidate("start_time", "start_time cannot be greater than than end_time");
 		return next(new Error("start_time greater than than end_time"));
@@ -118,31 +124,41 @@ BookingSchema.pre("save", function(next) {
 		transaction.invalidate("user", "user not allowed to assign appointment to another user");
 		return next(new Error("user not allowed to assign appointment to another user"));
 	}
-	var Booking = mongoose.model("Booking", BookingSchema);
 	getBookings({ end_time: { $gt: transaction.start_time }, start_time: { $lt: transaction.end_time }, room: transaction.room, _deleted: false })
 	.then(result => {
-		if (result.length && ("" + transaction._id !== "" + result[0]._id) && (!transaction._deleted)) {
+		if (result.length && ("" + transaction._id !== "" + result[0]._id)) {
 			console.error("Booking clash", result[0]._id, transaction._id);
 			throw("This booking clashes with an existing booking");
 		}
-		return getLedger({
-			source_type: "booking",
-			source_id: transaction._id
-		});
+	})
+	.then(result => {
+		next();
+	})
+	.catch(err => {
+		return next(new Error(err));
+	});
+});
+
+// Save in ledger
+BookingSchema.pre("save", function(next) {
+	var transaction = this;
+	//Are we invoicing this? If so, don't charge the Space account
+	if (transaction.invoice)
+		return next();
+	//Is this free? If so, cool, don't do any more
+	if (!transaction.cost)
+		return next();
+	getLedger({
+		source_type: "booking",
+		source_id: transaction._id
 	})
 	.then(ledger => {
 		if (ledger) {
 			ledger.remove();
 		}
-		
 		return getRoom({ _id: transaction.room });
 	})
 	.then(room => {
-		//Is this free? If so, cool, don't do any more
-		if (!transaction.cost) {
-			return true;
-		}
-
 		//Reserve the moneyz
 		//We do this here, because if it fails we don't want to process the payment.
 		var description = "Booking: " + transaction.title + " :: " + room.name +  ", " + moment(transaction.start_time).tz("Africa/Johannesburg").format("dddd MMMM Do, H:mm") + " to " + moment(transaction.end_time).tz("Africa/Johannesburg").format("H:mm");
@@ -172,7 +188,6 @@ BookingSchema.pre("save", function(next) {
 
 var deleteReserve = function(transaction) {
 	console.log("Remove called, Going to remove reserve");
-	console.log(transaction);
 	var item = null;
 	Ledger.findOne({
 		source_type: "booking",
@@ -193,15 +208,15 @@ var deleteReserve = function(transaction) {
 };
 
 BookingSchema.post("save", function(transaction) {
-	// console.log("Transaction", transaction);
-	if (transaction._deleted) {
+	if (transaction._deleted && !transaction.invoice) {
 		console.log("Fake delete but still delete reserve");
 		deleteReserve(transaction);
 	}
 });
 
 BookingSchema.post("remove", function(transaction) { //Keep our running total up to date
-	deleteReserve(transaction);
+	if (!transaction.invoice)
+		deleteReserve(transaction);
 });
 
 module.exports = mongoose.model('Booking', BookingSchema);
