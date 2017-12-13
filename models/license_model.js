@@ -5,6 +5,7 @@ var ObjectId = mongoose.Schema.Types.ObjectId;
 var Organisation = require("./organisation_model");
 var Membership = require("./membership_model");
 var User = require("./user_model");
+var Invoice = require("./invoice_model");
 var Location = require("./location_model");
 var Claytag = require("./claytag_model");
 var diff = require('deep-diff').diff;
@@ -18,6 +19,7 @@ var LicenseSchema   = new Schema({
 	user_id: { type: ObjectId, ref: 'User', index: true },
 	claytag_id: { type: ObjectId, ref: "Claytag" },
 	date_created: { type: Date, default: Date.now },
+	invoice_id: { type: ObjectId, ref: 'Invoice', index: true },
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
 });
