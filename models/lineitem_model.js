@@ -1,18 +1,32 @@
-var mongoose     = require('mongoose');
-var Schema       = mongoose.Schema;
+var mongoose = require("mongoose");
+var Schema = mongoose.Schema;
 
 var ObjectId = mongoose.Schema.Types.ObjectId;
 var Organisation = require("./organisation_model");
 var Product = require("./product_model");
 var Invoice = require("./invoice_model");
+var Booking = require("./booking_model");
 
-var LineItemSchema   = new Schema({
+var LineItemSchema = new Schema({
 	description: String,
-	organisation_id: { type: ObjectId, ref: 'Organisation' },
+	organisation_id: { type: ObjectId, ref: "Organisation" },
 	product_id: { type: ObjectId, ref: "Product" },
 	invoice_id: { type: ObjectId, ref: "Invoice" },
-	amount: { type: Number, validate: function(v) { return (v > 0); }, required: true },
-	price: { type: Number, validate: function(v) { return (v >= 0); }, required: true },
+	booking_id: { type: ObjectId, ref: "Booking" },
+	amount: {
+		type: Number,
+		validate: function(v) {
+			return v > 0;
+		},
+		required: true
+	},
+	price: {
+		type: Number,
+		validate: function(v) {
+			return v >= 0;
+		},
+		required: true
+	},
 	tax_type: String,
 	comment: String,
 	discount: { type: Number, default: 0 },
@@ -21,7 +35,7 @@ var LineItemSchema   = new Schema({
 	xero_account: String,
 	xero_id: String,
 	_owner_id: ObjectId,
-	_deleted: { type: Boolean, default: false, index: true },
+	_deleted: { type: Boolean, default: false, index: true }
 });
 
 LineItemSchema.set("_perms", {
@@ -32,5 +46,4 @@ LineItemSchema.set("_perms", {
 	all: ""
 });
 
-
-module.exports = mongoose.model('LineItem', LineItemSchema);
+module.exports = mongoose.model("LineItem", LineItemSchema);
