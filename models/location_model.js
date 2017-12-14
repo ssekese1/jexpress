@@ -1,17 +1,13 @@
-var mongoose     = require('mongoose');
-var Schema       = mongoose.Schema;
+var mongoose = require("mongoose");
+var Schema = mongoose.Schema;
 
-var LocationSchema   = new Schema({
+var LocationSchema = new Schema({
 	name: String,
 	city: String,
 	address: String,
 	img: String,
 	description: String,
 	email: String,
-	sage_uid: String,
-	sage_product_id: String,
-	sage_taxtype_id: String,
-	sage_message: String,
 	datatill_group_id: Number,
 	bank_account: Number,
 	bank_code: String,
@@ -24,7 +20,7 @@ var LocationSchema   = new Schema({
 	xero_eft_id: String,
 	clay_id: String,
 	nas_ip: String,
-	_deleted: { type: Boolean, default: false, index: true },
+	_deleted: { type: Boolean, default: false, index: true }
 });
 
 LocationSchema.set("_perms", {
@@ -33,4 +29,4 @@ LocationSchema.set("_perms", {
 	all: "r"
 });
 
-module.exports = mongoose.model('Location', LocationSchema);
+module.exports = mongoose.model("Location", LocationSchema);
