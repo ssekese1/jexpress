@@ -1,13 +1,15 @@
-var mongoose     = require('mongoose');
-var Schema       = mongoose.Schema;
+var mongoose = require("mongoose");
+var Schema = mongoose.Schema;
 
 var ObjectId = mongoose.Schema.Types.ObjectId;
-var Location = require('./location_model');
-var Layout = require('./layout_model');
-var Space = require('./space_model');
+var Location = require("./location_model");
+var Layout = require("./layout_model");
+var Space = require("./space_model");
+var Product = require("./product_model");
 
-var RoomSchema   = new Schema({
+var RoomSchema = new Schema({
 	location: { type: ObjectId, ref: "Location" },
+	product_id: { type: ObjectId, ref: "Product" },
 	name: String,
 	img: String,
 	cost: Number,
@@ -20,12 +22,12 @@ var RoomSchema   = new Schema({
 	private: { type: Boolean, default: false },
 	unavailable_reason: String,
 	display_device_id: String,
-	_deleted: { type: Boolean, default: false, index: true },
+	_deleted: { type: Boolean, default: false, index: true }
 });
 
 RoomSchema.set("_perms", {
 	admin: "crud",
-	user: "r",
+	user: "r"
 });
 
-module.exports = mongoose.model('Room', RoomSchema);
+module.exports = mongoose.model("Room", RoomSchema);
