@@ -39,6 +39,7 @@ var LedgerSchema   = new Schema({
 	email: String,
 	transaction_type: { type: String, validate: /credit|debit|reserve/ },
 	is_transfer: { type: Boolean, default: false },
+	receipt: String,
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
 });
