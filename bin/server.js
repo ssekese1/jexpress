@@ -53,12 +53,23 @@ config.callbacks = {
 };
 
 //DB connection
-mongoose.Promise = global.Promise;
-mongoose.createConnection('mongodb://' + config.mongo.server + '/' + config.mongo.db, function(err) {
-	if (err) {
-		console.log("Connection error", err);
-	}
-}, { db: { safe:true } }); // connect to our database
+// ES6 promises
+mongoose.Promise = Promise;
+
+// mongodb connection
+mongoose.connect(`mongodb://${ config.mongo.server }/${ config.mongo.db }`, {
+	promiseLibrary: global.Promise
+});
+
+var db = mongoose.connection;
+
+// mongodb error
+db.on('error', console.error.bind(console, 'connection error:'));
+
+// mongodb connection open
+db.once('open', () => {
+  console.log(`Connected to Mongo at: ${new Date()}`)
+});
 
 var server = new JExpress(config);
 

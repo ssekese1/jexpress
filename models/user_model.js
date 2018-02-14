@@ -19,7 +19,7 @@ var Clayaccessgroup = require("./clayaccessgroup_model");
 
 var UserSchema   = new Schema({
 	name: { type: String, required: true },
-	urlid: { type: String, unique: true, index: true },
+	urlid: { type: String, unique: true, index: true, sparse: true },
 	organisation_id: { type: ObjectId, ref: "Organisation" },
 	location_id: { type: ObjectId, ref: "Location" },
 	membership_id: { type: ObjectId, ref: "Membership" },
