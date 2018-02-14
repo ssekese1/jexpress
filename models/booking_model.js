@@ -174,7 +174,7 @@ BookingSchema.pre("save", function(next) {
 			source_type: "booking",
 			source_id: transaction._id,
 			reserve: true,
-			reserve_expires: reserve_expires.format("x"),
+			reserve_expires: reserve_expires.toISOString(),
 			__user: transaction.__user
 		});
 	})
