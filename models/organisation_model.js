@@ -17,7 +17,7 @@ var OrganisationSchema   = new Schema({
 	name: { type: String, unique: true, index: true },
 	legal_name: String,
 	urlid: { type: String, unique: true, index: true },
-	short_name: { type: String, index: { unique: true, partialFilterExpression: { short_name: { $type: 'string' } }, _deleted: false }, set: shortname },
+	short_name: { type: String, index: { unique: true, partialFilterExpression: { short_name: { $type: 'string' }, _deleted: false } }, set: shortname },
 	tel: String,
 	mobile: String,
 	email: { type: String, index: true, set: toLower },
