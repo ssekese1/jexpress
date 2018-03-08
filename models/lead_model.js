@@ -3,7 +3,8 @@ var Schema       = mongoose.Schema;
 
 var ObjectId = mongoose.Schema.Types.ObjectId;
 var Location = require('./location_model');
-var Membership = require('./membership_model');
+var Location = require('./location_model');
+var User = require('./user_model');
 var rest = require("restler-q");
 var config = require("config");
 
@@ -32,6 +33,9 @@ var LeadSchema   = new Schema({
 	spam: { type: Boolean, default: false },
 	data: mongoose.Schema.Types.Mixed,
 	"g-recaptcha-response": String,
+	referral_user_id: { type: ObjectId, ref: "User" },
+	referral_date_paid: Date,
+	referral_amount: Number,
 	_deleted: { type: Boolean, default: false, index: true },
 	_owner_id: ObjectId
 });
