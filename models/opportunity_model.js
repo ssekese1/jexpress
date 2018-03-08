@@ -6,7 +6,8 @@ var Location = require('./location_model');
 var Lead = require('./lead_model');
 var Track = require('./track_model');
 var User = require('./user_model');
-var async = require("async");
+var Ledger = require("./ledger_model");
+var asyncLib = require("async");
 
 var OpportunitySchema   = new Schema({
 	name: { type: String, index: true, required: true },
@@ -93,7 +94,7 @@ OpportunitySchema.pre("save", function(next) {
 			};
 		});
 		return new Promise((resolve, reject) => {
-			async.reduce(newTasks, firstTask, (prev, curr, cb) => {
+			asyncLib.reduce(newTasks, firstTask, (prev, curr, cb) => {
 				curr.due_after_task = (curr.due_after_event === "track_start") ? firstTask._id : prev._id;
 				let newTask = new Task(curr);
 				newTask.save()
@@ -119,6 +120,31 @@ OpportunitySchema.pre("save", function(next) {
 		console.error(err);
 		next(err);
 	})
+});
+
+// Pay referral reward
+OpportunitySchema.pre("save", async function(next) {
+	let doc = this;
+	if (!doc.lead_id) // No lead
+		return next();
+	let lead = await Lead.findOne({ _id: doc.lead_id });
+	if (!lead.referral_amount) // No amount to pay
+		return next();
+	if (lead.referral_date_paid) // Already paid
+		return next();
+	lead.referral_date_paid = new Date();
+	let ledger = new Ledger({
+		user_id: lead.referral_user_id,
+		description: `Refer-a-friend reward for ${ lead.name }`,
+		source_type: "refer-a-friend",
+		amount: lead.referral_amount,
+		cred_type: "stuff",
+		__user: doc.__user,
+	});
+	await ledger.save();
+	lead.referral_date_paid = new Date();
+	await lead.save();
+	next();
 });
 
 module.exports = mongoose.model('Opportunity', OpportunitySchema);
