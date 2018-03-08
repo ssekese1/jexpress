@@ -7,6 +7,7 @@ var Lead = require('./lead_model');
 var Track = require('./track_model');
 var User = require('./user_model');
 var Ledger = require("./ledger_model");
+var messagequeue = require("../libs/messagequeue");
 var asyncLib = require("async");
 
 var OpportunitySchema   = new Schema({
@@ -141,7 +142,8 @@ OpportunitySchema.pre("save", async function(next) {
 		cred_type: "stuff",
 		__user: doc.__user,
 	});
-	await ledger.save();
+	var ledgerRecord = await ledger.save();
+	messagequeue.action("ledger", "post", doc.__user, ledgerRecord);
 	lead.referral_date_paid = new Date();
 	await lead.save();
 	next();
