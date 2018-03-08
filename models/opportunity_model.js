@@ -135,7 +135,7 @@ OpportunitySchema.pre("save", async function(next) {
 	lead.referral_date_paid = new Date();
 	let ledger = new Ledger({
 		user_id: lead.referral_user_id,
-		description: `Refer-a-friend reward for ${ lead.name }`,
+		description: `Refer-a-friend reward for ${ lead.name + ((lead.organisation) ? " from " + lead.organisation : "") }`,
 		source_type: "refer-a-friend",
 		amount: lead.referral_amount,
 		cred_type: "stuff",
