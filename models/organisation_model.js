@@ -5,7 +5,9 @@ var Schema       = mongoose.Schema;
 var friendly = require("mongoose-friendly");
 
 var ObjectId = mongoose.Schema.Types.ObjectId;
+var Mixed = mongoose.Schema.Types.Mixed;
 var Membership = require('./membership_model');
+var XeroOrgAccount = require('./xeroorgaccount_model');
 var Location = require('./location_model');
 var User = require('./user_model');
 var diff = require('deep-diff').diff;
@@ -62,6 +64,7 @@ var OrganisationSchema   = new Schema({
 	stuff_total: Number,
 	space_total: Number,
 	primary_token: ObjectId,
+	xeroorgaccount_id: { type: ObjectId, ref: 'XeroOrgAccount' },
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
 	_import_ref: String,
@@ -73,6 +76,8 @@ OrganisationSchema.set("_perms", {
 	user: "cr",
 	all: "cr"
 });
+
+OrganisationSchema.index( { "name": "text" } );
 
 OrganisationSchema.path('name').validate(function (v) {
 	return v.length > 0;
