@@ -207,6 +207,8 @@ UserSchema.post('validate', function(doc) {
 	});
 });
 
+UserSchema.index( { "name": "text" } );
+
 UserSchema.path('name').validate(function (v) {
 	return (v) && (v.length > 0);
 }, 'Name cannot be empty');
