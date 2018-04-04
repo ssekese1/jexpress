@@ -13,6 +13,7 @@ var Balance = require("./balance_model");
 var Log = require("./log_model");
 var Currency = require("./currency_model");
 var Wallet = require("./wallet_model");
+var Invoice = require("./invoice_model");
 var moment = require("moment");
 var async = require("async");
 
@@ -40,6 +41,7 @@ var LedgerSchema   = new Schema({
 	transaction_type: { type: String, validate: /credit|debit|reserve/ },
 	is_transfer: { type: Boolean, default: false },
 	receipt: String,
+	invoice_id: { type: ObjectId, index: true, ref: "Invoice" },
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
 });
