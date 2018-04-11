@@ -13,7 +13,7 @@
 		},
 		"tls": { "rejectUnauthorized": false }
 	},
-	"password_recovery_url": "http://openmembers.dev:3000/login/reset",
+	"password_recovery_url": "http://localhost:3000/login/reset",
 	"secret": "xxx",
 	"shared_secret": "xxx",
 	"url": "http://localhost:3001",
