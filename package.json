@@ -7,7 +7,6 @@
     "test": "mocha --timeout 10000"
   },
   "dependencies": {
-    "amqplib": "^0.5.2",
     "async": "^2.6.0",
     "bcrypt": "^1.0.3",
     "body-parser": "^1.18.2",
@@ -19,7 +18,6 @@
     "cors": "^2.8.4",
     "debug": "^3.1.0",
     "deep-diff": "^0.3.8",
-    "express": "^4.16.2",
     "jexpress": "github:j-norwood-young/jexpress-2",
     "jsonwebtoken": "^8.1.1",
     "moment": "^2.20.1",
@@ -35,9 +33,6 @@
     "restify": "^6.3.4",
     "restler": "^3.4.0",
     "restler-q": "^0.1.1",
-    "serve-favicon": "^2.4.5",
-    "socket.io": "^2.0.4",
-    "underscore": "^1.8.3",
     "ws": "^4.0.0"
   },
   "devDependencies": {
@@ -45,7 +40,6 @@
     "chai-http": "^3.0.0",
     "chai-moment": "^0.1.0",
     "mocha": "^5.0.0",
-    "should": "^13.2.1",
-    "xero": "0.0.8"
+    "should": "^13.2.1"
   }
 }
