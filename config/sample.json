@@ -1,0 +1,32 @@
+{
+	"mongo": {
+		"server": "localhost",
+		"db": "openmembers"
+	},
+	"port": "3001",
+	"smtp": {
+		"host": "mailtrap.io",
+		"port": 25,
+		"auth": {
+			"user": "xxx",
+			"pass": "xxx"
+		},
+		"tls": { "rejectUnauthorized": false }
+	},
+	"password_recovery_url": "http://openmembers.dev:3000/login/reset",
+	"secret": "xxx",
+	"shared_secret": "xxx",
+	"url": "http://localhost:3001",
+	"apikey": "xxx",
+	"websocket": "ws://localhost:8081",
+	"log": "/tmp/access_log",
+	"open_queue": {
+		"server": "http://localhost:3010",
+		"username": "xxx",
+		"password": "xxx"
+	},
+	"recaptcha": {
+		"secret": "xxx",
+		"url": "https://www.google.com/recaptcha/api/siteverify"
+	}
+}
