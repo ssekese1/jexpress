@@ -6,6 +6,7 @@ var Organisation = require("./organisation_model");
 var Product = require("./product_model");
 var Invoice = require("./invoice_model");
 var Booking = require("./booking_model");
+var License = require("./license_model");
 
 var LineItemSchema = new Schema({
 	description: String,
@@ -13,6 +14,7 @@ var LineItemSchema = new Schema({
 	product_id: { type: ObjectId, ref: "Product" },
 	invoice_id: { type: ObjectId, ref: "Invoice" },
 	booking_id: { type: ObjectId, ref: "Booking" },
+	license_id: { type: ObjectId, ref: "License" },
 	amount: {
 		type: Number,
 		validate: function(v) {
