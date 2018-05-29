@@ -68,7 +68,7 @@ db.on('error', console.error.bind(console, 'connection error:'));
 
 // mongodb connection open
 db.once('open', () => {
-  console.log(`Connected to Mongo at: ${new Date()}`)
+  console.log(`Connected to Mongo at: ${new Date()}`);
 });
 
 var server = new JExpress(config);
