@@ -14,7 +14,6 @@ var Log = require("./log_model");
 var LicenseSchema   = new Schema({
 	organisation_id: { type: ObjectId, ref: 'Organisation', index: true, required: true },
 	membership_id: { type: ObjectId, ref: 'Membership', required: true },
-	location_id: { type: ObjectId, ref: 'Location', required: true },
 	xero_account: String,
 	user_id: { type: ObjectId, ref: 'User', index: true },
 	claytag_id: { type: ObjectId, ref: "Claytag" },
