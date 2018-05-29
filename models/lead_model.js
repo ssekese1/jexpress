@@ -41,7 +41,8 @@ var LeadSchema   = new Schema({
 });
 
 LeadSchema.set("_perms", {
-	admin: "crud",
+	admin: "cru",
+	super_user: "crud",
 	user: "cr",
 	all: "c",
 });
