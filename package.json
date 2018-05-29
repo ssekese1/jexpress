@@ -18,6 +18,7 @@
     "cors": "^2.8.4",
     "debug": "^3.1.0",
     "deep-diff": "^0.3.8",
+    "happypass": "github:j-norwood-young/happypass",
     "jexpress": "github:j-norwood-young/jexpress-2",
     "jsonwebtoken": "^8.1.1",
     "moment": "^2.20.1",
