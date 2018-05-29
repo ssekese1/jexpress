@@ -7,10 +7,12 @@ var Product = require("./product_model");
 var Invoice = require("./invoice_model");
 var Booking = require("./booking_model");
 var License = require("./license_model");
+var Location = require("./location_model");
 
 var LineItemSchema = new Schema({
 	description: String,
 	organisation_id: { type: ObjectId, ref: "Organisation" },
+	location_id: { type: ObjectId, ref: "Location" },
 	product_id: { type: ObjectId, ref: "Product" },
 	invoice_id: { type: ObjectId, ref: "Invoice" },
 	booking_id: { type: ObjectId, ref: "Booking" },
@@ -36,6 +38,8 @@ var LineItemSchema = new Schema({
 	is_quote: Boolean,
 	xero_account: String,
 	xero_id: String,
+	date_start: Date,
+	date_end: String,
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true }
 });
@@ -46,6 +50,17 @@ LineItemSchema.set("_perms", {
 	primary_member: "r",
 	user: "r",
 	all: ""
+});
+
+LineItemSchema.virtual("status").get(function() {
+	console.log("Calculating status");
+	if (!this.date_start) return "current";
+	var date_start = +new Date(this.date_start);
+	if (date_start > now) return "pending";
+	if (!this.date_end) return "current";
+	var date_end = +new Date(this.date_end);
+	if (date_end && date_end < now) return "expired";
+	return "current";
 });
 
 module.exports = mongoose.model("LineItem", LineItemSchema);
