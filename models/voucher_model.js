@@ -33,7 +33,6 @@ VoucherSchema.pre("save", function(next) {
 		var test = null;
 		do {
 			self.code = Math.floor(Math.random() * (max - min)) + min;
-			console.log(self.code);
 			test = vouchers.find(checkVoucher);
 		} while(test);
 		next();	

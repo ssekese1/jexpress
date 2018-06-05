@@ -548,7 +548,6 @@ LedgerSchema.post("save", function(transaction) { //Keep our running total up to
 		return;
 	if (transaction.amount < 0) {
 		var queue = [];
-		console.log(transaction.wallet_split);
 		transaction.wallet_split.forEach(wallet => {
 			queue.push(cb => {
 				Wallet.findByIdAndUpdate(wallet._id, { $set: { balance: wallet.balance } })

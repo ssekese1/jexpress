@@ -64,7 +64,6 @@ WalletSchema.statics.topup_weekly = function() {
 WalletSchema.statics.topup_monthly = function() {
 	var Wallet = require("./wallet_model");
 	var day_ago = moment().startOf('month');
-	console.log(day_ago);
 	return Wallet.find({ quota_frequency: "monthly", last_quota_date: { $lt: day_ago } })
 	.then(wallets => {
 		var result = [];
@@ -107,7 +106,6 @@ WalletSchema.statics.set_personal = function(_id) {
 	.then(wallets => {
 		wallets.forEach(w => {
 			if (w._id.toString() !== wallet._id.toString()) {
-				console.log(w._id, wallet._id);
 				queue.push(cb => {
 					w.personal = false;
 					w.save()
