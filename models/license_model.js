@@ -6,6 +6,7 @@ var Organisation = require("./organisation_model");
 var Membership = require("./membership_model");
 var User = require("./user_model");
 var Invoice = require("./invoice_model");
+var Space = require("./space_model");
 var Location = require("./location_model");
 var Claytag = require("./claytag_model");
 var diff = require('deep-diff').diff;
@@ -19,6 +20,8 @@ var LicenseSchema   = new Schema({
 	claytag_id: { type: ObjectId, ref: "Claytag" },
 	date_created: { type: Date, default: Date.now },
 	invoice_id: { type: ObjectId, ref: 'Invoice', index: true },
+	space_id: { type: ObjectId, ref: 'Space', index: true },
+	location_id: { type: ObjectId, ref: 'Location', index: true },
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
 });
