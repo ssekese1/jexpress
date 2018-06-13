@@ -13,6 +13,10 @@ var SpaceSchema   = new Schema({
 	spacetype_id: { type: ObjectId, ref: 'SpaceType' },
 	claylock_id: [{ type: ObjectId, ref: 'Claylock' }],
 	date_created: { type: Date, default: Date.now },
+	seats: Number,
+	shared: Boolean,
+	budget_price: Number, // Use this to calculate individual line item amounts
+	actual_price: Number,
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
 });
