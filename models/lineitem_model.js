@@ -8,11 +8,13 @@ var Invoice = require("./invoice_model");
 var Booking = require("./booking_model");
 var License = require("./license_model");
 var Location = require("./location_model");
+var User = require("./user_model");
 
 var LineItemSchema = new Schema({
 	description: String,
-	organisation_id: { type: ObjectId, ref: "Organisation" },
-	location_id: { type: ObjectId, ref: "Location" },
+	organisation_id: { type: ObjectId, ref: "Organisation", index: true },
+	location_id: { type: ObjectId, ref: "Location", index: true },
+	user_id: { type: ObjectId, ref: "User" },
 	product_id: { type: ObjectId, ref: "Product" },
 	invoice_id: { type: ObjectId, ref: "Invoice" },
 	booking_id: { type: ObjectId, ref: "Booking" },
@@ -39,7 +41,7 @@ var LineItemSchema = new Schema({
 	xero_account: String,
 	xero_id: String,
 	date_start: Date,
-	date_end: String,
+	date_end: Date,
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true }
 });
@@ -53,7 +55,7 @@ LineItemSchema.set("_perms", {
 });
 
 LineItemSchema.virtual("status").get(function() {
-	console.log("Calculating status");
+	var now = new Date();
 	if (!this.date_start) return "current";
 	var date_start = +new Date(this.date_start);
 	if (date_start > now) return "pending";
