@@ -22,8 +22,23 @@ var LicenseSchema   = new Schema({
 	invoice_id: { type: ObjectId, ref: 'Invoice', index: true },
 	space_id: { type: ObjectId, ref: 'Space', index: true },
 	location_id: { type: ObjectId, ref: 'Location', index: true },
+	date_start: Date,
+	date_end: Date,
+	price: {
+		type: Number,
+		validate: function(v) {
+			return v >= 0;
+		},
+	},
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
+}, {
+	toObject: {
+		virtuals: true
+	},
+	toJSON: {
+		virtuals: true
+	}
 });
 
 LicenseSchema.set("_perms", {
@@ -67,6 +82,17 @@ LicenseSchema.post('validate', function(doc) {
 			}
 		}
 	});
+});
+
+LicenseSchema.virtual("status").get(function() {
+	var now = new Date();
+	if (!this.date_start) return "current";
+	var date_start = +new Date(this.date_start);
+	if (date_start > now) return "pending";
+	if (!this.date_end) return "current";
+	var date_end = +new Date(this.date_end);
+	if (date_end && date_end < now) return "expired";
+	return "current";
 });
 
 module.exports = mongoose.model('License', LicenseSchema);
