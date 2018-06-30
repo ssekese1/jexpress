@@ -8,19 +8,38 @@ var Invoice = require("./invoice_model");
 
 var AdhocSchema   = new Schema({
 	description: String,
-	organisation_id: { type: ObjectId, ref: 'Organisation' },
+	organisation_id: { type: ObjectId, ref: "Organisation", index: true },
+	location_id: { type: ObjectId, ref: "Location", index: true },
+	user_id: { type: ObjectId, ref: "User" },
 	product_id: { type: ObjectId, ref: "Product" },
-	amount: { type: Number, validate: function(v) { return (v > 0); }, required: true },
-	price: { type: Number, validate: function(v) { return (v >= 0); }, required: true },
+	invoice_id: { type: ObjectId, ref: "Invoice" },
+	booking_id: { type: ObjectId, ref: "Booking" },
+	license_id: { type: ObjectId, ref: "License" },
+	amount: {
+		type: Number,
+		validate: function(v) {
+			return v > 0;
+		},
+		required: true
+	},
+	price: {
+		type: Number,
+		validate: function(v) {
+			return v >= 0;
+		},
+		required: true
+	},
 	tax_type: String,
 	comment: String,
 	discount: { type: Number, default: 0 },
 	date_created: { type: Date, default: Date.now },
 	is_quote: Boolean,
 	xero_account: String,
-	invoice_id: { type: ObjectId, ref: "Invoice" },
+	xero_id: String,
+	date_start: Date,
+	date_end: Date,
 	_owner_id: ObjectId,
-	_deleted: { type: Boolean, default: false, index: true },
+	_deleted: { type: Boolean, default: false, index: true }
 });
 
 AdhocSchema.set("_perms", {
