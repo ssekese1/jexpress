@@ -5,6 +5,7 @@ var ObjectId = mongoose.Schema.Types.ObjectId;
 var Location = require('./location_model');
 var Organisation = require("./organisation_model");
 var User = require("./user_model");
+var Lineitem = require("./lineitem_model");
 var messagequeue = require("../libs/messagequeue");
 
 var InvoiceSchema   = new Schema({
@@ -26,6 +27,7 @@ var InvoiceSchema   = new Schema({
 	tax: Number,
 	date_created: { type: Date, default: Date.now },
 	line_items: [ mongoose.Schema.Types.Mixed ],
+	original_lineitems: [ mongoose.Schema.Types.Mixed ],
 	amount_due: Number,
 	amount_paid: Number,
 	date_paid: Date,
