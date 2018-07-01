@@ -19,7 +19,7 @@ var MembershipSchema   = new Schema({
 	papercut_group: String,
 	xero_account: String,
 	xero_itemid: String,
-	occupancy_type: { type: String, validate: /hotdesk|dedicated_desk|dedicated_office|occasional/, default: "hotdesk" },
+	occupancy_type: { type: String, validate: /hotdesk|dedicated_desk|dedicated_office|occasional|other/, default: "hotdesk" },
 	clay_access_group: { type: ObjectId, ref: "Clayaccessgroup" },
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
