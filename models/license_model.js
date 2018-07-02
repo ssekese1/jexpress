@@ -9,6 +9,7 @@ var Invoice = require("./invoice_model");
 var Space = require("./space_model");
 var Location = require("./location_model");
 var Claytag = require("./claytag_model");
+var LineItem = require("./lineitem_model");
 var diff = require('deep-diff').diff;
 var Log = require("./log_model");
 
@@ -22,6 +23,7 @@ var LicenseSchema   = new Schema({
 	invoice_id: { type: ObjectId, ref: 'Invoice', index: true },
 	space_id: { type: ObjectId, ref: 'Space', index: true },
 	location_id: { type: ObjectId, ref: 'Location', index: true },
+	lineitem_id: { type: ObjectId, ref: 'LineItem', index: true },
 	date_start: Date,
 	date_end: Date,
 	price: {
