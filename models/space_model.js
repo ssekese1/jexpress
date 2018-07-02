@@ -17,7 +17,7 @@ var SpaceSchema   = new Schema({
 	seats: Number,
 	hot_oversell: Number,
 	occasional_oversell: Number,
-	shared: Boolean,
+	shared: { type: Boolean, default: true },
 	budget_price: Number, // Use this to calculate individual line item amounts
 	actual_price: Number,
 	_owner_id: ObjectId,
