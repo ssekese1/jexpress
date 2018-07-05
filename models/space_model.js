@@ -5,6 +5,7 @@ var ObjectId = mongoose.Schema.Types.ObjectId;
 var Location = require("./location_model");
 var License = require("./license_model");
 var SpaceType = require("./spacetype_model");
+var Product = require("./product_model");
 var Claylock = require("./claylock_model");
 
 var SpaceSchema   = new Schema({
@@ -12,6 +13,7 @@ var SpaceSchema   = new Schema({
 	location_id: { type: ObjectId, ref: 'Location' },
 	meters_squared: Number,
 	spacetype_id: { type: ObjectId, ref: 'SpaceType' },
+	product_id: { type: ObjectId, ref: 'Product' },
 	claylock_id: [{ type: ObjectId, ref: 'Claylock' }],
 	date_created: { type: Date, default: Date.now },
 	seats: Number,
@@ -19,7 +21,6 @@ var SpaceSchema   = new Schema({
 	occasional_oversell: Number,
 	shared: { type: Boolean, default: true },
 	budget_price: Number, // Use this to calculate individual line item amounts
-	actual_price: Number,
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
 }, {
