@@ -40,7 +40,8 @@ var InvoiceSchema   = new Schema({
 	mail_date: Date,
 	mail_result: mongoose.Schema.Types.Mixed,
 	personal_account: { type: Boolean, default: false },
-	_owner_id: ObjectId
+	_owner_id: ObjectId,
+	_deleted: Boolean,
 });
 
 InvoiceSchema.set("_perms", {
@@ -65,6 +66,12 @@ InvoiceSchema.post('validate', function(doc) {
 			}
 		}
 	});
+});
+
+InvoiceSchema.pre('save', function(next) {
+	var self = this;
+	if (self.status === "DELETED") self._deleted = true;
+	next();
 });
 
 var InvoiceModel = mongoose.model('Invoice', InvoiceSchema);
