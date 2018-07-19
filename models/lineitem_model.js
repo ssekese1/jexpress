@@ -38,7 +38,6 @@ var LineItemSchema = new Schema({
 	discount: { type: Number, default: 0 },
 	date_created: { type: Date, default: Date.now },
 	is_quote: Boolean,
-	xero_account: String,
 	xero_id: String,
 	date_start: Date,
 	date_end: Date,
