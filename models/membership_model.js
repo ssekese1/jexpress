@@ -26,10 +26,11 @@ var MembershipSchema   = new Schema({
 });
 
 MembershipSchema.set("_perms", {
-	admin: "crud",
+	admin: "r",
 	owner: "r",
 	user: "r",
-	all: "r"
+	all: "r",
+	setup: "crud",
 });
 
 module.exports = mongoose.model('Membership', MembershipSchema);
