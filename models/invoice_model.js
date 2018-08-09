@@ -51,6 +51,8 @@ InvoiceSchema.set("_perms", {
 	user: "c"
 });
 
+InvoiceSchema.index( { "xero_invoice_number": "text" } );
+
 InvoiceSchema.post('validate', function(doc) {
 	var self = this;
 	doc._isNew = false;

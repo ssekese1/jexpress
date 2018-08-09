@@ -105,7 +105,7 @@ UserSchema.pre("validate", function(next) {
 						// return;
 					}
 				}
-			
+
 				UserModel.findOne({ emails: email }, function(err, doc) {
 					if (err) {
 						return next(err);
@@ -117,7 +117,7 @@ UserSchema.pre("validate", function(next) {
 							return next(new Error('Alternative email already in use'));
 							// return;
 						}
-					} 
+					}
 					return next();
 				});
 			});
@@ -207,7 +207,7 @@ UserSchema.post('validate', function(doc) {
 	});
 });
 
-UserSchema.index( { "name": "text" } );
+UserSchema.index( { "name": "text", "email": "text" } );
 
 UserSchema.path('name').validate(function (v) {
 	return (v) && (v.length > 0);
