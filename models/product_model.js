@@ -20,7 +20,7 @@ var ProductSchema   = new Schema({
 	payment_options: [ { type: String, validate: /stuff|space|creditcard|account/, required: true } ],
 	self_service: { type: Boolean, default: false, index: true },
 	date_created: { type: Date, default: Date.now },
-	recurring_cost: { type: String, validate: /once-off|monthly|annually/, default: "monthly" },
+	pro_rata: { type: Boolean, default: false, index: true },
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
 });
