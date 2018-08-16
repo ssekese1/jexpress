@@ -31,7 +31,7 @@ WalletSchema.index({ name: 1, user_id: 1 }, { unique: true });
 
 WalletSchema.statics.topup_daily = function() {
 	var Wallet = require("./wallet_model");
-	var day_ago = moment().subtract(1, "day").startOf("day").format("YYYY-MM-DD");
+	var day_ago = moment().startOf("day").format("YYYY-MM-DD");
 	console.log({ day_ago });
 	return Wallet.find({ quota_frequency: "daily", last_quota_date: { $lte: day_ago } })
 	.then(wallets => {
