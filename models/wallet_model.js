@@ -32,6 +32,7 @@ WalletSchema.index({ name: 1, user_id: 1 }, { unique: true });
 WalletSchema.statics.topup_daily = function() {
 	var Wallet = require("./wallet_model");
 	var day_ago = moment().subtract(1, "day").startOf("day").format("YYYY-MM-DD");
+	console.log({ day_ago });
 	return Wallet.find({ quota_frequency: "daily", last_quota_date: { $lte: day_ago } })
 	.then(wallets => {
 		var result = [];
@@ -101,7 +102,7 @@ WalletSchema.statics.set_personal = function(_id) {
 	return Wallet.findOne({ _id })
 	.then(result => {
 		wallet = result;
-		return Wallet.find({ currency: wallet.currency, user_id: wallet.user_id, personal: true });	
+		return Wallet.find({ currency: wallet.currency, user_id: wallet.user_id, personal: true });
 	})
 	.then(wallets => {
 		wallets.forEach(w => {
