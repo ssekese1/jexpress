@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "start": "node ./bin/server.js",
-    "test": "mocha --timeout 10000"
+    "test": "mocha --timeout 10000",
+    "watch": "nodemon --watch libs --watch models"
   },
   "dependencies": {
     "async": "^2.6.0",
