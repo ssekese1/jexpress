@@ -33,6 +33,10 @@ var LineItemSchema = new Schema({
 		},
 		required: true
 	},
+	price_customised: { type: Boolean, default: false },
+	price_customised_user_id: { type: ObjectId, ref: "User" },
+	price_customised_reason: String,
+	price_customised_date: Date,
 	tax_type: String,
 	comment: String,
 	discount: { type: Number, default: 0 },
@@ -62,6 +66,57 @@ LineItemSchema.virtual("status").get(function() {
 	var date_end = +new Date(this.date_end);
 	if (date_end && date_end < now) return "expired";
 	return "current";
+});
+
+// Check if we've changed the value of the product or license
+LineItemSchema.pre("save", function(next) {
+	var lineitem = this;
+	if (!lineitem.product_id && !lineitem.license_id) {
+		// Nothing to see here
+		return next();
+	}
+	var LineItem = require("./lineitem_model");
+	LineItem.findOne({ _id: lineitem._id })
+	.then(result => {
+		if (result) {
+			lineitem._is_new = false;
+			if (result.price !== lineitem.price) {
+				lineitem.price_customised = true;
+				lineitem.price_customised_user_id = lineitem.__user._id;
+				lineitem.price_customised_date = new Date();
+			}
+			next();
+		} else {
+			lineitem._is_new = false;
+			if (lineitem.product_id) {
+				Product.findOne({ _id: lineitem.product_id })
+				.then(product => {
+					if (product.price !== lineitem.price) {
+						lineitem.price_customised = true;
+						lineitem.price_customised_user_id = lineitem.__user._id;
+						lineitem.price_customised_date = new Date();
+					}
+					next();
+				});
+			} else {
+				License.findOne({ _id: lineitem.license_id }).populate('membership_id').populate('organisation_id')
+				.then(license => {
+					var price = null;
+					if (license.organisation_id.user_id === license.user_id) {
+						price = license.membership_id.cost;
+					} else {
+						price = license.membership_id.cost_extra_member;
+					}
+					if (price !== lineitem.price) {
+						lineitem.price_customised = true;
+						lineitem.price_customised_user_id = lineitem.__user._id;
+						lineitem.price_customised_date = new Date();
+					}
+					next();
+				})
+			}
+		}
+	});
 });
 
 module.exports = mongoose.model("LineItem", LineItemSchema);
