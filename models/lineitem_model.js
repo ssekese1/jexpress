@@ -84,7 +84,7 @@ LineItemSchema.plugin(postFind, {
 		Discount.find()
 		.then(discounts => {
 			rows.forEach(row => {
-				row._doc.discount = 0;
+				row._doc.calculated_discount = 0;
 				var org_discounts = discounts.filter(discount => discount.organisation_id + "" === row.organisation_id + "");
 				if (!org_discounts.length) return;
 				var lineitem_discounts = [];
@@ -103,7 +103,7 @@ LineItemSchema.plugin(postFind, {
 				}
 				// console.log({ lineitem_discounts });
 				row._doc.discounts = lineitem_discounts.map(discount => discount._id);
-				row._doc.discount = lineitem_discounts.reduce((sum, b) => ( sum + b.discount ), 0);
+				row._doc.calculated_discount = lineitem_discounts.reduce((sum, b) => ( sum + b.discount ), 0);
 			});
 			done(null, rows);
 		})
@@ -117,7 +117,7 @@ LineItemSchema.plugin(postFind, {
 		Discount.find({ organisation_id: row.organisation_id })
 		.then(discounts => {
 			console.log(row);
-			row._doc.discount = 0;
+			row._doc.calculated_discount = 0;
 			var org_discounts = discounts.filter(discount => discount.organisation_id + "" === row.organisation_id + "");
 			if (!org_discounts.length) {
 				return done(null, row);
@@ -138,7 +138,7 @@ LineItemSchema.plugin(postFind, {
 			}
 			// console.log({ lineitem_discounts });
 			row._doc.discounts = lineitem_discounts.map(discount => discount._id);
-			row._doc.discount = lineitem_discounts.reduce((sum, b) => ( sum + b.discount ), 0);
+			row._doc.calculated_discount = lineitem_discounts.reduce((sum, b) => ( sum + b.discount ), 0);
 			done(null, row);
 		})
 		.catch(err => {
