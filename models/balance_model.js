@@ -1,13 +1,11 @@
 var mongoose     = require('mongoose');
 var Schema       = mongoose.Schema;
 var ObjectId     = mongoose.Schema.Types.ObjectId;
-
-var User = require("./user_model");
-var Ledger = require("./ledger_model");
-var Wallet = require("./wallet_model");
-var Currency = require("./currency_model");
-
-var postFind = require('../libs/mongoose-post-find');
+var User 	     = require("./user_model");
+var Ledger 	     = require("./ledger_model");
+var Wallet 	     = require("./wallet_model");
+var Currency 	 = require("./currency_model");
+var postFind 	 = require('../libs/mongoose-post-find');
 
 var BalanceSchema   = new Schema({
 	user_id: { type: ObjectId, index: true, ref: "User", required: true },
@@ -74,6 +72,6 @@ BalanceSchema.plugin(postFind, {
 			console.error(err);
 			done(err);
 		});
-	} 
+	}
 });
 module.exports = mongoose.model('Balance', BalanceSchema);
