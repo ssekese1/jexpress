@@ -41,7 +41,6 @@ var LineItemSchema = new Schema({
 	price_customised_date: Date,
 	tax_type: String,
 	comment: String,
-	discounts: [ { type: ObjectId, ref: "Discount" } ],
 	discount: { type: Number, default: 0 },
 	date_created: { type: Date, default: Date.now },
 	is_quote: Boolean,
@@ -101,7 +100,6 @@ LineItemSchema.plugin(postFind, {
 						lineitem_discounts.push(discount);
 					}
 				}
-				// console.log({ lineitem_discounts });
 				row._doc.discounts = lineitem_discounts.map(discount => discount._id);
 				row._doc.calculated_discount = lineitem_discounts.reduce((sum, b) => ( sum + b.discount ), 0);
 			});
@@ -116,7 +114,6 @@ LineItemSchema.plugin(postFind, {
 	findOne: function(row, done) {
 		Discount.find({ organisation_id: row.organisation_id })
 		.then(discounts => {
-			console.log(row);
 			row._doc.calculated_discount = 0;
 			var org_discounts = discounts.filter(discount => discount.organisation_id + "" === row.organisation_id + "");
 			if (!org_discounts.length) {
@@ -136,7 +133,6 @@ LineItemSchema.plugin(postFind, {
 					lineitem_discounts.push(discount);
 				}
 			}
-			// console.log({ lineitem_discounts });
 			row._doc.discounts = lineitem_discounts.map(discount => discount._id);
 			row._doc.calculated_discount = lineitem_discounts.reduce((sum, b) => ( sum + b.discount ), 0);
 			done(null, row);
@@ -145,18 +141,6 @@ LineItemSchema.plugin(postFind, {
 			console.error(err);
 			done(err);
 		});
-		// Currency.findOne({ name: row.cred_type[0].toUpperCase() + row.cred_type.slice(1) })
-		// .then(currency => {
-		// 	return Wallet.find({ user_id: row.user_id, currency_id: currency._id });
-		// })
-		// .then(wallets => {
-		// 	row._doc.balance = wallets.reduce((sum, b) => ( sum + b.balance ), 0);
-		// 	done(null, row);
-		// })
-		// .catch(err => {
-		// 	console.error(err);
-		// 	done(err);
-		// });
 	}
 });
 
