@@ -42,7 +42,7 @@ var LineItemSchema = new Schema({
 	tax_type: String,
 	comment: String,
 	discounts: [ { type: ObjectId, ref: "Discount" } ],
-	// discount: { type: Number, default: 0 },
+	discount: { type: Number, default: 0 },
 	date_created: { type: Date, default: Date.now },
 	is_quote: Boolean,
 	xero_id: String,
