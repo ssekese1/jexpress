@@ -60,6 +60,9 @@ BalanceSchema.plugin(postFind, {
 	},
 
 	findOne: function(row, done) {
+		if (!row.cred_type) {
+			done(null, row);
+		}
 		Currency.findOne({ name: row.cred_type[0].toUpperCase() + row.cred_type.slice(1) })
 		.then(currency => {
 			return Wallet.find({ user_id: row.user_id, currency_id: currency._id });
