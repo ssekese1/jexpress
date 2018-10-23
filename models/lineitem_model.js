@@ -78,30 +78,43 @@ LineItemSchema.virtual("status").get(function() {
 	return "current";
 });
 
+var _calculate_row_discount = (row, org_discounts) => {
+	var now = new Date();
+	row._doc.calculated_discount = 0;
+	if (!org_discounts.length) {
+		0;
+	}
+	var lineitem_discounts = [];
+	for (discount of org_discounts) {
+		if (discount.lineitem_id && discount.lineitem_id + "" === row._id + "") {
+			lineitem_discounts.push(discount);
+		} else if (discount.apply_to.includes("all")) {
+			lineitem_discounts.push(discount);
+		} else if (discount.apply_to.includes("product") && row.product_id) {
+			lineitem_discounts.push(discount);
+		} else if (discount.apply_to.includes("license") && row.license_id) {
+			lineitem_discounts.push(discount);
+		} else if (discount.apply_to.includes("booking") && row.booking_id) {
+			lineitem_discounts.push(discount);
+		}
+	}
+	row._doc.discounts = lineitem_discounts.map(discount => discount._id);
+	row._doc.calculated_discount = lineitem_discounts.filter(discount => (!discount.date_start || now > discount.date_start) && (!discount.date_end || now < discount.date_end)).reduce((sum, b) => ( sum + b.discount ), 0);
+	if (row._doc.calculated_discount > 100) {
+		row._doc.calculated_discount = 100;
+	}
+	return row;
+}
+
 LineItemSchema.plugin(postFind, {
 	find: function(rows, done) {
-		Discount.find()
+		Discount.find({ _deleted: false })
 		.then(discounts => {
 			rows.forEach(row => {
 				row._doc.calculated_discount = 0;
-				var org_discounts = discounts.filter(discount => discount.organisation_id + "" === row.organisation_id + "");
-				if (!org_discounts.length) return;
-				var lineitem_discounts = [];
-				for (discount of org_discounts) {
-					if (discount.lineitem_id && discount.lineitem_id === row.id) {
-						lineitem_discounts.push(discount);
-					} else if (discount.apply_to.includes("all")) {
-						lineitem_discounts.push(discount);
-					} else if (discount.apply_to.includes("product") && row.product_id) {
-						lineitem_discounts.push(discount);
-					} else if (discount.apply_to.includes("license") && row.license_id) {
-						lineitem_discounts.push(discount);
-					} else if (discount.apply_to.includes("booking") && row.booking_id) {
-						lineitem_discounts.push(discount);
-					}
-				}
-				row._doc.discounts = lineitem_discounts.map(discount => discount._id);
-				row._doc.calculated_discount = lineitem_discounts.reduce((sum, b) => ( sum + b.discount ), 0);
+				var org_discounts = discounts
+					.filter(discount => (row.organisation_id + "" === discount.organisation_id + "") || (row.organisation_id._id + "" === discount.organisation_id + ""));
+				row = _calculate_row_discount(row, org_discounts);
 			});
 			done(null, rows);
 		})
@@ -112,29 +125,9 @@ LineItemSchema.plugin(postFind, {
 	},
 
 	findOne: function(row, done) {
-		Discount.find({ organisation_id: row.organisation_id })
+		Discount.find({ organisation_id: row.organisation_id, _deleted: false })
 		.then(discounts => {
-			row._doc.calculated_discount = 0;
-			var org_discounts = discounts.filter(discount => discount.organisation_id + "" === row.organisation_id + "");
-			if (!org_discounts.length) {
-				return done(null, row);
-			}
-			var lineitem_discounts = [];
-			for (discount of org_discounts) {
-				if (discount.lineitem_id && discount.lineitem_id === row.id) {
-					lineitem_discounts.push(discount);
-				} else if (discount.apply_to.includes("all")) {
-					lineitem_discounts.push(discount);
-				} else if (discount.apply_to.includes("product") && row.product_id) {
-					lineitem_discounts.push(discount);
-				} else if (discount.apply_to.includes("license") && row.license_id) {
-					lineitem_discounts.push(discount);
-				} else if (discount.apply_to.includes("booking") && row.booking_id) {
-					lineitem_discounts.push(discount);
-				}
-			}
-			row._doc.discounts = lineitem_discounts.map(discount => discount._id);
-			row._doc.calculated_discount = lineitem_discounts.reduce((sum, b) => ( sum + b.discount ), 0);
+			row = _calculate_row_discount(row, discounts);
 			done(null, row);
 		})
 		.catch(err => {
