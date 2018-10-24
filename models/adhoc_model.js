@@ -40,6 +40,13 @@ var AdhocSchema   = new Schema({
 	date_end: Date,
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true }
+}, {
+	toObject: {
+		virtuals: true
+	},
+	toJSON: {
+		virtuals: true
+	}
 });
 
 AdhocSchema.set("_perms", {
@@ -49,6 +56,8 @@ AdhocSchema.set("_perms", {
 	user: "r",
 	all: ""
 });
+
+AdhocSchema.virtual('calculated_discount').get(function() { return this.discount; });
 
 
 module.exports = mongoose.model('Adhoc', AdhocSchema);
