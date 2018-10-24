@@ -113,7 +113,7 @@ LineItemSchema.plugin(postFind, {
 			rows.forEach(row => {
 				row._doc.calculated_discount = 0;
 				var org_discounts = discounts
-					.filter(discount => (row.organisation_id + "" === discount.organisation_id + "") || (row.organisation_id._id + "" === discount.organisation_id + ""));
+					.filter(discount => (row.organisation_id + "" === discount.organisation_id + "") || (row.organisation_id && row.organisation_id._id + "" === discount.organisation_id + ""));
 				row = _calculate_row_discount(row, org_discounts);
 			});
 			done(null, rows);
