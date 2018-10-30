@@ -37,6 +37,7 @@ var LeadSchema   = new Schema({
 	referral_user_id: { type: ObjectId, ref: "User" },
 	referral_date_paid: Date,
 	referral_amount: Number,
+	heat: { type: String, validate: /hot|mild|cold/ },
 	_deleted: { type: Boolean, default: false, index: true },
 	_owner_id: ObjectId
 });
