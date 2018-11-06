@@ -446,7 +446,6 @@ LedgerSchema.pre("save", function(next) {
 LedgerSchema.pre("remove", function(next) {
 	// Credit the wallet in the case of a delete
 	var transaction = this;
-	console.log(transaction);
 	var queue = [];
 	if (transaction.reserve) {
 		transaction.wallet_split.forEach(wallet => {
@@ -560,6 +559,16 @@ LedgerSchema.post("save", function(transaction) { //Keep our running total up to
 				});
 			});
 		});
+		queue.push(cb => {
+			Balance.update_balance(transaction.user_id, transaction.currency_id)
+			.then(result => {
+				cb(null, result);
+			})
+			.catch(err => {
+				console.error(err);
+				cb(err);
+			});
+		})
 		async.series(queue, (err, result) => {
 			if (err)
 				console.error(err);
@@ -578,6 +587,9 @@ LedgerSchema.post("save", function(transaction) { //Keep our running total up to
 				throw("Could not find wallet for user " + transaction.user_id);
 			wallet.balance = wallet.balance + transaction.amount;
 			return wallet.save();
+		})
+		.then(result => {
+			return Balance.update_balance(transaction.user_id, transaction.currency_id);
 		})
 		.then(result => {
 			return transaction;

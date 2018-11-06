@@ -77,4 +77,26 @@ BalanceSchema.plugin(postFind, {
 		});
 	}
 });
+
+BalanceSchema.statics.update_balance = function(user_id, currency_id) {
+	var Balance      = require("./balance_model");
+	var new_balance;
+	var cred_type;
+	return Currency.findOne({ _id: currency_id })
+	.then(currency => {
+		cred_type = currency.name.toLowerCase();
+		return Wallet.find({ user_id: user_id, currency_id: currency._id });
+	})
+	.then(wallets => {
+		new_balance = wallets.reduce((sum, b) => ( sum + b.balance ), 0);
+		return Balance.find({ user_id, cred_type });
+	})
+	.then(balance => {
+		return balance[0].update({ balance: new_balance });
+	})
+	.catch(err => {
+		console.error(err);
+	});
+};
+
 module.exports = mongoose.model('Balance', BalanceSchema);
