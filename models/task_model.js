@@ -28,10 +28,10 @@ var TaskSchema   = new Schema({
 	date_completed: Date,
 	completed: { type: Boolean, default: false, index: true },
 	abandoned: { type: Boolean, default: false, index: true },
-	notes: [{ 
-		note: String, 
-		date_created: { type: Date, default: Date.now }, 
-		user_id: { type: ObjectId, ref: "User" } 
+	notes: [{
+		note: String,
+		date_created: { type: Date, default: Date.now },
+		user_id: { type: ObjectId, ref: "User" }
 	}],
 	data: { type: Mixed },
 	date_created: { type: Date, default: Date.now },
@@ -156,5 +156,37 @@ TaskSchema.plugin(postFind, {
 		});
 	}
 });
+
+TaskSchema.statics.getUnique = function(opts) {
+	return new Promise((resolve, reject) => {
+		var q = {
+			// populate:
+		};
+		var Task = require("./task_model");
+		if (opts.track_id) q["track_id"] = opts.track_id;
+	    if (opts.location_id) q["location_id"] = opts.location_id;
+		if (opts.user_id) q["user_id"] = opts.user_id;
+		if (opts.incomplete) q["completed"] = false;
+		Task.find(q).populate(["due_after_task", "user_id", "track_id", "opportunity_id"]).exec(function(err, result) {
+			if (err) {
+				console.error(err)
+				return reject(err);
+			}
+			var allTasks = result.filter(task => (task.template_task_id && task.opportunity_id));
+			var opportunitiesList = [];
+		    allTasks.forEach(task => {
+		        if (opportunitiesList.indexOf(task.opportunity_id._id) === -1)
+		            opportunitiesList.push(task.opportunity_id._id);
+		    });
+		    var displayTasks = [];
+		    opportunitiesList.forEach(opportunity_id => {
+		        var opportunityTasks = allTasks.filter(task => task.opportunity_id._id === opportunity_id);
+		        if (opportunityTasks.length)
+		            displayTasks.push(opportunityTasks.shift());
+		    });
+			return resolve(displayTasks);
+		});
+	});
+}
 
 module.exports = mongoose.model('Task', TaskSchema);
