@@ -15,7 +15,7 @@ var LeadSchema   = new Schema({
 	space_id: { type: ObjectId, index: true, ref: "Space" },
 	email: { type: String, index: true },
 	mobile: String,
-	date_created: { type: Date, default: Date.now },
+	date_created: { type: Date, default: Date.now, index: true },
 	source: String,
 	url: String,
 	type: String,
@@ -48,6 +48,8 @@ LeadSchema.set("_perms", {
 	user: "cr",
 	all: "c",
 });
+
+LeadSchema.index( { "name": "text", "email": "text", "organisation": "text" } );
 
 LeadSchema.pre("save", function(next) {
 	var Lead = require("./lead_model");

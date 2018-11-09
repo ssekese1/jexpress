@@ -43,6 +43,8 @@ TaskSchema.set("_perms", {
 	admin: "crud",
 });
 
+TaskSchema.index( { "name": "text" } );
+
 var checkNoCalc = task => {
 	return ((task.category === "init") || (task.absolute_due_date) || (!task.due_after_task) || (task.completed))
 }
@@ -92,6 +94,11 @@ var findDueDate = (task) => {
 		return queue.pop().due_date;
 	})
 };
+
+// Handle adding to notes array
+TaskSchema.virtual("note").set(function(note) {
+	this.notes.push(note);
+});
 
 // Set wasNew
 TaskSchema.pre("save", function(next) {

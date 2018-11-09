@@ -20,20 +20,27 @@ var OpportunitySchema   = new Schema({
 	value: Number,
 	assigned_to: { type: ObjectId, index: true, ref: "User" },
 	probability: Number,
-	notes: [{ 
-		note: String, 
-		date_created: { type: Date, default: Date.now }, 
-		user_id: { type: ObjectId, ref: "User" } 
+	notes: [{
+		note: String,
+		date_created: { type: Date, default: Date.now },
+		user_id: { type: ObjectId, ref: "User" }
 	}],
 	abandoned: { type: Boolean, default: false, index: true },
 	completed: { type: Boolean, default: false, index: true },
 	date_completed: Date,
 	data: mongoose.Schema.Types.Mixed,
-	
+
 });
 
 OpportunitySchema.set("_perms", {
 	admin: "crud",
+});
+
+OpportunitySchema.index( { "name": "text" } );
+
+// Handle adding to notes array
+OpportunitySchema.virtual("note").set(function(note) {
+	this.notes.push(note);
 });
 
 // Set Completed Date
