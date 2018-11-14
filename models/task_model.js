@@ -168,13 +168,12 @@ TaskSchema.statics.getUnique = function(opts) {
 	console.log("Task - getUnique", opts);
 	return new Promise((resolve, reject) => {
 		var q = {
-			// populate:
+			completed: false
 		};
 		var Task = require("./task_model");
 		if (opts.track_id) q["track_id"] = opts.track_id;
 	    if (opts.location_id) q["location_id"] = opts.location_id;
 		if (opts.user_id) q["user_id"] = opts.user_id;
-		if (opts.incomplete) q["completed"] = false;
 		Task.find(q).populate(["due_after_task", "user_id", "track_id", "opportunity_id"]).exec(function(err, result) {
 			if (err) {
 				console.error(err)
