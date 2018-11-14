@@ -165,34 +165,84 @@ TaskSchema.plugin(postFind, {
 });
 
 TaskSchema.statics.getUnique = function(opts) {
-	console.log("Task - getUnique", opts);
+	console.log("Task - getUnique");
 	return new Promise((resolve, reject) => {
 		var q = {
 			completed: false
 		};
 		var Task = require("./task_model");
 		if (opts.track_id) q["track_id"] = opts.track_id;
-	    if (opts.location_id) q["location_id"] = opts.location_id;
-		if (opts.user_id) q["user_id"] = opts.user_id;
-		Task.find(q).populate(["due_after_task", "user_id", "track_id", "opportunity_id"]).exec(function(err, result) {
+	    if (opts.location_id) q["location_id"] = new mongoose.Types.ObjectId(opts.location_id);
+		if (opts.user_id) q["user_id"] = new mongoose.Types.ObjectId(opts.user_id);
+		var aggregate = [
+	        {
+				$match: q
+			},
+	        {
+				$lookup: {
+		            from: "tasks",
+		            localField: "due_after_task",
+		            foreignField: "_id",
+		            as: "due_after_task"
+	        	}
+			},
+	        {
+	            $group: {
+	                _id: "$opportunity_id",
+	                task: { $first: "$$ROOT" }
+	            }
+	        },
+			{
+				$replaceRoot: {
+					newRoot: "$task"
+				}
+			},
+			{
+				$lookup: {
+		            from: "users",
+		            localField: "user_id",
+		            foreignField: "_id",
+		            as: "user_id"
+	        	}
+			},
+			{
+					$unwind: "$user_id"
+			},
+			{
+				$lookup: {
+		            from: "tracks",
+		            localField: "track_id",
+		            foreignField: "_id",
+		            as: "track_id"
+	        	}
+			},
+			{
+					$unwind: "$track_id"
+			},
+			{
+				$lookup: {
+		            from: "opportunities",
+		            localField: "opportunity_id",
+		            foreignField: "_id",
+		            as: "opportunity_id"
+	        	}
+			},
+			{
+					$unwind: "$opportunity_id"
+			},
+			{
+				$sort: {
+					due_date: 1
+				}
+			}
+	    ]
+		Task.aggregate(aggregate).exec(function(err, result) {
 			if (err) {
 				console.error(err)
 				return reject(err);
 			}
-			var allTasks = result.filter(task => (task.template_task_id && task.opportunity_id));
-			var opportunitiesList = [];
-		    allTasks.forEach(task => {
-		        if (opportunitiesList.indexOf(task.opportunity_id._id) === -1)
-		            opportunitiesList.push(task.opportunity_id._id);
-		    });
-		    var displayTasks = [];
-		    opportunitiesList.forEach(opportunity_id => {
-		        var opportunityTasks = allTasks.filter(task => task.opportunity_id._id === opportunity_id);
-		        if (opportunityTasks.length)
-		            displayTasks.push(opportunityTasks.shift());
-		    });
-			return resolve(displayTasks);
-		});
+			return resolve(result);
+		})
 	});
 }
 
