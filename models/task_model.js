@@ -171,7 +171,7 @@ TaskSchema.statics.getUnique = function(opts) {
 			completed: false
 		};
 		var Task = require("./task_model");
-		if (opts.track_id) q["track_id"] = opts.track_id;
+		if (opts.track_id) q["track_id"] = mongoose.Types.ObjectId(opts.track_id);
 	    if (opts.location_id) q["location_id"] = new mongoose.Types.ObjectId(opts.location_id);
 		if (opts.user_id) q["user_id"] = new mongoose.Types.ObjectId(opts.user_id);
 		var aggregate = [
