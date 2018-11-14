@@ -79,6 +79,7 @@ BalanceSchema.plugin(postFind, {
 });
 
 BalanceSchema.statics.update_balance = function(user_id, currency_id) {
+	console.log("Updating balance", user_id, currency_id);
 	var Balance      = require("./balance_model");
 	var new_balance;
 	var cred_type;

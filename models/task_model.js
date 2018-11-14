@@ -165,6 +165,7 @@ TaskSchema.plugin(postFind, {
 });
 
 TaskSchema.statics.getUnique = function(opts) {
+	console.log("Task - getUnique", opts);
 	return new Promise((resolve, reject) => {
 		var q = {
 			// populate:
