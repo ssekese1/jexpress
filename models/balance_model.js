@@ -100,4 +100,89 @@ BalanceSchema.statics.update_balance = function(user_id, currency_id) {
 	});
 };
 
+BalanceSchema.statics.get_user_balances = function(opts) {
+	console.log("Balance get_user_balances");
+	return new Promise((resolve, reject) => {
+		var q = {
+			user: {
+				$exists: true
+			},
+			"user.status": "active",
+			"user._deleted": { $ne: true }
+		}
+		if (opts.search) {
+			q["$or"] = [
+				{"user.email": { $regex: opts.search, $options: "i" }},
+				{"user.name": { $regex: opts.search, $options: "i" }},
+			]
+		}
+		if (opts.cred_type) {
+			q["cred_type"] = opts.cred_type;
+		}
+		var aggregate = [
+			{
+				$group: {
+					_id: { user_id: "$user_id", currency_id: "$currency_id" },
+					total: { $sum: "$balance" }
+				}
+			},
+			// {
+			// 	$match: {
+			// 		total: { $gt: 0 }
+			// 	}
+			// },
+			{
+				$lookup: {
+					from: "users",
+					localField: "_id.user_id",
+					foreignField: "_id",
+					as: "user",
+				}
+			},
+			{
+				$unwind: "$user",
+			},
+			{
+				$lookup: {
+					from: "currencies",
+					localField: "_id.currency_id",
+					foreignField: "_id",
+					as: "currency",
+				}
+			},
+			{
+				$unwind: "$currency",
+			},
+			{
+				$project: {
+					cred_type: { $toLower: "$currency.name" },
+					"balance": "$total",
+					"user": 1
+				}
+			},
+			{
+				$match: q
+			},
+			{
+				$project: {
+					cred_type: 1,
+					"user.name": 1,
+					"user.email": 1,
+					"user.img": 1,
+					"user._id": 1,
+					"balance": 1,
+					_id: 0,
+				}
+			}
+		]
+		Wallet.aggregate(aggregate).exec(function(err, result) {
+			if (err) {
+				console.error(err)
+				return reject(err);
+			}
+			return resolve(result);
+		})
+	})
+}
+
 module.exports = mongoose.model('Balance', BalanceSchema);
