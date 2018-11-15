@@ -8,7 +8,7 @@ var User = require("./user_model");
 var Organisation = require("./organisation_model");
 
 var WalletSchema   = new Schema({
-	name: { type: String, required: true, validate: /\S+/ },
+	name: { type: String, required: true, validate: /\S+/, index: true },
 	currency_id: { type: ObjectId, index: true, ref: "Currency", required: true },
 	priority: { type: Number, required: true },
 	quota_frequency: { type: String, validate: /daily|weekly|monthly|annually|never/, index: true, default: "never" },
