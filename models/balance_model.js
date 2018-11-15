@@ -164,6 +164,9 @@ BalanceSchema.statics.get_user_balances = function(opts) {
 				$match: q
 			},
 			{
+				$sort: { "user.name": 1 }
+			},
+			{
 				$project: {
 					cred_type: 1,
 					"user.name": 1,
