@@ -78,9 +78,16 @@ var findDueDate = (task) => {
 		let queue = [task];
 		due_after_task = (task.due_after_task._id) ? task.due_after_task._id : task.due_after_task;
 		var nextTask = tasks.find(t => "" + t._id === "" + due_after_task)
+		var count = 0;
 		while(nextTask) {
+			console.log("while");
 			queue.unshift(nextTask);
 			nextTask = tasks.find(t => "" + t._id === "" + nextTask.due_after_task)
+			count++;
+			if (count > 100) {
+				console.error("Infinite loop detected on task", nextTask);
+				throw("Infinite loop detected");
+			}
 		}
 		for (var x = 0; x < queue.length - 1; x++) {
 			if (queue[x + 1].absolute_due_date) {
