@@ -207,6 +207,12 @@ UserSchema.post('validate', function(doc) {
 	});
 });
 
+UserSchema.post("save", function() {
+	if (!this.email) return;
+	var Contact = require("./contact_model");
+	Contact.populate({ email: this.email });
+});
+
 UserSchema.index( { "name": "text", "email": "text" } );
 
 UserSchema.path('name').validate(function (v) {

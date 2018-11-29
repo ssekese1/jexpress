@@ -23,4 +23,10 @@ GuestSchema.set("_perms", {
 	user: "cr",
 });
 
+GuestSchema.post("save", function() {
+	if (!this.email) return;
+	var Contact = require("./contact_model");
+	Contact.populate({ email: this.email });
+})
+
 module.exports = mongoose.model('Guest', GuestSchema);

@@ -78,7 +78,12 @@ LeadSchema.pre("save", function(next) {
 			next();
 		}
 	})
-
 });
+
+LeadSchema.post("save", function() {
+	if (!this.email) return;
+	var Contact = require("./contact_model");
+	Contact.populate({ email: this.email });
+})
 
 module.exports = mongoose.model('Lead', LeadSchema);
