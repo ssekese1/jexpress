@@ -63,28 +63,30 @@ ContactSchema.statics.populate = async function(opts) {
     var contacts = [];
     var guests = await Guest.find(params);
     for(let x = 0; x < guests.length; x++) {
-        if (!guests[x].email) break;
-        var data = {
-            email: guests[x].email,
-            guest_id: guests[x]._id,
-            name: guests[x].name,
-            mobile: guests[x].mobile,
-            organisation: guests[x].organisation
+        if (guests[x].email) {
+            var data = {
+                email: guests[x].email,
+                guest_id: guests[x]._id,
+                name: guests[x].name,
+                mobile: guests[x].mobile,
+                organisation: guests[x].organisation
+            }
+            contacts.push(await updateContact(data));
         }
-        contacts.push(await updateContact(data));
     }
 
     var leads = await Lead.find(params);
     for(let x = 0; x < leads.length; x++) {
-        if (!leads[x].email) break;
-        var data = {
-            email: leads[x].email,
-            lead_id: leads[x]._id,
-            name: leads[x].name,
-            mobile: leads[x].mobile,
-            organisation: leads[x].organisation
+        if (leads[x].email) {
+            var data = {
+                email: leads[x].email,
+                lead_id: leads[x]._id,
+                name: leads[x].name,
+                mobile: leads[x].mobile,
+                organisation: leads[x].organisation
+            }
+            contacts.push(await updateContact(data));
         }
-        contacts.push(await updateContact(data));
     }
 
     var users = await User.find(params);
