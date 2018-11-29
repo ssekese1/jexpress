@@ -82,6 +82,7 @@ LeadSchema.pre("save", function(next) {
 
 LeadSchema.post("save", function() {
 	if (!this.email) return;
+	if (this.spam) return;
 	var Contact = require("./contact_model");
 	Contact.populate({ email: this.email });
 })

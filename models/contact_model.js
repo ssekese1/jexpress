@@ -59,7 +59,6 @@ ContactSchema.statics.populate = async function(opts) {
     if (params.__user) {
         delete(params.__user);
     }
-    params._deleted = false;
     console.log("Contact Populate", params);
     var contacts = [];
     var guests = await Guest.find(params);
@@ -75,6 +74,7 @@ ContactSchema.statics.populate = async function(opts) {
             contacts.push(await updateContact(data));
         }
     }
+    params._deleted = false;
     var leadParams = params;
     leadParams.spam = false;
     var leads = await Lead.find(leadParams);
