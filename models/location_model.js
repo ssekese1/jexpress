@@ -3,12 +3,12 @@ var Schema = mongoose.Schema;
 
 var LocationSchema = new Schema({
 	name: String,
+	active: { type: Boolean, default: true, index: true },
 	city: String,
 	address: String,
 	img: String,
 	description: String,
 	email: String,
-	datatill_group_id: Number,
 	bank_account: Number,
 	bank_code: String,
 	community_manager_name: String,
