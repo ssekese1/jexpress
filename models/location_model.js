@@ -1,8 +1,11 @@
 var mongoose = require("mongoose");
 var Schema = mongoose.Schema;
 
+var friendly = require("mongoose-friendly");
+
 var LocationSchema = new Schema({
 	name: String,
+	urlid: { type: String, index: { unique: true, partialFilterExpression: { urlid: { $type: 'string' } } } },
 	active: { type: Boolean, default: true, index: true },
 	city: String,
 	address: String,
@@ -31,6 +34,13 @@ LocationSchema.set("_perms", {
 	user: "r",
 	all: "r",
 	setup: "crud",
+});
+
+LocationSchema.plugin(friendly, {
+	source: 'name',
+	friendly: 'urlid',
+	addIndex: false,
+	findById: true
 });
 
 module.exports = mongoose.model("Location", LocationSchema);
