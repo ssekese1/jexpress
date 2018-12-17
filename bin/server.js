@@ -58,7 +58,9 @@ mongoose.Promise = Promise;
 
 // mongodb connection
 mongoose.connect(`mongodb://${ config.mongo.server }/${ config.mongo.db }`, {
-	promiseLibrary: global.Promise
+	promiseLibrary: global.Promise,
+	useNewUrlParser: true,
+	useCreateIndex: true,
 });
 
 var db = mongoose.connection;
