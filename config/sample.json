@@ -28,5 +28,9 @@
 	"recaptcha": {
 		"secret": "xxx",
 		"url": "https://www.google.com/recaptcha/api/siteverify"
+	},
+	"memcached": {
+		"server": "localhost:11211",
+		"lifetime": 604800
 	}
 }
