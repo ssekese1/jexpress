@@ -63,6 +63,7 @@ LeadSchema.pre("save", function(next) {
 			return next();
 		}
 		if (this.email.endsWith(".ru")) {
+			this.spam = true;
 			return next();
 		}
 		if (this["g-recaptcha-response"]) {
