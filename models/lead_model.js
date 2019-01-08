@@ -62,6 +62,9 @@ LeadSchema.pre("save", function(next) {
 			this.spam = false;
 			return next();
 		}
+		if (this.email.endsWith(".ru")) {
+			return next();
+		}
 		if (this["g-recaptcha-response"]) {
 			rest.post(config.recaptcha.url, { data: { secret: config.recaptcha.secret, response: this["g-recaptcha-response"] }})
 			.then(result => {
