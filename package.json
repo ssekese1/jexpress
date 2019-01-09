@@ -8,6 +8,7 @@
     "watch": "nodemon --watch libs --watch models"
   },
   "dependencies": {
+    "@google-cloud/pubsub": "^0.22.2",
     "async": "^2.6.1",
     "body-parser": "^1.18.3",
     "chance": "^1.0.18",
