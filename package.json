@@ -33,6 +33,7 @@
     "ws": "^6.1.2"
   },
   "devDependencies": {
+    "bcryptjs": "^2.4.3",
     "chai": "^4.2.0",
     "chai-http": "^4.2.0",
     "chai-moment": "^0.1.0",
