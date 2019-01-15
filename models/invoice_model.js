@@ -59,12 +59,12 @@ InvoiceSchema.post('validate', function(doc) {
 	InvoiceModel.findOne({ _id: doc._id }, function(err, original) {
 		if (!original) {
 			if (doc.status === "AUTHORISED") {
-				messagequeue.action("purchase", "invoice", doc._id);
+				messagequeue.action("purchase", "invoice", owner, doc._id);
 			}
 		} else {
 			console.log("Status", doc.status, original.status, (doc.status === "AUTHORISED") && (original.status === "DRAFT"));
 			if ((doc.status === "AUTHORISED") && (original.status === "DRAFT")) {
-				messagequeue.action("purchase", "invoice", doc._id);
+				messagequeue.action("purchase", "invoice", owner, doc._id);
 			}
 		}
 	});
