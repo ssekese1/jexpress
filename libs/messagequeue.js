@@ -12,13 +12,11 @@ var MessageQueue = {
 	action: async (type, op, user, item) => {
 		try {
 			const data = JSON.stringify([ user, item ]);
-			const dataBuffer = Buffer.from(data);
-			const messageId = await pubsub
-				.topic(topicName)
-				.publisher()
-				.publish(dataBuffer, { type, op, _id: item._id + "" });
-			console.log(`${ new Date() } Message ${messageId} published.`);
-			return messageId;
+			const data_buffer = Buffer.from(data);
+			console.log({ type, op, _id: item._id + "" });
+			const message_id = await pubsub.topic(topicName).publisher().publish(data_buffer, { type, op, _id: item._id + "" });
+			console.log(`${ new Date() } Message ${message_id} published.`);
+			return message_id;
 		} catch(err) {
 			console.error(err);
 			return Promise.reject();
