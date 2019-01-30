@@ -72,7 +72,7 @@ InvoiceSchema.post('validate', function(doc) {
 
 InvoiceSchema.pre('save', function(next) {
 	var self = this;
-	if (self.status === "DELETED") self._deleted = true;
+	if (self.status === "DELETED") self.status = "REJECTED";
 	next();
 });
 
