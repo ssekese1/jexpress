@@ -25,7 +25,7 @@ var LedgerSchema   = new Schema({
 	description: String,
 	details: Mixed,
 	partner_id: { type: ObjectId, index: true, ref: "Partner" },
-	partner_reference: { type: Mixed, unique: true },
+	partner_reference: { type: Mixed, unique: true, sparse: true },
 	date: { type: Date, default: Date.now, required: true, index: true },
 	source_type: String,
 	source_id: ObjectId,
