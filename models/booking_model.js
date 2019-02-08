@@ -102,7 +102,7 @@ var postLedger = params => {
 	var ledger = Ledger(params);
 	return new Promise((resolve, reject) => {
 		ledger.save(function(err, result) {
-			if (err) 
+			if (err)
 				return reject(err);
 			return resolve(result);
 		});
@@ -169,6 +169,7 @@ BookingSchema.pre("save", function(next) {
 		return postLedger({
 			user_id: transaction.user,
 			description: description,
+			partner_reference: transaction._id,
 			amount: Math.abs(transaction.cost) * -1, // Ensure negative value
 			cred_type: "space",
 			source_type: "booking",
