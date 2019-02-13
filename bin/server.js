@@ -1,4 +1,4 @@
-var JExpress = require("jexpress");
+const Jxp = require("jxp");
 var config = require('config');
 var mongoose = require("mongoose");
 var Websocket = require('../libs/websockets.js');
@@ -73,10 +73,10 @@ db.once('open', () => {
   console.log(`Connected to Mongo at: ${new Date()}`);
 });
 
-var server = new JExpress(config);
+var server = new Jxp(config);
 
 server.listen(config.port || 3001, function() {
-	console.log('%s listening at %s', "JExpress", server.url);
+	console.log('%s listening at %s', "Workspaceman API", server.url);
 });
 
 module.exports = server; //For Testing
