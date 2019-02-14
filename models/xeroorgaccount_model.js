@@ -9,6 +9,8 @@ var XeroOrgAccountSchema   = new Schema({
 	location_id: { type: ObjectId, ref: 'Location' },
 	organisation_id: { type: ObjectId, ref: 'Organisation', index: true },
 	xero_id: String
+}, {
+	timestamps: true
 });
 
 XeroOrgAccountSchema.set("_perms", {

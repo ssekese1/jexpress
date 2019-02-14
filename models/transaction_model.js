@@ -27,6 +27,8 @@ var TransactionSchema   = new Schema({
 	amount_fee: Number,
 	amount_net: Number,
 	_owner_id: Objectid
+}, {
+	timestamps: true
 });
 
 TransactionSchema.set("_perms", {

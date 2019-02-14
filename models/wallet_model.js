@@ -20,6 +20,8 @@ var WalletSchema   = new Schema({
 	date_created: { type: Date, default: Date.now },
 	personal: Boolean,
 	_owner_id: ObjectId
+}, {
+	timestamps: true
 });
 
 WalletSchema.set("_perms", {

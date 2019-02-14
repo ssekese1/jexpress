@@ -67,6 +67,8 @@ var OrganisationSchema   = new Schema({
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
 	_import_ref: String,
+}, {
+	timestamps: true
 });
 
 OrganisationSchema.set("_perms", {

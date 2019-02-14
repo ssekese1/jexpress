@@ -15,6 +15,8 @@ var LogSchema   = new Schema({
 	title: String,
 	message: String,
 	data: Mixed,
+}, {
+	timestamps: true
 });
 
 LogSchema.set("_perms", {

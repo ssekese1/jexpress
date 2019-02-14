@@ -34,10 +34,12 @@ var EventSchema   = new Schema({
 	location_id: { type: ObjectId, index: true, ref: "Location" },
 	booking_id: { type: ObjectId, index: true, ref: "Booking" },
 	room_id: [{ type: ObjectId, index: true, ref: "Room" }],
-	catering: [{ type: ObjectId, index: true, ref: "Catering" }],	
+	catering: [{ type: ObjectId, index: true, ref: "Catering" }],
 	date_created: { type: Date, default: Date.now },
 	notes: String,
 	_owner_id: ObjectId
+}, {
+	timestamps: true
 });
 
 EventSchema.set("_perms", {

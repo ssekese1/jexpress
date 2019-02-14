@@ -7,6 +7,8 @@ var UserAdminSchema   = new Schema({
 	user_id: { type: Objectid, unique: true, index: true },
 	extra_credits: Number,
 	_owner_id: Objectid,
+}, {
+	timestamps: true
 });
 
 UserAdminSchema.set("_perms", {

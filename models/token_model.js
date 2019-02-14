@@ -11,6 +11,8 @@ var TokenSchema   = new Schema({
 	expires_in: Number,
 	created: { type: Date, default: Date.now },
 	_owner_id: Objectid,
+}, {
+	timestamps: true
 });
 
 TokenSchema.set("_perms", {

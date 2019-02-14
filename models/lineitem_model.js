@@ -56,7 +56,8 @@ var LineItemSchema = new Schema({
 	},
 	toJSON: {
 		virtuals: true
-	}
+	},
+	timestamps: true
 });
 
 LineItemSchema.set("_perms", {

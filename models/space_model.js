@@ -29,7 +29,8 @@ var SpaceSchema   = new Schema({
 	},
 	toJSON: {
 		virtuals: true
-	}
+	},
+	timestamps: true
 });
 
 SpaceSchema.set("_perms", {

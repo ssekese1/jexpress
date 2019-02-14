@@ -9,6 +9,8 @@ var MailtemplateSchema   = new Schema({
 	body: String,
 	_version: { type: Number, default: 0 },
 	_deleted: { type: Boolean, default: false, index: true },
+}, {
+	timestamps: true
 });
 
 MailtemplateSchema.set("_perms", {

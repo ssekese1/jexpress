@@ -6,6 +6,8 @@ var Objectid = mongoose.Schema.Types.ObjectId;
 var ConfigSchema   = new Schema({
 	_id: String,
 	value: String,
+}, {
+	timestamps: true
 });
 
 ConfigSchema.set("_perms", {

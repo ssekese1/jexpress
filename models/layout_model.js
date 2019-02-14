@@ -6,6 +6,8 @@ var LayoutSchema   = new Schema({
 	img: String,
 	_version: { type: Number, default: 0 },
 	_deleted: { type: Boolean, default: false, index: true },
+}, {
+	timestamps: true
 });
 
 LayoutSchema.set("_perms", {

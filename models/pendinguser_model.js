@@ -17,8 +17,10 @@ var PendinguserSchema   = new Schema({
 	newsletter: Boolean,
 	otp: { type: String, get: function(otp) {
 		return "<obfuscated>";
-		} 
+		}
 	}
+}, {
+	timestamps: true
 });
 
 PendinguserSchema.set("_perms", {

@@ -9,6 +9,8 @@ var SpaceTypeSchema   = new Schema({
 	date_created: { type: Date, default: Date.now },
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
+}, {
+	timestamps: true
 });
 
 SpaceTypeSchema.set("_perms", {

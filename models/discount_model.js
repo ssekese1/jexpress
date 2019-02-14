@@ -16,6 +16,8 @@ var DiscountSchema   = new Schema({
 	_owner_id: ObjectId,
 	_version: { type: Number, default: 0 },
 	_deleted: { type: Boolean, default: false, index: true },
+}, {
+	timestamps: true
 });
 
 DiscountSchema.set("_perms", {

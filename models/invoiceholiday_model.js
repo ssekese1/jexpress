@@ -14,6 +14,8 @@ var InvoiceHolidaySchema = new Schema({
 	reason: String,
 	_owner_id: ObjectId,
     _deleted: Boolean,
+}, {
+	timestamps: true
 });
 
 InvoiceHolidaySchema.set("_perms", {

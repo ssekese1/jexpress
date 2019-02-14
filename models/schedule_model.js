@@ -15,6 +15,8 @@ var ScheduleSchema   = new Schema({
 	last_output: mongoose.Schema.Types.Mixed,
 	repeat:  { type: String, validate: /never|minutely|hourly|daily|monthly/, index: true, default: "never" },
 	created: { type: Date, default: Date.now },
+}, {
+	timestamps: true
 });
 
 ScheduleSchema.set("_perms", {

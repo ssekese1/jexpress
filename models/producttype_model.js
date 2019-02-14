@@ -8,6 +8,8 @@ var ProductTypeSchema   = new Schema({
 	fire_action: String,
 	_owner_id: Objectid,
 	_deleted: { type: Boolean, default: false, index: true },
+}, {
+	timestamps: true
 });
 
 ProductTypeSchema.set("_perms", {

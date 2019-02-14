@@ -10,6 +10,8 @@ var CrmnoteSchema   = new Schema({
 	note: String,
 	date_created: { index: true, type: Date, default: Date.now },
 	_owner_id: { type: ObjectId, ref: "User" }
+}, {
+	timestamps: true
 });
 
 CrmnoteSchema.set("_perms", {

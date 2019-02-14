@@ -10,6 +10,8 @@ var CurrencySchema   = new Schema({
 	products: [ ObjectId ],
 	date_created: { type: Date, default: Date.now },
 	_owner_id: ObjectId
+}, {
+	timestamps: true
 });
 
 CurrencySchema.set("_perms", {

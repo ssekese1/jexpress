@@ -11,6 +11,8 @@ var EmailcampaignSchema = new Schema({
 	subject: String,
 	body: String,
 	date_created: { type: Date, default: Date.now },
+}, {
+	timestamps: true
 });
 
 EmailcampaignSchema.set("_perms", {

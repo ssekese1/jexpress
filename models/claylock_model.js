@@ -25,6 +25,8 @@ var ClaylockSchema   = new Schema({
 	location_id: { type: ObjectId, index: true, ref: "Location" },
 	date_created: { type: Date, default: Date.now },
 	_owner_id: ObjectId
+}, {
+	timestamps: true
 });
 
 ClaylockSchema.set("_perms", {

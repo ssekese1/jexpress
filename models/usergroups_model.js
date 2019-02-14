@@ -7,6 +7,8 @@ var UserGroupSchema   = new Schema({
 	user_id: Objectid,
 	groups: [String],
 	_date: { type: Date, default: Date.now },
+}, {
+	timestamps: true
 });
 
 UserGroupSchema.set("_perms", {

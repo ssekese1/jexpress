@@ -15,7 +15,8 @@ var BalanceSchema   = new Schema({
 	ledger_id: { type: ObjectId, index: true, ref: "Ledger" },
 	_owner_id: ObjectId,
 }, {
-	strict: true
+	strict: true,
+	timestamps: true
 });
 
 BalanceSchema.set("_perms", {

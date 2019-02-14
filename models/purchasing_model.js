@@ -9,6 +9,8 @@ var PurchasingSchema   = new Schema({
 	date_created: { type: Date, default: Date.now },
 	date_completed: Date,
 	_owner_id: ObjectId,
+}, {
+	timestamps: true
 });
 
 PurchasingSchema.set("_perms", {

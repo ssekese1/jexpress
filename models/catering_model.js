@@ -21,6 +21,8 @@ var CateringSchema   = new Schema({
 	date_created: { type: Date, default: Date.now },
 	notes: String,
 	_owner_id: ObjectId
+}, {
+	timestamps: true
 });
 
 CateringSchema.set("_perms", {

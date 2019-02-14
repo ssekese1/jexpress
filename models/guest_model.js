@@ -16,6 +16,8 @@ var GuestSchema   = new Schema({
 	login_method: String,
 	mac: [ mongoose.Schema.Types.Mixed ],
 	ip: [ mongoose.Schema.Types.Mixed ]
+}, {
+	timestamps: true
 });
 
 GuestSchema.set("_perms", {

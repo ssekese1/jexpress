@@ -15,6 +15,8 @@ var TrackSchema   = new Schema({
 	}],
 	date_created: { type: Date, default: Date.now },
 	_owner_id: ObjectId
+}, {
+	timestamps: true
 });
 
 TrackSchema.set("_perms", {

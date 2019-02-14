@@ -17,6 +17,8 @@ var VoucherSchema   = new Schema({
 	notes: String,
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
+}, {
+	timestamps: true
 });
 
 VoucherSchema.pre("save", function(next) {
@@ -35,7 +37,7 @@ VoucherSchema.pre("save", function(next) {
 			self.code = Math.floor(Math.random() * (max - min)) + min;
 			test = vouchers.find(checkVoucher);
 		} while(test);
-		next();	
+		next();
 	});
 });
 

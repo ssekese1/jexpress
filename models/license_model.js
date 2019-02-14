@@ -40,7 +40,8 @@ var LicenseSchema   = new Schema({
 	},
 	toJSON: {
 		virtuals: true
-	}
+	},
+	timestamps: true
 });
 
 LicenseSchema.set("_perms", {

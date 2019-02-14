@@ -44,6 +44,8 @@ var LedgerSchema   = new Schema({
 	invoice_id: { type: ObjectId, index: true, ref: "Invoice" },
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
+}, {
+	timestamps: true
 });
 
 LedgerSchema.set("_perms", {

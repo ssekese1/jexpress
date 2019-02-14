@@ -9,6 +9,8 @@ var PartnerSchema   = new Schema({
 	date_created: { type: Date, default: Date.now },
 	_version: { type: Number, default: 0 },
 	_deleted: { type: Boolean, default: false, index: true },
+}, {
+	timestamps: true
 });
 
 PartnerSchema.set("_perms", {

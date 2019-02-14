@@ -24,6 +24,8 @@ var ContactSchema   = new Schema({
 		date_created: { type: Date, default: Date.now },
 		user_id: { type: ObjectId, ref: "User" }
 	}],
+}, {
+	timestamps: true
 });
 
 ContactSchema.set("_perms", {

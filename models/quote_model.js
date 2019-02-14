@@ -48,6 +48,8 @@ var QuoteSchema   = new Schema({
 	rejection_tags: [ { type: ObjectId, ref: "Tag" } ],
 	_version: { type: Number, default: 0 },
 	_deleted: { type: Boolean, default: false, index: true },
+}, {
+	timestamps: true
 });
 
 QuoteSchema.set("_perms", {

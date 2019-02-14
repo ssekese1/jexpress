@@ -27,6 +27,8 @@ var LocationSchema = new Schema({
 	clay_id: String,
 	nas_ip: String,
 	_deleted: { type: Boolean, default: false, index: true }
+}, {
+	timestamps: true
 });
 
 LocationSchema.set("_perms", {

@@ -32,6 +32,8 @@ var PendingOrganisationSchema   = new Schema({
 	data: Schema.Types.Mixed,
 	_owner_id: Objectid,
 	_deleted: { type: Boolean, default: false, index: true },
+}, {
+	timestamps: true
 });
 
 PendingOrganisationSchema.set("_perms", {

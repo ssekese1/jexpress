@@ -46,7 +46,8 @@ var AdhocSchema   = new Schema({
 	},
 	toJSON: {
 		virtuals: true
-	}
+	},
+	timestamps: true
 });
 
 AdhocSchema.set("_perms", {

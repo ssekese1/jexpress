@@ -9,6 +9,8 @@ var SourceSchema   = new Schema({
 	description: String,
 	_deleted: { type: Boolean, default: false, index: true },
 	_owner_id: Objectid
+}, {
+	timestamps: true
 });
 
 SourceSchema.set("_perms", {

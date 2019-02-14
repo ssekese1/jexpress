@@ -18,6 +18,8 @@ var SpecialofferSchema   = new Schema({
 	date: { type: Date, default: Date.now, required: true, index: true },
 	start_date: { type: Date, default: Date.now, index: true },
 	end_date: { type: Date, default: Date.now, index: true },
+}, {
+	timestamps: true
 });
 
 SpecialofferSchema.set("_perms", {

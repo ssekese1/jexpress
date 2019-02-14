@@ -19,6 +19,8 @@ var PayfasttokenSchema   = new Schema({
 	date_created: { type: Date, default: Date.now },
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
+}, {
+	timestamps: true
 });
 
 PayfasttokenSchema.set("_perms", {

@@ -28,6 +28,8 @@ var BankaccountSchema   = new Schema({
 	date_created: { type: Date, default: Date.now, index: true },
 	_version: { type: Number, default: 0 },
 	// _deleted: { type: Boolean, default: false, index: true },
+}, {
+	timestamps: true
 });
 
 BankaccountSchema.set("_perms", {

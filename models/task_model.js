@@ -37,6 +37,8 @@ var TaskSchema   = new Schema({
 	date_created: { type: Date, default: Date.now },
 	due_date: { type: Date },
 	_owner_id: ObjectId
+}, {
+	timestamps: true
 });
 
 TaskSchema.set("_perms", {

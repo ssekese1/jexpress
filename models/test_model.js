@@ -10,6 +10,8 @@ var TestSchema   = new Schema({
 	yack: Mixed,
 	shmack: [String],
 	_owner_id: Objectid
+}, {
+	timestamps: true
 });
 
 TestSchema.set("_perms", {

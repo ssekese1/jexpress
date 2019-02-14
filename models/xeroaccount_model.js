@@ -8,6 +8,8 @@ var XeroAccountSchema   = new Schema({
 	location_id: { type: ObjectId, ref: 'Location' },
 	consumer_key: String,
 	consumer_secret: String
+}, {
+	timestamps: true
 });
 
 XeroAccountSchema.set("_perms", {

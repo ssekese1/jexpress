@@ -42,6 +42,8 @@ var InvoiceSchema   = new Schema({
 	personal_account: { type: Boolean, default: false },
 	_owner_id: ObjectId,
 	_deleted: Boolean,
+}, {
+	timestamps: true
 });
 
 InvoiceSchema.set("_perms", {

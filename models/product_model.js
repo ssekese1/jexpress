@@ -24,6 +24,8 @@ var ProductSchema   = new Schema({
 	pro_rata: { type: Boolean, default: false, index: true },
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
+}, {
+	timestamps: true
 });
 
 ProductSchema.set("_perms", {

@@ -10,6 +10,8 @@ var ClayAccessGroupSchema   = new Schema({
 	system: mongoose.Schema.Types.Mixed,
 	date_created: { type: Date, default: Date.now },
 	_owner_id: ObjectId
+}, {
+	timestamps: true
 });
 
 ClayAccessGroupSchema.set("_perms", {

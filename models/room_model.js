@@ -23,6 +23,8 @@ var RoomSchema = new Schema({
 	unavailable_reason: String,
 	display_device_id: String,
 	_deleted: { type: Boolean, default: false, index: true }
+}, {
+	timestamps: true
 });
 
 RoomSchema.set("_perms", {

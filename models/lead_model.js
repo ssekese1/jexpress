@@ -40,6 +40,8 @@ var LeadSchema   = new Schema({
 	heat: { type: String, validate: /hot|mild|cold/, default: "cold" },
 	_deleted: { type: Boolean, default: false, index: true },
 	_owner_id: ObjectId
+}, {
+	timestamps: true
 });
 
 LeadSchema.set("_perms", {

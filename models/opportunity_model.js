@@ -30,6 +30,8 @@ var OpportunitySchema   = new Schema({
 	date_completed: Date,
 	data: mongoose.Schema.Types.Mixed,
 
+}, {
+	timestamps: true
 });
 
 OpportunitySchema.set("_perms", {
