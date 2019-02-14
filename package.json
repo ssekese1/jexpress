@@ -19,7 +19,7 @@
     "debug": "^4.1.1",
     "deep-diff": "^1.0.2",
     "jsonwebtoken": "^8.4.0",
-    "jxp": "^1.0.5",
+    "jxp": "^1.0.6",
     "memcached": "^2.2.2",
     "moment": "^2.24.0",
     "moment-timezone": "^0.5.23",
