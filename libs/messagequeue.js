@@ -14,7 +14,7 @@ var MessageQueue = {
 			const data = JSON.stringify([ user, item ]);
 			const data_buffer = Buffer.from(data);
 			console.log({ type, op, _id: item._id + "" });
-			const message_id = await pubsub.topic(topicName).publisher().publish(data_buffer, { type, op, _id: item._id + "" });
+			const message_id = await pubsub.topic(topicName).publish(data_buffer, { type, op, _id: item._id + "" });
 			console.log(`${ new Date() } Message ${message_id} published.`);
 			return message_id;
 		} catch(err) {
