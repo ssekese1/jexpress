@@ -126,6 +126,10 @@ LineItemSchema.plugin(postFind, {
 	},
 
 	findOne: function(row, done) {
+		if (!row) {
+			console.trace();
+			return done("Row not found");
+		}
 		Discount.find({ organisation_id: row.organisation_id, _deleted: false })
 		.then(discounts => {
 			row = _calculate_row_discount(row, discounts);
@@ -167,6 +171,10 @@ LineItemSchema.pre("save", function(next) {
 						lineitem.price_customised_date = new Date();
 					}
 					next();
+				})
+				.catch(err => {
+					console.error(err);
+					next(err);
 				});
 			} else {
 				License.findOne({ _id: lineitem.license_id }).populate('membership_id').populate('organisation_id')
@@ -184,8 +192,16 @@ LineItemSchema.pre("save", function(next) {
 					}
 					next();
 				})
+				.catch(err => {
+					console.error(err);
+					next(err);
+				});
 			}
 		}
+	})
+	.catch(err => {
+		console.error(err);
+		next(err);
 	});
 });
 
