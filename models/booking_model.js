@@ -1,5 +1,6 @@
 var mongoose     = require('mongoose');
 var Schema       = mongoose.Schema;
+const config	= require("config");
 
 var ObjectId = mongoose.Schema.Types.ObjectId;
 var Room = require("./room_model");
@@ -163,7 +164,7 @@ BookingSchema.pre("save", function(next) {
 	.then(room => {
 		//Reserve the moneyz
 		//We do this here, because if it fails we don't want to process the payment.
-		var description = "Booking: " + transaction.title + " :: " + room.name +  ", " + moment(transaction.start_time).tz("Africa/Johannesburg").format("dddd MMMM Do, H:mm") + " to " + moment(transaction.end_time).tz("Africa/Johannesburg").format("H:mm");
+		var description = "Booking: " + transaction.title + " :: " + room.name +  ", " + moment(transaction.start_time).tz(config.timezone || "Africa/Johannesburg").format("dddd MMMM Do, H:mm") + " to " + moment(transaction.end_time).tz(config.timezone || "Africa/Johannesburg").format("H:mm");
 		if (parseInt(transaction._owner_id) !== parseInt(transaction.user)) {
 			description += " (Booked by Reception)";
 		}
