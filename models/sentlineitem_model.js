@@ -5,14 +5,16 @@ var ObjectId = mongoose.Schema.Types.ObjectId;
 var Organisation = require("./organisation_model");
 var Product = require("./product_model");
 var Invoice = require("./invoice_model");
+var Lineitem = require("./lineitem_model");
 
 var SentlineitemSchema   = new Schema({
 	description: String,
 	organisation_id: { type: ObjectId, ref: "Organisation", index: true },
+	lineitem_id: { type: ObjectId, ref: "Lineitem" },
 	location_id: { type: ObjectId, ref: "Location", index: true },
 	user_id: { type: ObjectId, ref: "User" },
 	product_id: { type: ObjectId, ref: "Product" },
-	invoice_id: { type: ObjectId, ref: "Invoice", required: true },
+	invoice_id: { type: ObjectId, ref: "Invoice", required: true, index: true },
 	booking_id: { type: ObjectId, ref: "Booking" },
 	license_id: { type: ObjectId, ref: "License" },
 	amount: {
