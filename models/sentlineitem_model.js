@@ -40,6 +40,7 @@ var SentlineitemSchema   = new Schema({
 	xero_id: String,
 	date_start: Date,
 	date_end: Date,
+	type: String,
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true }
 }, {
