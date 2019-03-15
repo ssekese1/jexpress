@@ -20,11 +20,6 @@
 	"apikey": "xxx",
 	"websocket": "ws://localhost:8081",
 	"log": "/tmp/access_log",
-	"open_queue": {
-		"server": "http://localhost:3010",
-		"username": "xxx",
-		"password": "xxx"
-	},
 	"recaptcha": {
 		"secret": "xxx",
 		"url": "https://www.google.com/recaptcha/api/siteverify"
