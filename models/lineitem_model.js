@@ -127,7 +127,7 @@ LineItemSchema.plugin(postFind, {
 
 	findOne: function(row, done) {
 		if (!row) {
-			return done(null);
+			return done(null, row);
 		}
 		Discount.find({ organisation_id: row.organisation_id, _deleted: false })
 		.then(discounts => {
