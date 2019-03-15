@@ -1,19 +1,19 @@
-var mongoose     = require('mongoose');
-var Schema       = mongoose.Schema;
+const mongoose     = require('mongoose');
+const Schema       = mongoose.Schema;
 
-var ObjectId = mongoose.Schema.Types.ObjectId;
-var Mixed = mongoose.Schema.Types.Mixed;
-var Opportunity = require("./opportunity_model");
-var User = require("./user_model");
-var Track = require("./track_model");
-var Task = require("./task_model");
-var Location = require('./location_model');
-var moment = require("moment");
-var async = require("async");
+const ObjectId = mongoose.Schema.Types.ObjectId;
+const Mixed = mongoose.Schema.Types.Mixed;
+const Opportunity = require("./opportunity_model");
+const User = require("./user_model");
+const Track = require("./track_model");
+const Task = require("./task_model");
+const Location = require('./location_model');
+const moment = require("moment");
+const async = require("async");
 
-var postFind = require('../libs/mongoose-post-find');
+const postFind = require('mongoose-post-find-findone');
 
-var TaskSchema   = new Schema({
+const TaskSchema   = new Schema({
 	name: String,
 	category: { type: String, validate: /init|call|email|follow_up|meeting|milestone|site_visit/, index: true, default: "email", required: true },
 	due_after_task: { type: ObjectId, ref: "Task" },

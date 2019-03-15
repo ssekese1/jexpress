@@ -1,13 +1,13 @@
-var mongoose     = require('mongoose');
-var Schema       = mongoose.Schema;
-var ObjectId     = mongoose.Schema.Types.ObjectId;
-var User 	     = require("./user_model");
-var Ledger 	     = require("./ledger_model");
-var Wallet 	     = require("./wallet_model");
-var Currency 	 = require("./currency_model");
-var postFind 	 = require('../libs/mongoose-post-find');
+const mongoose     = require('mongoose');
+const Schema       = mongoose.Schema;
+const ObjectId     = mongoose.Schema.Types.ObjectId;
+const User 	     = require("./user_model");
+const Ledger 	     = require("./ledger_model");
+const Wallet 	     = require("./wallet_model");
+const Currency 	 = require("./currency_model");
+const postFind 	 = require('mongoose-post-find-findone');
 
-var BalanceSchema   = new Schema({
+const BalanceSchema   = new Schema({
 	user_id: { type: ObjectId, index: true, ref: "User", required: true },
 	cred_type: { type: String, index: true, required: true },
 	balance: Number,
