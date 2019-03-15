@@ -5,6 +5,7 @@ config.js
 config_working.js
 config.bak
 config/*
+package-lock.js
 
 # Logs
 logs
