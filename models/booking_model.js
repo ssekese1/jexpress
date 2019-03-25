@@ -40,6 +40,7 @@ var BookingSchema   = new Schema({
 	invoice: { type: Boolean, default: false},
 	invoice_id: { type: ObjectId, ref: "Invoice" },
 	external_id: String,
+	hidden: { type: Boolean, default: false },
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
 	_version: { type: Number, default: 0 },
