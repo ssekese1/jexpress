@@ -25,4 +25,6 @@ ScheduleSchema.set("_perms", {
 	admin: "cr",
 });
 
+ScheduleSchema.index( { "$**": "text" } );
+
 module.exports = mongoose.model('Schedule', ScheduleSchema);

@@ -20,4 +20,6 @@ SpaceTypeSchema.set("_perms", {
 	all: "r"
 });
 
+SpaceTypeSchema.index( { "$**": "text" } );
+
 module.exports = mongoose.model('SpaceType', SpaceTypeSchema);

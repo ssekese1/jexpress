@@ -16,4 +16,6 @@ LayoutSchema.set("_perms", {
 	all: "r"
 });
 
+LayoutSchema.index( { "$**": "text" } );
+
 module.exports = mongoose.model('Layout', LayoutSchema);

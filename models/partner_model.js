@@ -19,6 +19,8 @@ PartnerSchema.set("_perms", {
 	all: "r"
 });
 
+PartnerSchema.index( { "$**": "text" } );
+
 PartnerSchema.plugin(friendly, {
 	source: 'name',
 	friendly: 'urlid'

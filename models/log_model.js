@@ -24,4 +24,6 @@ LogSchema.set("_perms", {
 	user: "c",
 });
 
+LogSchema.index( { "$**": "text" } );
+
 module.exports = mongoose.model('Log', LogSchema);

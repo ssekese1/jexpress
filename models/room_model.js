@@ -33,4 +33,6 @@ RoomSchema.set("_perms", {
 	user: "r"
 });
 
+RoomSchema.index( { "$**": "text" } );
+
 module.exports = mongoose.model("Room", RoomSchema);

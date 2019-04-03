@@ -18,6 +18,8 @@ MailtemplateSchema.set("_perms", {
 	all: "r"
 });
 
+MailtemplateSchema.index( { "$**": "text" } );
+
 MailtemplateSchema.plugin(friendly, {
 	source: 'name',
 	friendly: 'urlid'

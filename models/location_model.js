@@ -38,6 +38,8 @@ LocationSchema.set("_perms", {
 	setup: "crud",
 });
 
+LocationSchema.index( { "$**": "text" } );
+
 LocationSchema.plugin(friendly, {
 	source: 'name',
 	friendly: 'urlid',

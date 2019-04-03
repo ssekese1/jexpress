@@ -25,6 +25,8 @@ GuestSchema.set("_perms", {
 	user: "cr",
 });
 
+GuestSchema.index( { "$**": "text" } );
+
 GuestSchema.post("save", function() {
 	if (!this.email) return;
 	var Contact = require("./contact_model");

@@ -36,4 +36,6 @@ MembershipSchema.set("_perms", {
 	setup: "crud",
 });
 
+MembershipSchema.index( { "$**": "text" } );
+
 module.exports = mongoose.model('Membership', MembershipSchema);

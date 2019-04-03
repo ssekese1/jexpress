@@ -29,6 +29,8 @@ WalletSchema.set("_perms", {
 	user: "r",
 });
 
+WalletSchema.index( { "$**": "text" } );
+
 WalletSchema.index({ name: 1, user_id: 1 }, { unique: true });
 
 WalletSchema.statics.topup_daily = function() {

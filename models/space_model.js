@@ -40,6 +40,8 @@ SpaceSchema.set("_perms", {
 	all: "r"
 });
 
+SpaceSchema.index( { "$**": "text" } );
+
 SpaceSchema.virtual("budget_value_per_m2").get(function() {
 	return this.budget_price/this.meters_squared;
 });

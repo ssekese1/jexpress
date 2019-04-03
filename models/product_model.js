@@ -35,5 +35,6 @@ ProductSchema.set("_perms", {
 	all: "r"
 });
 
+ProductSchema.index( { "$**": "text" } );
 
 module.exports = mongoose.model('Product', ProductSchema);

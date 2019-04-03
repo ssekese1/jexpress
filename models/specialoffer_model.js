@@ -28,6 +28,8 @@ SpecialofferSchema.set("_perms", {
 	all: "cr"
 });
 
+SpecialofferSchema.index( { "$**": "text" } );
+
 function toLower (v) {
 	return v.toLowerCase();
 }

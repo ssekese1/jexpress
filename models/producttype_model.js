@@ -19,5 +19,6 @@ ProductTypeSchema.set("_perms", {
 	all: "r"
 });
 
+ProductTypeSchema.index( { "$**": "text" } );
 
 module.exports = mongoose.model('ProductType', ProductTypeSchema);
