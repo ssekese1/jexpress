@@ -17,8 +17,6 @@ var Invoice = require("./invoice_model");
 var moment = require("moment");
 var async = require("async");
 
-var credTypes = ["space", "stuff", "daily"];
-
 var LedgerSchema   = new Schema({
 	user_id: { type: ObjectId, index: true, ref: "User", required: true },
 	organisation_id: { type: ObjectId, index: true, ref: "Organisation" },
@@ -45,8 +43,16 @@ var LedgerSchema   = new Schema({
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
 }, {
-	timestamps: true
+	timestamps: true,
+	toObject: {
+		virtuals: true
+	},
+	toJSON: {
+		virtuals: true
+	},
 });
+
+LedgerSchema.index( { "$**": "text" } );
 
 LedgerSchema.set("_perms", {
 	admin: "crud",
@@ -55,171 +61,73 @@ LedgerSchema.set("_perms", {
 	all: ""
 });
 
-var log = (id, level, title, message, data, code) => {
-	log = new Log({
-		id: id,
-		model: "ledger",
-		level,
-		user_id: self.__user || null,
-		title,
-		message,
-		code,
-		data,
-	}).save();
+var getUser = async _id => {
+	try {
+		let user = await User.findOne({_id});
+		if (!user) throw("Cannot find user");
+		if (user._deleted === true) throw("User is deleted");
+		if (user.status === "inactive") throw("User is inactive");
+		return user;
+	} catch(err) {
+		console.error(err);
+		return Promise.reject(err);
+	}
 };
 
-var logError = (id, title, message, data) => {
-	log(id, 1, title, message, data, "ledger-error");
+var getOrganisation = async _id => {
+	try {
+		let organisation = await Organisation.findOne({_id});
+		if (!organisation) throw("Cannot find organisation");
+		if (organisation._deleted === true) throw("Organisation is deleted");
+		if (organisation.status !== "active") throw("Organisation is not active");
+		return organisation;
+	} catch(err) {
+		console.error(err);
+		return Promise.reject(err);
+	}
 };
 
-var notDeleted = function(item) {
-	return item._deleted !== true;
-};
-
-var getUsers = function() {
-	return new Promise((resolve, reject) => {
-		User.find(function(err, users) {
-			if (err) {
-				console.error(err);
-				reject(err);
-			} else {
-				resolve(users.filter(notDeleted));
-			}
-		});
-	});
-};
-
-var getOrganisations = function() {
-	return new Promise((resolve, reject) => {
-		Organisation.find(function(err, organisations) {
-			if (err) {
-				console.error(err);
-				return reject(err);
-			}
-			return resolve(organisations.filter(notDeleted));
-		});
-	});
-};
-
-var getUser = _id => {
-	return new Promise((resolve, reject) => {
-		User.findOne({_id}, (err, user) => {
-			if (err)
-				return reject(err);
-			if (!user)
-				return reject(new Error("Cannot find user"));
-			if (user.status === "inactive" || user._deleted === true)
-				return reject(new Error("User is inactive"));
-			if (user._deleted === true)
-				return reject(new Error("User is deleted"));
-			resolve(user);
-		});
-	});
-};
-
-var getOrganisation = _id => {
-	return new Promise((resolve, reject) => {
-		Organisation.findOne({_id}, (err, organisation) => {
-			if (err)
-				return reject(err);
-			if (!organisation)
-				return reject(new Error("Cannot find organisation"));
-			if (organisation.status !== "active")
-				return reject(new Error("Organisation is not active"));
-			resolve(organisation);
-		});
-	});
-};
-
-var getLedger = _id => {
-	return new Promise((resolve, reject) => {
-		mongoose.model('Ledger', LedgerSchema).findOne({_id}, (err, ledger) => {
-			if (err)
-				return reject(err);
-			// if (!ledger)
-			// 	return reject(new Error("Cannot find ledger"));
-			resolve(ledger);
-		});
-	});
-};
-
-LedgerSchema.statics.transfer = function(data) {
-	return new Promise((resolve, reject) => {
+LedgerSchema.statics.transfer = async function(data) {
+	try {
 		if ((data.sender + "" !== data.__user._id + "") && (!data.__user.admin)) {
 			console.log("Reject", data.sender, data.__user._id);
-			return reject("This is not your account and you are not an admin");
+			throw("This is not your account and you are not an admin");
 		}
-		var Ledger = require("./ledger_model");
+		const Ledger = require("./ledger_model");
 		var credit = new Ledger();
 		var debit = new Ledger();
-		var sender = null;
-		var recipient = null;
-		var debit_wallet = null;
-		var credit_wallet = null;
-		var currency = null;
-		getUser(data.sender)
-		.then(function(user) {
-			sender = user;
-			return getUser(data.recipient);
-		})
-		.then(function(user) {
-			recipient = user;
-			return Wallet.findOne({ _id: data.wallet_id, user_id: data.sender });
-		})
-		.then(result => {
-			if (!result)
-				throw("Unable to find sender's wallet: " + data.wallet_id);
-			debit_wallet = result;
-			return Wallet.findOne({ user_id: data.recipient, quota_frequency: debit_wallet.quota_frequency, currency_id: debit_wallet.currency_id });
-		})
-		.then(result => {
-			if (!result)
-				throw("Unable to find recipient's wallet");
-			credit_wallet = result;
-			return Currency.findOne({ _id: credit_wallet.currency_id });
-		})
-		.then(result => {
-			if (!result)
-				throw("Unable to find currency");
-			currency = result;
-			credit.wallet_id = credit_wallet._id;
-			credit.currency_id = credit_wallet.currency_id;
-			credit.user_id = data.recipient;
-			credit.amount = Math.abs(data.amount);
-			credit.cred_type = currency.name.toLowerCase();
-			credit.description = "Transfer from " + sender.name + " <" + sender.email + "> to " + recipient.name + " <" + recipient.email + ">";
-			credit.__user = data.__user;
-			credit.is_transfer = true;
-			debit.user_id = data.sender;
-			debit.amount = Math.abs(data.amount) * -1;
-			debit.cred_type = currency.name.toLowerCase();
-			debit.description = "Transfer from " + sender.name + " <" + sender.email + "> to " + recipient.name + " <" + recipient.email + ">";
-			debit.__user = data.__user;
-			debit.is_transfer = true;
-			debit.wallet_id = data.wallet_id;
-			debit.currency_id = debit_wallet.currency_id;
-
-			debit.save(function(err, result) {
-				if (err) {
-					console.error(err);
-					reject(err);
-				} else {
-					credit.save(function(err, result) {
-						if (err) {
-							console.error(err);
-							reject(err);
-						} else {
-							resolve({ credit, debit });
-						}
-					});
-				}
-			});
-		})
-		.then(null, function(err) {
-			console.error(err);
-			reject(err);
-		});
-	});
+		const sender = await getUser(data.sender);
+		const recipient = await getUser(data.recipient);
+		const debit_wallet = await Wallet.findOne({ _id: data.wallet_id, user_id: data.sender });
+		if (!debit_wallet) throw("Unable to find sender's wallet: " + data.wallet_id);
+		const credit_wallet = await Wallet.findOne({ user_id: data.recipient, quota_frequency: debit_wallet.quota_frequency, currency_id: debit_wallet.currency_id });
+		if (!credit_wallet) throw("Unable to find recipient's wallet");	
+		const currency = await Currency.findOne({ _id: credit_wallet.currency_id });
+		if (!currency) throw("Unable to find currency");
+		credit.wallet_id = credit_wallet._id;
+		credit.currency_id = credit_wallet.currency_id;
+		credit.user_id = data.recipient;
+		credit.amount = Math.abs(data.amount);
+		credit.cred_type = currency.name.toLowerCase();
+		credit.description = "Transfer from " + sender.name + " <" + sender.email + "> to " + recipient.name + " <" + recipient.email + ">";
+		credit.__user = data.__user;
+		credit.is_transfer = true;
+		debit.user_id = data.sender;
+		debit.amount = Math.abs(data.amount) * -1;
+		debit.cred_type = currency.name.toLowerCase();
+		debit.description = "Transfer from " + sender.name + " <" + sender.email + "> to " + recipient.name + " <" + recipient.email + ">";
+		debit.__user = data.__user;
+		debit.is_transfer = true;
+		debit.wallet_id = data.wallet_id;
+		debit.currency_id = debit_wallet.currency_id;
+		let result = {};
+		result.debit = await debit.save();
+		result.credit = await credit.save();
+		return result;
+	} catch(err) {
+		console.error(err);
+		return Promise.reject(err);
+	}
 };
 
 LedgerSchema.statics.confirm_reserve = function(_id) {
@@ -541,6 +449,13 @@ LedgerSchema.pre("save", function(next) {
 	});
 });
 
+LedgerSchema.pre("save", next => { // Assign user
+	this.user = this.__user;
+	console.log(this);
+	next();
+});
+	
+
 LedgerSchema.post("save", function(transaction) { //Keep our running total up to date
 	console.log("Post Save");
 	if (transaction._is_reserve_conversion)
@@ -602,9 +517,28 @@ LedgerSchema.post("save", function(transaction) { //Keep our running total up to
 	}
 });
 
+LedgerSchema.post("save", async (transaction) => { //Log
+	console.log(transaction);
+	try {
+		const data = {
+			id: transaction._id,
+			level: 3,
+			title: `Ledger: ${ transaction.transaction_type } ${ transaction.amount } ${ transaction.cred_type } for ${ (await getUser(transaction.user_id)).name }`,
+			message: transaction.description,
+			data: transaction,
+			user_id: transaction.user_id,
+			model: "ledger",
+		}
+		console.log({ data });
+		const log = new Log(data)
+		await log.save()
+	} catch(err) {
+		console.error(err);
+	}
+});
+
 LedgerSchema.virtual("__user").set(function(user) {
 	this.sender = user;
 });
 
-var LedgerModel = mongoose.model('Ledger', LedgerSchema);
 module.exports = mongoose.model('Ledger', LedgerSchema);
