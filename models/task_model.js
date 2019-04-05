@@ -47,10 +47,6 @@ TaskSchema.set("_perms", {
 
 TaskSchema.index( { "name": "text" } );
 
-var checkNoCalc = task => {
-	return ((task.category === "init") || (task.absolute_due_date) || (!task.due_after_task) || (task.completed))
-}
-
 // Leaving this here as an example
 var rawFind = (searchObj => {
 	return new Promise((resolve, reject) => {
@@ -72,7 +68,7 @@ var findDueDate = (task) => {
 	if (!task.due_after_task)
 		return Promise.resolve(task.date_created);
 	if (task.completed)
-			return Promise.resolve(task.date_completed);
+		return Promise.resolve(task.date_completed);
 	let Task = require("./task_model");
 	let opportunity_id = (task.opportunity_id) ? task.opportunity_id._id : task.opportunity_id;
 	return Task.find({ opportunity_id })
@@ -143,34 +139,12 @@ TaskSchema.pre("save", function(next) {
 	next();
 });
 
-TaskSchema.plugin(postFind, {
-	find: function(rows, done) {
-		var queue = rows.map(row => {
-			return cb => {
-				findDueDate(row)
-				.then(due_date => {
-					row.due_date = new Date(due_date);
-					cb(null, row);
-				})
-				.catch(err => {
-					cb(err);
-				});
-			}
-		})
-		async.series(queue, done);
-	},
+TaskSchema.post("findOne", async doc => {
+	doc._doc.due_date = await findDueDate(doc);
+});
 
-	findOne: function(row, done) {
-		findDueDate(row)
-		.then(due_date => {
-			row._doc.due_date = due_date;
-			done(null, row);
-		})
-		.catch(err => {
-			console.error(err);
-			done(err);
-		});
-	}
+TaskSchema.post("find", async docs => {
+	// We need to find due_date without doing another Find
 });
 
 TaskSchema.statics.getUnique = function(opts) {
@@ -180,7 +154,7 @@ TaskSchema.statics.getUnique = function(opts) {
 			completed: false
 		};
 		var Task = require("./task_model");
-		if (opts.track_id) q["track_id"] = mongoose.Types.ObjectId(opts.track_id);
+		if (opts.track_id) q["track_id"] = new mongoose.Types.ObjectId(opts.track_id);
 	    if (opts.location_id) q["location_id"] = new mongoose.Types.ObjectId(opts.location_id);
 		if (opts.user_id) q["user_id"] = new mongoose.Types.ObjectId(opts.user_id);
 		var aggregate = [
