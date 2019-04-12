@@ -41,6 +41,7 @@ var BookingSchema   = new Schema({
 	invoice_id: { type: ObjectId, ref: "Invoice" },
 	external_id: String,
 	hidden: { type: Boolean, default: false },
+	ical_source: { type: String, index: true },
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
 	_version: { type: Number, default: 0 },
