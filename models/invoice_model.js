@@ -40,6 +40,11 @@ var InvoiceSchema   = new Schema({
 	mail_date: Date,
 	mail_result: mongoose.Schema.Types.Mixed,
 	personal_account: { type: Boolean, default: false },
+	monthly_invoice: { type: Boolean, default: false },
+	approved_user_id: { type: ObjectId, ref: "User" },
+	approved_date: Date,
+	sent_user_id: { type: ObjectId, ref: "User" },
+	sent_date: Date,
 	_owner_id: ObjectId,
 	_deleted: Boolean,
 }, {
