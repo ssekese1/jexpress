@@ -10,7 +10,6 @@ const License 		= require("./license_model");
 const Location 		= require("./location_model");
 const User 			= require("./user_model");
 const Discount 		= require("./discount_model");
-const postFind 	 	= require('mongoose-post-find-findone');
 
 const LineItemSchema = new Schema({
 	description: String,
@@ -107,37 +106,29 @@ var _calculate_row_discount = (row, org_discounts) => {
 	return row;
 }
 
-LineItemSchema.plugin(postFind, {
-	find: function(rows, done) {
-		Discount.find({ _deleted: false })
-		.then(discounts => {
-			rows.forEach(row => {
-				row._doc.calculated_discount = 0;
-				var org_discounts = discounts
-					.filter(discount => (row.organisation_id + "" === discount.organisation_id + "") || (row.organisation_id && row.organisation_id._id + "" === discount.organisation_id + ""));
-				row = _calculate_row_discount(row, org_discounts);
-			});
-			done(null, rows);
-		})
-		.catch(err => {
-			console.error(err);
-			done(err);
-		});
-	},
-
-	findOne: function(row, done) {
-		if (!row) {
-			return done(null, row);
+LineItemSchema.post("find", async (rows, next) => {
+	try {
+		const discounts = await Discount.find({ _deleted: false });
+		for (let row of rows) {
+			row._doc.calculated_discount = 0;
+			const org_discounts = discounts.filter(discount => (row.organisation_id + "" === discount.organisation_id + "") || (row.organisation_id && row.organisation_id._id + "" === discount.organisation_id + ""));
+			row = _calculate_row_discount(row, org_discounts);
 		}
-		Discount.find({ organisation_id: row.organisation_id, _deleted: false })
-		.then(discounts => {
-			row = _calculate_row_discount(row, discounts);
-			done(null, row);
-		})
-		.catch(err => {
-			console.error(err);
-			done(err);
-		});
+		next();
+	} catch(err) {
+		console.error(err);
+		next(err);
+	}
+});
+
+LineItemSchema.post("findOne", async (row, next) => {
+	try {
+		const discounts = await Discount.find({ organisation_id: row.organisation_id, _deleted: false });
+		row = _calculate_row_discount(row, discounts);
+		next();
+	} catch(err) {
+		console.error(err);
+		next(err);
 	}
 });
 
