@@ -123,6 +123,7 @@ LineItemSchema.post("find", async (rows, next) => {
 
 LineItemSchema.post("findOne", async (row, next) => {
 	try {
+		if (!row || !row.organisation_id) return next();
 		const discounts = await Discount.find({ organisation_id: row.organisation_id, _deleted: false });
 		row = _calculate_row_discount(row, discounts);
 		next();
