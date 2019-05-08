@@ -53,37 +53,36 @@ LeadSchema.set("_perms", {
 
 LeadSchema.index( { "name": "text", "email": "text", "organisation": "text" } );
 
-LeadSchema.pre("save", function(next) {
-	var Lead = require("./lead_model");
-	var transaction = this;
-	Lead.findOne({ _id: transaction._id })
-	.then(result => {
-		if (result) // Is an edit
-			return next();
+LeadSchema.pre("save", async function(next) {
+	try {
+		const count = await this.constructor.countDocuments({ _id: this._id });
+		if (count) // Is an edit
+			return Promise.resolve();
 		if (this.__user) {
 			this.spam = false;
-			return next();
+			return Promise.resolve();
 		}
-		if (this.email.endsWith(".ru")) {
+		if (this.email && this.email.endsWith(".ru")) {
 			this.spam = true;
-			return next();
+			return Promise.resolve();
 		}
 		if (this["g-recaptcha-response"]) {
-			rest.post(config.recaptcha.url, { data: { secret: config.recaptcha.secret, response: this["g-recaptcha-response"] }})
-			.then(result => {
-				this.spam = !result.success;
-				next();
-			})
-			.catch(err => {
-				console.error(err);
-				this.spam = true;
-				next();
-			})
-		} else {
-			this.spam = true;
-			next();
+			const captcha = await rest.post(config.recaptcha.url, { data: { secret: config.recaptcha.secret, response: this["g-recaptcha-response"] }});
+			this.spam = !captcha.success;
+			return Promise.resolve();
 		}
-	})
+		this.spam = true;
+		return Promise.resolve();
+	} catch(err) {
+		console.error(err);
+		throw(err);
+	}
+});
+
+LeadSchema.pre("save", function(next) {
+	if (!this.spam) return next();
+	var err = new Error('Spam');
+	next(err);
 });
 
 LeadSchema.post("save", function() {
