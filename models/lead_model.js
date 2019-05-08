@@ -37,7 +37,7 @@ var LeadSchema   = new Schema({
 	referral_user_id: { type: ObjectId, ref: "User" },
 	referral_date_paid: Date,
 	referral_amount: Number,
-	heat: { type: String, validate: /hot|mild|cold/, default: "cold" },
+	heat: { type: String, validate: /hot|mild|cold/, default: "mild" },
 	_deleted: { type: Boolean, default: false, index: true },
 	_owner_id: ObjectId
 }, {
@@ -68,6 +68,7 @@ LeadSchema.pre("save", async function(next) {
 		}
 		if (this["g-recaptcha-response"]) {
 			const captcha = await rest.post(config.recaptcha.url, { data: { secret: config.recaptcha.secret, response: this["g-recaptcha-response"] }});
+			console.log(captcha);
 			this.spam = !captcha.success;
 			return Promise.resolve();
 		}
