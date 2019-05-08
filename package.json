@@ -19,7 +19,7 @@
     "debug": "^4.1.1",
     "deep-diff": "^1.0.2",
     "jsonwebtoken": "^8.5.0",
-    "jxp": "^1.0.15",
+    "jxp": "^1.0.17",
     "memcached": "^2.2.2",
     "minimist": "^1.2.0",
     "mkdirp": "^0.5.1",
