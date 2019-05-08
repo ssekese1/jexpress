@@ -18,7 +18,7 @@ var messagequeue = require("../libs/messagequeue");
 var Clayaccessgroup = require("./clayaccessgroup_model");
 
 var UserSchema   = new Schema({
-	name: { type: String, required: true },
+	name: { type: String, required: true, index: true },
 	urlid: { type: String, index: { unique: true, partialFilterExpression: { urlid: { $type: 'string' } } } },
 	organisation_id: { type: ObjectId, ref: "Organisation" },
 	location_id: { type: ObjectId, ref: "Location" },
@@ -73,6 +73,8 @@ UserSchema.set("_perms", {
 	member: "r",
 	api: "r"
 });
+
+UserSchema.index( { "name": "text", "email": "text" } );
 
 /*
  * Ensure emails are unique
@@ -214,8 +216,6 @@ UserSchema.post("save", function() {
 	var Contact = require("./contact_model");
 	Contact.populate({ email: this.email });
 });
-
-UserSchema.index( { "name": "text", "email": "text" } );
 
 UserSchema.path('name').validate(function (v) {
 	return (v) && (v.length > 0);
