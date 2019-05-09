@@ -55,8 +55,7 @@ LeadSchema.index( { "name": "text", "email": "text", "organisation": "text" } );
 
 LeadSchema.pre("save", async function(next) {
 	try {
-		const count = await this.constructor.countDocuments({ _id: this._id });
-		if (count) // Is an edit
+		if (!this.isNew) // Is an edit
 			return Promise.resolve();
 		if (this.__user) {
 			this.spam = false;
@@ -81,6 +80,7 @@ LeadSchema.pre("save", async function(next) {
 });
 
 LeadSchema.pre("save", function(next) {
+	if (!this.isNew) return next();
 	if (!this.spam) return next();
 	var err = new Error('Spam');
 	next(err);
