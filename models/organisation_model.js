@@ -44,7 +44,7 @@ var OrganisationSchema   = new Schema({
 	print_credits_per_month_override: Number,
 	cost_per_month_override: Number,
 	items: mongoose.Schema.Types.Mixed,
-	status: { type: String, validate: /active|inactive|prospect|pending/, index: true, default: "active" },
+	status: { type: String, validate: /active|inactive|prospect|pending|offboarded/, index: true, default: "active" },
 	type: [{ type: String, validate: /member|events/, index: true, default: "member" }],
 	hidden: { type: Boolean, default: false, index: true },
 	product: String,
@@ -157,12 +157,13 @@ OrganisationSchema.post('validate', function(doc) {
  * Onboard, offboard, suspend or unsuspend a user
  */
 OrganisationSchema.post('validate', function(doc) {
-	var inactiveStates = ["inactive", "prospect", "pending"];
-	var activeStates = ["active", "hidden"];
-	var self = this;
+	const inactiveStates = ["inactive", "prospect", "pending", "offboarded"];
+	const activeStates = ["active", "hidden"];
+	const self = this;
 	doc._isNew = false;
 	getOrganisation({ _id: doc._id })
 	.then(original => {
+		console.log({ original, doc, self });
 		doc.active = (activeStates.indexOf(doc.status) !== -1);
 		if (!original) {
 			if (doc.status === "active") {
@@ -175,8 +176,9 @@ OrganisationSchema.post('validate', function(doc) {
 				if (doc.status === "active") {
 					//Status changed to active
 					onboard(doc._id, self.__user);
-				} else {
-					//Status changed to inactive
+				} else if (doc.status === "offboarded") {
+					//Status changed to offboarded
+					console.log("Offboard");
 					offboard(doc._id, self.__user);
 				}
 			}
