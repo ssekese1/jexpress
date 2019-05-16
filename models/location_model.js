@@ -26,6 +26,9 @@ var LocationSchema = new Schema({
 	xero_branding_theme: String,
 	clay_id: String,
 	nas_ip: String,
+	operator: String,
+	contract_template: String,
+	contract_addendum: String,
 	_deleted: { type: Boolean, default: false, index: true }
 }, {
 	timestamps: true
