@@ -57,11 +57,14 @@ config.callbacks = {
 mongoose.Promise = Promise;
 
 // mongodb connection
-mongoose.connect(`mongodb://${ config.mongo.server }/${ config.mongo.db }`, {
+config.mongo.options = config.mongo.options || {};
+let mongoOptions = Object.assign(config.mongo.options, {
 	promiseLibrary: global.Promise,
 	useNewUrlParser: true,
 	useCreateIndex: true,
 });
+
+mongoose.connect(`mongodb://${ config.mongo.server }/${ config.mongo.db }`, mongoOptions);
 
 var db = mongoose.connection;
 
