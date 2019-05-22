@@ -48,7 +48,8 @@ var InvoiceSchema   = new Schema({
 	_owner_id: ObjectId,
 	_deleted: Boolean,
 }, {
-	timestamps: true
+	timestamps: true,
+    toJSON: { virtuals: true }
 });
 
 InvoiceSchema.set("_perms", {
@@ -61,7 +62,6 @@ InvoiceSchema.set("_perms", {
 InvoiceSchema.index( { "xero_invoice_number": "text" } );
 
 InvoiceSchema.post('validate', function(doc) {
-	var self = this;
 	doc._isNew = false;
 	InvoiceModel.findOne({ _id: doc._id }, function(err, original) {
 		if (!original) {
@@ -69,7 +69,6 @@ InvoiceSchema.post('validate', function(doc) {
 				messagequeue.action("purchase", "invoice", doc._owner_id, doc._id);
 			}
 		} else {
-			console.log("Status", doc.status, original.status, (doc.status === "AUTHORISED") && (original.status === "DRAFT"));
 			if ((doc.status === "AUTHORISED") && (original.status === "DRAFT")) {
 				messagequeue.action("purchase", "invoice", original._owner_id, doc._id);
 			}
@@ -82,6 +81,18 @@ InvoiceSchema.pre('save', function(next) {
 	if (self.status === "DELETED") self.status = "REJECTED";
 	next();
 });
+
+InvoiceSchema.virtual("xero_lineitems_flat").get(function() {
+	if (!this.line_items) return [];
+	if (this.line_items[0] && this.line_items[0].LineItem) {
+		if (!Array.isArray(this.line_items[0].LineItem)) {
+			return [ this.line_items[0].LineItem ]
+		} else {
+			return this.line_items[0].LineItem;
+		}
+	}
+	return this.line_items;
+})
 
 var InvoiceModel = mongoose.model('Invoice', InvoiceSchema);
 
