@@ -59,6 +59,7 @@ var UserSchema   = new Schema({
 	claytag_id: { type: ObjectId, ref: "Claytag" },
 	clay_access_group_ids: [ { type: ObjectId, ref: "Clayaccessgroup" } ],
 	last_login: Date,
+	xero_id: String,
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
 	_import_ref: String,
