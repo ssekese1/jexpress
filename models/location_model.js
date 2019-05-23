@@ -29,6 +29,7 @@ var LocationSchema = new Schema({
 	operator: String,
 	contract_template: String,
 	contract_addendum: String,
+	contract_prepend: String,
 	_deleted: { type: Boolean, default: false, index: true }
 }, {
 	timestamps: true
