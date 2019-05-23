@@ -18,6 +18,7 @@ var ProductSchema   = new Schema({
 	xero_code: { type: String, index: true },
 	xero_id: String,
 	xero_tax_type: String,
+	tax_rate: Number,
 	payment_options: [ { type: String, validate: /stuff|space|creditcard|account/, required: true } ],
 	self_service: { type: Boolean, default: false, index: true },
 	date_created: { type: Date, default: Date.now },
