@@ -12,7 +12,7 @@ var SpaceSchema   = new Schema({
 	name: String,
 	location_id: { type: ObjectId, ref: 'Location' },
 	meters_squared: Number,
-	spacetype_id: { type: ObjectId, ref: 'SpaceType' },
+	spacetype_id: { type: ObjectId, ref: 'SpaceType', required: true },
 	product_id: { type: ObjectId, ref: 'Product' },
 	claylock_id: [{ type: ObjectId, ref: 'Claylock' }],
 	date_created: { type: Date, default: Date.now },
