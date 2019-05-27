@@ -21,6 +21,14 @@ var SpaceSchema   = new Schema({
 	occasional_oversell: Number,
 	shared: { type: Boolean, default: true },
 	budget_price: Number, // Use this to calculate individual line item amounts
+	aesthetic: String,
+	aesthetic_impact: Number,
+	business_case: Number,
+	business_case_date: Date,
+	business_case_factor: Number,
+	market_rate: Number,
+	market_date: Date,
+	twelve_month_discount: Number,
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
 }, {
