@@ -23,6 +23,11 @@ var ProductSchema   = new Schema({
 	self_service: { type: Boolean, default: false, index: true },
 	date_created: { type: Date, default: Date.now },
 	pro_rata: { type: Boolean, default: false, index: true },
+	amortise_months: Number,
+	purchase_price: Number,
+	markup: Number,
+	price_updated_date: Date,
+	image: String,
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
 }, {
