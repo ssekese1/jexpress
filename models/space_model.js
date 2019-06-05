@@ -29,6 +29,7 @@ var SpaceSchema   = new Schema({
 	market_rate: Number,
 	market_date: Date,
 	twelve_month_discount: Number,
+	tenant_installation_allowance: Number,
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
 }, {
