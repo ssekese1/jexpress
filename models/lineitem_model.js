@@ -41,6 +41,8 @@ const LineItemSchema = new Schema({
 	tax_type: String,
 	comment: String,
 	discount: { type: Number, default: 0 },
+	discount_date_start: Date,
+	discount_date_end: Date,
 	date_created: { type: Date, default: Date.now },
 	is_quote: Boolean,
 	xero_id: String,
