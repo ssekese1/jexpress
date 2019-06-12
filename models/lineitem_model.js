@@ -40,7 +40,9 @@ const LineItemSchema = new Schema({
 	price_customised_date: Date,
 	tax_type: String,
 	comment: String,
-	// discount: { type: Number, default: 0 }, // DEPRECATED IN FAVOUR OF DISCOUNT TABLE
+	discount: { type: Number, default: 0 }, // DEPRECATED IN FAVOUR OF DISCOUNT TABLE
+	discount_date_start: Date, // DEPRECATED IN FAVOUR OF DISCOUNT TABLE
+	discount_date_end: Date, // DEPRECATED IN FAVOUR OF DISCOUNT TABLE
 	date_created: { type: Date, default: Date.now },
 	is_quote: Boolean,
 	xero_id: String,
@@ -78,7 +80,22 @@ LineItemSchema.virtual("status").get(function() {
 	return "current";
 });
 
-var _calculate_row_discount = (row, org_discounts) => {
+LineItemSchema.pre("save", async function() {
+	if (!this.isNew) {
+		await Discount.find({ lineitem_id: this._id }).deleteMany().exec();
+	}
+	const discount = new Discount({
+		discount: this.discount,
+		lineitem_id: this._id,
+		organisation_id: this.organisation_id,
+		date_start: this.discount_date_start,
+		date_end: this.discount_date_end,
+		_owner_id: this._owner_id
+	});
+	var result = await discount.save();
+});
+
+const _calculate_row_discount = (row, org_discounts) => {
 	var now = new Date();
 	row._doc.calculated_discount = 0;
 	if (!org_discounts.length) {
