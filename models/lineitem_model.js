@@ -80,7 +80,7 @@ LineItemSchema.virtual("status").get(function() {
 
 var _calculate_row_discount = (row, org_discounts) => {
 	var now = new Date();
-	row._doc.calculated_discount = row._doc.discount;
+	row._doc.calculated_discount = 0;
 	if (!org_discounts.length) {
 		return row;
 	}
@@ -99,7 +99,7 @@ var _calculate_row_discount = (row, org_discounts) => {
 		}
 	}
 	row._doc.discounts = lineitem_discounts.map(discount => discount._id);
-	row._doc.calculated_discount = lineitem_discounts.filter(discount => (!discount.date_start || now > discount.date_start) && (!discount.date_end || now < discount.date_end)).reduce((sum, b) => ( sum + b.discount ), row._doc.discount);
+	row._doc.calculated_discount = lineitem_discounts.filter(discount => (!discount.date_start || now > discount.date_start) && (!discount.date_end || now < discount.date_end)).reduce((sum, b) => ( sum + b.discount ), 0);
 	if (row._doc.calculated_discount > 100) {
 		row._doc.calculated_discount = 100;
 	}
