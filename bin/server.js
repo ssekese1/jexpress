@@ -77,8 +77,7 @@ db.once('open', () => {
 });
 
 var server = new Jxp(config);
-server.use(require('datadog-restify')({}));
-server.use(server.router);
+
 server.listen(config.port || 3001, function() {
 	console.log('%s listening at %s', "Workspaceman API", server.url);
 });
