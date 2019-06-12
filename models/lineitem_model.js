@@ -40,9 +40,7 @@ const LineItemSchema = new Schema({
 	price_customised_date: Date,
 	tax_type: String,
 	comment: String,
-	discount: { type: Number, default: 0 },
-	discount_date_start: Date,
-	discount_date_end: Date,
+	// discount: { type: Number, default: 0 }, // DEPRECATED IN FAVOUR OF DISCOUNT TABLE
 	date_created: { type: Date, default: Date.now },
 	is_quote: Boolean,
 	xero_id: String,
@@ -87,7 +85,7 @@ var _calculate_row_discount = (row, org_discounts) => {
 		return row;
 	}
 	var lineitem_discounts = [];
-	for (discount of org_discounts) {
+	for (let discount of org_discounts) {
 		if (discount.lineitem_id && discount.lineitem_id + "" === row._id + "") {
 			lineitem_discounts.push(discount);
 		} else if (discount.apply_to.includes("all")) {
@@ -104,6 +102,15 @@ var _calculate_row_discount = (row, org_discounts) => {
 	row._doc.calculated_discount = lineitem_discounts.filter(discount => (!discount.date_start || now > discount.date_start) && (!discount.date_end || now < discount.date_end)).reduce((sum, b) => ( sum + b.discount ), row._doc.discount);
 	if (row._doc.calculated_discount > 100) {
 		row._doc.calculated_discount = 100;
+	}
+	const line_discount = org_discounts.find(discount => discount.lineitem_id + "" === row._id + "");
+	row._doc.discount = 0;
+	row._doc.discount_date_start = null;
+	row._doc.discount_date_end = null;
+	if (line_discount) {
+		row._doc.discount = line_discount.discount;
+		row._doc.discount_date_start = line_discount.date_start;
+		row._doc.discount_date_end = line_discount.date_end;
 	}
 	return row;
 }
