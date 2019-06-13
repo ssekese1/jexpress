@@ -58,7 +58,12 @@ const LineItemSchema = new Schema({
 	toJSON: {
 		virtuals: true
 	},
-	timestamps: true
+	timestamps: true,
+	writeConcern: {
+		w: 'majority',
+		j: true,
+		wtimeout: 1000
+	},
 });
 
 LineItemSchema.set("_perms", {
@@ -90,9 +95,10 @@ LineItemSchema.pre("save", async function() {
 		organisation_id: this.organisation_id,
 		date_start: this.discount_date_start,
 		date_end: this.discount_date_end,
+		description: this.description,
 		_owner_id: this._owner_id
 	});
-	var result = await discount.save();
+	await discount.save();
 });
 
 const _calculate_row_discount = (row, org_discounts) => {
