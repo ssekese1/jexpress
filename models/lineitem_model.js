@@ -89,6 +89,7 @@ LineItemSchema.pre("save", async function() {
 	if (!this.isNew) {
 		await Discount.find({ lineitem_id: this._id }).deleteMany().exec();
 	}
+	if (!this.discount) return;
 	const discount = new Discount({
 		discount: this.discount,
 		lineitem_id: this._id,
@@ -109,7 +110,7 @@ const _calculate_row_discount = (row, org_discounts) => {
 	}
 	var lineitem_discounts = [];
 	for (let discount of org_discounts) {
-		if (discount.lineitem_id && discount.lineitem_id + "" === row._id + "") {
+		if (discount.lineitem_id && discount.lineitem_id + "" === row._id + "" && (discount.discount > 0)) {
 			lineitem_discounts.push(discount);
 		} else if (discount.apply_to.includes("all")) {
 			lineitem_discounts.push(discount);
@@ -130,7 +131,7 @@ const _calculate_row_discount = (row, org_discounts) => {
 	row._doc.discount = 0;
 	row._doc.discount_date_start = null;
 	row._doc.discount_date_end = null;
-	if (line_discount) {
+	if (line_discount && line_discount.discount) {
 		row._doc.discount = line_discount.discount;
 		row._doc.discount_date_start = line_discount.date_start;
 		row._doc.discount_date_end = line_discount.date_end;
