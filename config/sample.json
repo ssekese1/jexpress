@@ -1,7 +1,7 @@
 {
 	"mongo": {
-		"server": "localhost",
-		"db": "openmembers"
+		"server": "mongo",
+		"db": "jxp"
 	},
 	"port": "3001",
 	"smtp": {
@@ -18,14 +18,15 @@
 	"shared_secret": "xxx",
 	"url": "http://localhost:3001",
 	"apikey": "xxx",
-	"websocket": "ws://localhost:8081",
+	"websocket": "ws://ws:8080",
 	"log": "/tmp/access_log",
 	"recaptcha": {
 		"secret": "xxx",
 		"url": "https://www.google.com/recaptcha/api/siteverify"
 	},
-	"memcached": {
-		"server": "localhost:11211",
-		"lifetime": 604800
+	"google": {
+		"projectId": "my-google-project",
+		"topicName": "dev.workshop17.co.za",
+		"keyFilename": "./keys/my-google-key.json"
 	}
 }

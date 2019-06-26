@@ -1,0 +1,18 @@
+version: '3'
+services:
+  ws:
+    build: ../jxp-ws/.
+    ports:
+      - "8080:8080"
+  redis:
+    image: "redis:alpine"
+  mongo:
+    image: "mongo"
+  api:
+    build: .
+    ports:
+      - "3001:3001"
+    depends_on:
+      - ws
+      - redis
+      - mongo

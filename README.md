@@ -4,6 +4,20 @@ This is the [JExpress2](https://github.com/j-norwood-young/jexpress) implementat
 
 Please note that the working branch is _jexpress2_.
 
+## Docker
+
+Clone Github repo to jxp-api
+`git clone git@github.com:10layer/jexpress.git jxp-api`
+
+Clone Websocket
+`git clone git@github.com:10layer/openmembers-ws.git jxp-ws`
+
+Change to API directory
+`cd jxp-api`
+
+Run Docker Compose
+`docker-compose up`
+
 ## Installing
 
 ```
