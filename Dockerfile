@@ -1,8 +1,5 @@
-FROM node:carbon
+FROM node:12
 WORKDIR /usr/src/app
-
-# RUN apt-get update && apt-get install -y \
-# 	redis-server
 
 COPY package*.json ./
 RUN npm install
