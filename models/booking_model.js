@@ -146,25 +146,23 @@ BookingSchema.pre("save", function(next) {
 });
 
 // Save in ledger
-BookingSchema.pre("save", function(next) {
-	var transaction = this;
+BookingSchema.pre("save", async function(f, item) {
+	const transaction = this;
 	//Are we invoicing this? If so, don't charge the Space account
 	if (transaction.invoice)
-		return next();
+		return;
 	//Is this free? If so, cool, don't do any more
 	if (!transaction.cost)
-		return next();
-	getLedger({
-		source_type: "booking",
-		source_id: transaction._id
-	})
-	.then(ledger => {
+		return;
+	try {
+		const ledger = await getLedger({
+			source_type: "booking",
+			source_id: transaction._id
+		});
 		if (ledger) {
-			ledger.remove();
+			await ledger.remove();
 		}
-		return getRoom({ _id: transaction.room });
-	})
-	.then(room => {
+		const room = await getRoom({ _id: transaction.room });
 		//Reserve the moneyz
 		//We do this here, because if it fails we don't want to process the payment.
 		var description = "Booking: " + transaction.title + " :: " + room.name +  ", " + moment(transaction.start_time).tz(config.timezone || "Africa/Johannesburg").format("dddd MMMM Do, H:mm") + " to " + moment(transaction.end_time).tz(config.timezone || "Africa/Johannesburg").format("H:mm");
@@ -172,7 +170,7 @@ BookingSchema.pre("save", function(next) {
 			description += " (Booked by Reception)";
 		}
 		reserve_expires = moment(transaction.start_time).subtract(24, "hours");
-		return postLedger({
+		const newledger = await postLedger({
 			user_id: transaction.user,
 			description: description,
 			partner_reference: transaction._id,
@@ -184,13 +182,9 @@ BookingSchema.pre("save", function(next) {
 			reserve_expires: reserve_expires.toISOString(),
 			__user: transaction.__user
 		});
-	})
-	.then(result => {
-		next();
-	})
-	.catch(err => {
-		return next(new Error(err));
-	});
+	} catch(err) {
+		return new Error(err);
+	};
 });
 
 var deleteReserve = function(transaction) {
