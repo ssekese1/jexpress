@@ -1,15 +1,19 @@
-var mongoose = require("mongoose");
-var Schema = mongoose.Schema;
+const mongoose = require("mongoose");
+const Schema = mongoose.Schema;
 
-var ObjectId = mongoose.Schema.Types.ObjectId;
-var Location = require("./location_model");
-var Layout = require("./layout_model");
-var Space = require("./space_model");
-var Product = require("./product_model");
+const friendly = require("mongoose-friendly");
 
-var RoomSchema = new Schema({
-	location: { type: ObjectId, ref: "Location" },
+const ObjectId = mongoose.Schema.Types.ObjectId;
+const Location = require("./location_model");
+const Layout = require("./layout_model");
+const Space = require("./space_model");
+const Product = require("./product_model");
+
+const RoomSchema = new Schema({
+	urlid: { type: String, unique: true, index: true },
+	location_id: { type: ObjectId, ref: "Location", index: true },
 	product_id: { type: ObjectId, ref: "Product" },
+	type: [ { type: String, validate: /meeting|event|office|other/, index: true } ],
 	name: String,
 	img: String,
 	cost: Number,
@@ -18,21 +22,26 @@ var RoomSchema = new Schema({
 	capacity: Number,
 	meters_squared: Number,
 	layout: [{ type: ObjectId, ref: "Layout" }],
-	space_id: { type: ObjectId, ref: "Space" },
 	private: { type: Boolean, default: false },
 	unavailable_reason: String,
 	display_device_id: String,
 	external_ical: String,
-	_deleted: { type: Boolean, default: false, index: true }
+	half_day_discount: Number,
+	full_day_discount: Number,
+	_deleted: { type: Boolean, default: false, index: true },
+	_owner_id: ObjectId,
 }, {
 	timestamps: true
+});
+
+RoomSchema.plugin(friendly, {
+	source: 'name',
+	friendly: 'urlid'
 });
 
 RoomSchema.set("_perms", {
 	admin: "crud",
 	user: "r"
 });
-
-RoomSchema.index( { "$**": "text" } );
 
 module.exports = mongoose.model("Room", RoomSchema);
