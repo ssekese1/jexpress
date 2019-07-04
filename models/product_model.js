@@ -28,6 +28,8 @@ var ProductSchema   = new Schema({
 	markup: Number,
 	price_updated_date: Date,
 	image: String,
+	supplier_name: String,
+	supplier_sku: String,
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
 }, {
