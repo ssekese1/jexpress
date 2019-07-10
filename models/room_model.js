@@ -30,6 +30,9 @@ const RoomSchema = new Schema({
 	full_day_discount: Number,
 	price_per_user_per_day: Number,
 	price_per_square_meter_per_day: Number,
+	aesthetic: String,
+	aesthetic_impact: Number,
+	safety_margin: Number,
 	_deleted: { type: Boolean, default: false, index: true },
 	_owner_id: ObjectId,
 }, {
