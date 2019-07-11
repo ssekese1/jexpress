@@ -31,11 +31,9 @@ var MembershipSchema   = new Schema({
 MembershipSchema.set("_perms", {
 	admin: "r",
 	owner: "r",
-	user: "r",
+	user: "cru",
 	all: "r",
 	setup: "crud",
 });
-
-MembershipSchema.index( { "$**": "text" } );
 
 module.exports = mongoose.model('Membership', MembershipSchema);

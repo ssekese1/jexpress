@@ -39,13 +39,11 @@ var LocationSchema = new Schema({
 });
 
 LocationSchema.set("_perms", {
-	admin: "r",
+	admin: "cru",
 	user: "r",
 	all: "r",
 	setup: "crud",
 });
-
-LocationSchema.index( { "$**": "text" } );
 
 LocationSchema.plugin(friendly, {
 	source: 'name',
