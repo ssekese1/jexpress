@@ -20,9 +20,9 @@ var Clayaccessgroup = require("./clayaccessgroup_model");
 var UserSchema   = new Schema({
 	name: { type: String, required: true, index: true },
 	urlid: { type: String, index: { unique: true, partialFilterExpression: { urlid: { $type: 'string' } } } },
-	organisation_id: { type: ObjectId, ref: "Organisation" },
-	location_id: { type: ObjectId, ref: "Location" },
-	membership_id: { type: ObjectId, ref: "Membership" },
+	organisation_id: { type: ObjectId, ref: "Organisation", index: true },
+	location_id: { type: ObjectId, ref: "Location", index: true },
+	membership_id: { type: ObjectId, ref: "Membership" }, // DEPRECATED
 	email: { type: String, unique: true, index: true, set: toLower },
 	emails: [String],
 	id_number: String,
