@@ -65,6 +65,7 @@ var OrganisationSchema   = new Schema({
 	xeroorgaccount_id: { type: ObjectId, ref: 'XeroOrgAccount' },
 	escalation_date: Date,
 	subscription_locked: { type: Boolean, default: false },
+	summarise_invoice: { type: Boolean, default: false },
 	_owner_id: ObjectId,
 	_deleted: { type: Boolean, default: false, index: true },
 	_import_ref: String,
