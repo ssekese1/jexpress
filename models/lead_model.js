@@ -19,7 +19,7 @@ var LeadSchema   = new Schema({
 	source: String,
 	url: String,
 	type: String,
-	intercom_id: String,
+	//intercom_id: String,
 	mailtemplate_id: ObjectId,
 	membership_id: { type: ObjectId, ref: "Membership" },
 	short_name: String,
